@@ -1,0 +1,424 @@
+.wrapper {
+  position: relative;
+  z-index: 2;
+  background: var(--canvas);
+}
+
+/* ─── Tab body ──────────────────────────────────────── */
+
+.tabBody {
+  display: block;
+}
+
+.tabPanel {
+  display: none;
+}
+
+.tabPanelActive {
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .tabBody {
+    position: relative;
+    height: 280vh;
+  }
+
+  .tabPanel {
+    display: block;
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .tabPanelActive {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .tabPanel {
+      transition: opacity 0.35s ease;
+    }
+  }
+}
+
+/* ─── Toggle ─────────────────────────────────────────── */
+
+.tabList {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.tabBtn {
+  font-family: var(--font-inter, sans-serif);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding-bottom: 8px;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.tabBtnActive {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tabBtn {
+    transition: color var(--duration-fast, 100ms) ease,
+                border-color var(--duration-fast, 100ms) ease;
+  }
+}
+
+.tabBtn:not(.tabBtnActive):hover {
+  color: var(--text-primary);
+}
+
+/* ─── Buy scroll track ───────────────────────────────── */
+
+.buyScrollTrack {
+  display: block;
+  position: relative;
+  height: 250vh;
+}
+
+@media (min-width: 640px) {
+  .buyScrollTrack {
+    height: 280vh;
+  }
+}
+
+/* ─── Buy sticky container ───────────────────────────── */
+
+.buyScrollSticky {
+  position: sticky;
+  top: 56px;
+  height: calc(100vh - 56px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: 0 var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .buyScrollSticky {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+    align-items: center;
+    padding: 0 var(--space-6);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .buyScrollSticky {
+    padding: 0 40px;
+    gap: 100px;
+  }
+}
+
+/* ─── Caption area ───────────────────────────────────── */
+
+.buyCaption {
+  flex-shrink: 0;
+  order: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .buyCaption {
+    order: 1;
+    padding: 0;
+    gap: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+/* ─── Photo area ─────────────────────────────────────── */
+
+.buyPhotoArea {
+  position: relative;
+  overflow: hidden;
+  order: 2;
+  flex: none;
+  width: 70%;
+  max-width: 260px;
+  aspect-ratio: 3 / 4;
+  margin: 0 auto;
+  border-radius: 12px;
+}
+
+@media (min-width: 640px) {
+  .buyPhotoArea {
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+    justify-self: center;
+    border-radius: 16px;
+  }
+}
+
+.buyPhoto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  will-change: transform;
+}
+
+/* ─── Slide stack ────────────────────────────────────── */
+
+.buySlideStack {
+  display: grid;
+  margin-top: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .buySlideStack {
+    margin-bottom: var(--space-7);
+    margin-top: var(--space-5);
+  }
+}
+
+.buySlide {
+  grid-row: 1;
+  grid-column: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.buySlideActive {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .buySlide {
+    transition: opacity 0.15s ease;
+  }
+}
+
+/* ─── Shared benefit text ─────────────────────────────── */
+
+.benefitHeadline {
+  font-family: var(--font-fraunces, serif);
+  font-weight: 400;
+  font-size: clamp(22px, 5vw, 32px);
+  line-height: 1.3;
+  font-variation-settings: 'opsz' 144;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.benefitBody {
+  font-family: var(--font-inter, sans-serif);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 280px;
+}
+
+@media (min-width: 640px) {
+  .benefitBody {
+    max-width: 360px;
+  }
+}
+
+/* ─── Sell mobile (< 640px) ─────────────────────────── */
+
+.sellMobile {
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .sellMobile {
+    display: none;
+  }
+}
+
+.sellContainer {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-4) var(--space-8);
+}
+
+/* ─── Sell desktop sticky (≥ 640px) ─────────────────── */
+
+.sellScrollTrack {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .sellScrollTrack {
+    display: block;
+    position: relative;
+    height: 280vh;
+  }
+}
+
+.sellScrollSticky {
+  position: sticky;
+  top: 56px;
+  height: calc(100vh - 56px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: 0 var(--space-6);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .sellScrollSticky {
+    padding: 0 40px;
+  }
+}
+
+/* ─── Sell shared layout ─────────────────────────────── */
+
+.sellLayout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .sellLayout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-8);
+  }
+}
+
+.sellMockupWrap {
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .sellMockupWrap {
+    width: 200px;
+  }
+}
+
+.phoneMockup {
+  width: 160px;
+  background: var(--text-primary);
+  border-radius: 28px;
+  padding: 12px;
+}
+
+.phoneNotch {
+  width: 44px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  margin: 0 auto var(--space-3);
+}
+
+.phoneScreen {
+  background: var(--canvas);
+  border-radius: 18px;
+  aspect-ratio: 9 / 19;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.phoneScreenLabel {
+  font-family: var(--font-inter, sans-serif);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: var(--space-4);
+}
+
+.sellContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+
+.sellBenefits {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.sellBenefit {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.sellIcon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+.sellHeadline {
+  font-family: var(--font-inter, sans-serif);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.sellCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-5);
+  background: var(--text-primary);
+  color: var(--white);
+  font-family: var(--font-inter, sans-serif);
+  font-weight: 500;
+  font-size: 14px;
+  border-radius: 0;
+  min-height: 48px;
+  align-self: flex-start;
+}
+
+@media (max-width: 639px) {
+  .sellCta {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sellCta {
+    transition: opacity var(--duration-fast, 100ms) ease;
+  }
+  .sellCta:hover {
+    opacity: 0.85;
+  }
+}

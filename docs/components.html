@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reloved components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@5..144,300;5..144,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ── Tokens ─────────────────────────────────────────────── */
+:root {
+  --canvas:          #FAF9F7;
+  --surface:         #F3F2EF;
+  --white:           #FFFFFF;
+  --text-primary:    #2D2D2D;
+  --text-secondary:  #6B6B6B;
+  --text-tertiary:   #737373;
+  --border:          #E5E4E1;
+
+  --status-pending:  #92600A;
+  --status-live:     #15803D;
+  --status-rejected: #DC2626;
+  --status-sold:     #0A0A0A;
+  --status-expired:  #71717A;
+  --status-hidden:   #5E6B7A;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-ui:      'Inter', sans-serif;
+  --font-body:    'Inter', sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-sm: 4px;
+
+  --dur-fast: 100ms;
+  --dur-base: 200ms;
+  --ease: ease;
+}
+
+/* ── Reset / base ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text-primary);
+  background: var(--canvas);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+input, textarea { font-family: inherit; }
+
+/* Focus ring — applies to all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+/* Reduced-motion: wrap all transitions in this media query */
+@media (prefers-reduced-motion: no-preference) {
+  .btn-primary, .btn-secondary, .btn-whatsapp,
+  .filter-chip, .browse-card,
+  .input, .textarea, .toggle-btn,
+  .condition-option, .reason-option { transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease); }
+  .toggle-track { transition: background var(--dur-base) var(--ease); }
+  .bottom-sheet { transition: transform var(--dur-base) var(--ease); }
+}
+
+/* ── Page scaffolding ───────────────────────────────────── */
+.page { max-width: 800px; margin: 0 auto; padding: var(--space-8) var(--space-4); }
+.section { margin-bottom: var(--space-8); }
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 24px;
+  line-height: 1.3;
+  margin-bottom: var(--space-1);
+  font-variation-settings: "opsz" 144;
+}
+.section-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+}
+.subsection { margin-bottom: var(--space-6); }
+.subsection-title {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-3);
+}
+.showcase {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-5);
+}
+.showcase-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.showcase-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+hr.divider { border: none; border-top: 1px solid var(--border); }
+
+/* ── 1. Nav ─────────────────────────────────────────────── */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 var(--space-4);
+  background: var(--canvas);
+  border-bottom: 1px solid var(--border);
+}
+.nav-left { display: flex; align-items: center; gap: var(--space-2); }
+.nav-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--text-primary); }
+.nav-wordmark {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1;
+  font-variation-settings: "opsz" 144;
+}
+.nav-right { display: flex; align-items: center; gap: var(--space-1); }
+
+/* ── 2. Buttons ─────────────────────────────────────────── */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  background: var(--text-primary);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn-primary:hover { background: var(--white); color: var(--text-primary); border-color: var(--text-primary); }
+.btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+  border-radius: 0;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.btn-secondary:hover { border-color: var(--text-primary); }
+.btn-secondary:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-whatsapp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  background: var(--text-primary);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn-whatsapp:hover { background: var(--white); color: var(--text-primary); border-color: var(--text-primary); }
+
+.btn-text-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--space-3) 0;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Small button for admin actions */
+.btn-sm {
+  min-height: 36px;
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-sm:hover { border-color: var(--text-primary); }
+.btn-sm.btn-approve { background: var(--text-primary); color: var(--white); border-color: var(--text-primary); }
+.btn-sm.btn-reject { color: var(--status-rejected); border-color: var(--status-rejected); }
+
+/* ── 3. Input / search ──────────────────────────────────── */
+.input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text-primary);
+}
+.input::placeholder { color: var(--text-tertiary); }
+.input:focus { border-color: var(--text-primary); outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.input.input-error { border-color: var(--status-rejected); }
+
+.input-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+.input-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+}
+.input-error-msg {
+  font-size: 12px;
+  color: var(--status-rejected);
+  margin-top: var(--space-1);
+}
+
+.textarea {
+  display: block;
+  width: 100%;
+  min-height: 96px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text-primary);
+  resize: vertical;
+}
+.textarea::placeholder { color: var(--text-tertiary); }
+.textarea:focus { border-color: var(--text-primary); outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+/* Search bar with AI icon */
+.search-bar {
+  position: relative;
+}
+.search-bar-icon {
+  position: absolute;
+  left: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+.search-bar .input { padding-left: 44px; }
+
+/* ── 4. Filter chips ────────────────────────────────────── */
+.chip-row {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.chip-row::-webkit-scrollbar { display: none; }
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.filter-chip.active {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+.filter-chip:hover { border-color: var(--text-secondary); }
+
+/* ── 5. Status chips ────────────────────────────────────── */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12px;
+  background: transparent;
+}
+.status-pending  { color: var(--status-pending);  border: 1px solid var(--status-pending); }
+.status-live     { color: var(--status-live);     border: 1px solid var(--status-live); }
+.status-rejected { color: var(--status-rejected); border: 1px solid var(--status-rejected); }
+.status-sold     { color: var(--white); background: var(--status-sold); }
+.status-expired  { color: var(--status-expired);  border: 1px solid var(--status-expired); }
+.status-hidden   { color: var(--status-hidden);   border: 1px solid var(--status-hidden); }
+
+/* ── 6. Buy/Sell toggle ─────────────────────────────────── */
+.toggle-track {
+  display: inline-flex;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1);
+}
+.toggle-btn {
+  min-height: 44px;
+  padding: 0 var(--space-5);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+.toggle-btn.active {
+  background: var(--text-primary);
+  color: var(--white);
+}
+
+/* ── 7. Browse grid + card ──────────────────────────────── */
+.browse-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+@media (min-width: 640px) {
+  .browse-grid { grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+}
+.browse-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+}
+.browse-card:hover { border-color: var(--text-primary); }
+.browse-card-photo {
+  aspect-ratio: 3/4;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.browse-card-info {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.browse-card-brand {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.browse-card-title {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.browse-card-price {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+/* ── 8. AI search bar ───────────────────────────────────── */
+.search-ai {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-height: 44px;
+}
+.search-ai:focus-within { border-color: var(--text-primary); outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.search-ai-icon {
+  flex-shrink: 0;
+  padding-left: var(--space-4);
+  color: var(--text-tertiary);
+}
+.search-ai-input {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text-primary);
+  outline: none;
+}
+.search-ai-input::placeholder { color: var(--text-tertiary); }
+
+/* ── 9. Listing detail (mobile carousel) ───────────────── */
+.listing-carousel {
+  width: 100%;
+  aspect-ratio: 3/4;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.listing-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding-top: var(--space-2);
+}
+.listing-carousel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.listing-carousel-dot.active { background: var(--text-primary); }
+.listing-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+}
+.listing-brand {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.listing-title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 24px;
+  line-height: 1.3;
+  font-variation-settings: "opsz" 144;
+}
+.listing-price-block {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.listing-price {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 24px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.listing-original-price {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+  font-variant-numeric: tabular-nums;
+}
+.listing-negotiable {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.listing-detail-row {
+  display: flex;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+.listing-detail-item { display: flex; flex-direction: column; gap: var(--space-1); }
+.listing-detail-label { font-family: var(--font-ui); font-weight: 500; font-size: 12px; color: var(--text-tertiary); }
+.listing-detail-value { font-size: 14px; color: var(--text-primary); }
+.condition-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: 14px;
+}
+.condition-badge-label { font-family: var(--font-ui); font-weight: 500; }
+.condition-badge-desc { color: var(--text-secondary); }
+.replica-badge {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: var(--font-ui);
+  font-weight: 500;
+}
+.note-block { display: flex; flex-direction: column; gap: var(--space-1); }
+.note-block-label { font-family: var(--font-ui); font-weight: 500; font-size: 12px; color: var(--text-tertiary); }
+.note-block-text { font-size: 14px; color: var(--text-primary); }
+
+/* ── 10. Photo upload grid ──────────────────────────────── */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+.photo-slot {
+  aspect-ratio: 1;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+.photo-slot.has-photo { border-style: solid; }
+.photo-slot.is-cover { border: 2px solid var(--text-primary); }
+.photo-slot-add { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+.photo-slot-add-icon { color: var(--text-tertiary); }
+.photo-slot-add-text { font-family: var(--font-ui); font-weight: 500; font-size: 12px; color: var(--text-tertiary); }
+.photo-slot-remove {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 18px; height: 18px;
+  background: var(--text-primary);
+  color: var(--white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+}
+.photo-slot-cover-label {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--text-primary);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12px;
+  text-align: center;
+  padding: 3px 4px;
+}
+.photo-slot.is-selected { border: 2px solid var(--text-secondary); }
+.photo-slot-set-cover {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--canvas);
+  border-top: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12px;
+  text-align: center;
+  padding: 3px 4px;
+  cursor: pointer;
+}
+.photo-grid-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin-top: var(--space-2);
+}
+
+/* ── 11. Condition picker ───────────────────────────────── */
+.condition-picker { display: flex; flex-direction: column; gap: var(--space-1); }
+.condition-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  min-height: 44px;
+}
+.condition-option.selected { border-color: var(--text-primary); }
+.condition-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+.condition-option.selected .condition-radio { border-color: var(--text-primary); }
+.condition-radio-dot {
+  display: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-primary);
+}
+.condition-option.selected .condition-radio-dot { display: block; }
+.condition-text { display: flex; flex-direction: column; gap: 2px; }
+.condition-text-label { font-family: var(--font-ui); font-weight: 500; font-size: 14px; }
+.condition-text-desc { font-size: 13px; color: var(--text-secondary); }
+
+/* ── 12. Bottom sheet ───────────────────────────────────── */
+/* Used for: submission confirmation, photo quality advisory */
+.phone-frame {
+  position: relative;
+  width: 375px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--canvas);
+}
+.phone-frame-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(45,45,45,0.5);
+}
+.bottom-sheet {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--canvas);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  padding: var(--space-7) var(--space-5) var(--space-7);
+}
+.bottom-sheet-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.bottom-sheet-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.bottom-sheet-thumb {
+  width: 48px; height: 64px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.bottom-sheet-item-name {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+}
+.bottom-sheet-item-price { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.bottom-sheet-heading {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1.3;
+  margin-bottom: var(--space-2);
+}
+.bottom-sheet-body {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+}
+/* Two-action variant */
+.bottom-sheet-actions { display: flex; gap: var(--space-3); }
+
+/* Photo quality advisory preview thumbnail */
+.advisory-preview {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-family: var(--font-ui);
+  overflow: hidden;
+  position: relative;
+}
+.advisory-preview-label {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  background: rgba(45,45,45,0.6);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* Standalone (no overlay) variant for photo quality advisory */
+.sheet-standalone {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  padding: var(--space-3) var(--space-5) var(--space-7);
+  max-width: 375px;
+}
+/* .sheet-standalone close button inherits .bottom-sheet-close */
+
+
+/* ── My listings page ──────────────────────────────────── */
+.tab-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-5);
+}
+.tab-btn {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.tab-btn.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
+.listings-page-group { margin-bottom: var(--space-5); }
+.listings-page-group-heading {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 20px;
+  line-height: 1.25;
+  margin-bottom: var(--space-3);
+  font-variation-settings: "opsz" 144;
+}
+.listings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+.status-needs-attention { color: var(--status-pending); border-color: var(--status-pending); }
+.status-under-review { color: var(--text-tertiary); border-color: var(--border); }
+
+/* ── 14. Admin queue row ────────────────────────────────── */
+.queue-panel { border-radius: var(--radius-sm); overflow: hidden; }
+.queue-row {
+  display: grid;
+  grid-template-columns: 128px 1fr 140px;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+}
+.queue-row:last-child { border-bottom: none; }
+.queue-cover {
+  width: 128px;
+  aspect-ratio: 3/4;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+}
+.queue-flag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px var(--space-2);
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+.queue-timestamp { font-size: 12px; color: var(--text-tertiary); margin-bottom: var(--space-1); }
+.queue-title { font-family: var(--font-ui); font-weight: 500; font-size: 18px; line-height: 1.3; margin-bottom: 4px; }
+.queue-details { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; }
+.queue-price { font-family: var(--font-ui); font-weight: 500; font-size: 14px; margin-bottom: var(--space-2); }
+.queue-seller-name { font-size: 14px; }
+.queue-ai-list {
+  margin: var(--space-3) 0 0;
+  padding-left: var(--space-5);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+.queue-ai-list li { margin-bottom: 2px; }
+.queue-col-actions { display: flex; flex-direction: column; gap: var(--space-3); }
+.queue-whatsapp-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── 16. Admin report row ───────────────────────────────── */
+.report-row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  padding: var(--space-4);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.report-photo {
+  width: 56px; height: 72px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.report-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.report-listing-title { font-family: var(--font-ui); font-weight: 500; font-size: 14px; }
+.report-reason { font-size: 13px; color: var(--text-secondary); }
+.report-detail { font-size: 13px; color: var(--text-secondary); font-style: italic; }
+.report-meta { font-size: 12px; color: var(--text-tertiary); }
+.auto-hidden-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 1px solid var(--status-pending);
+  border-radius: var(--radius-sm);
+  padding: 4px var(--space-2);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--status-pending);
+}
+.report-action { align-self: flex-start; flex-shrink: 0; }
+
+/* ── 17. Auth: Email verification ───────────────────────── */
+.auth-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-6);
+  max-width: 375px;
+}
+.auth-heading {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 24px;
+  margin-bottom: var(--space-2);
+  font-variation-settings: "opsz" 144;
+}
+.auth-body { font-size: 14px; color: var(--text-secondary); margin-bottom: var(--space-5); line-height: 1.6; }
+
+/* 6-digit OTP */
+.otp-row { display: flex; gap: var(--space-2); }
+.otp-box {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
+  height: 48px;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 24px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  caret-color: var(--text-primary);
+  box-sizing: border-box;
+}
+.otp-box:focus { border-color: var(--text-primary); outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.otp-box.filled { border-color: var(--text-primary); }
+
+/* ── 18. Homepage proposition switcher ──────────────────── */
+.prop-switcher { max-width: 375px; }
+.prop-panel { padding: var(--space-5) 0; }
+.prop-headline {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 32px;
+  line-height: 1.2;
+  margin-bottom: var(--space-3);
+  font-variation-settings: "opsz" 144;
+}
+.prop-body { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--space-5); }
+
+/* ── 19. Curated selection cards ────────────────────────── */
+.curated-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+.curated-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+}
+.curated-card:hover { border-color: var(--text-primary); }
+.curated-card-photo {
+  aspect-ratio: 1;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.curated-card-info { padding: var(--space-3); }
+.curated-card-label { font-family: var(--font-ui); font-weight: 500; font-size: 14px; }
+.curated-card-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ── 20. Report form ────────────────────────────────────── */
+.report-form { max-width: 375px; display: flex; flex-direction: column; gap: var(--space-4); }
+.select-input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text-primary);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B6B6B' stroke-width='1.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+.select-input:focus { border-color: var(--text-primary); outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+/* ── 21. Empty state ────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: var(--space-8);
+}
+.empty-state-illustration {
+  width: 120px; height: 120px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+}
+.empty-state-heading {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 18px;
+  margin-bottom: var(--space-2);
+}
+.empty-state-body {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 280px;
+  line-height: 1.6;
+  margin-bottom: var(--space-6);
+}
+.empty-state-cta { max-width: 280px; width: 100%; }
+
+/* ── 22. Navigation drawer ──────────────────────────────── */
+.drawer-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(45,45,45,0.4);
+  z-index: 1;
+}
+.drawer {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 280px;
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+}
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.drawer-wordmark { font-family: var(--font-display); font-weight: 400; font-size: 20px; font-variation-settings: "opsz" 144; }
+.drawer-close { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--text-primary); cursor: pointer; }
+.drawer-nav { flex: 1; padding: var(--space-2) 0; }
+.drawer-nav-item {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  font-size: 16px;
+  color: var(--text-primary);
+  cursor: pointer;
+  position: relative;
+}
+.drawer-nav-item.active {
+  background: var(--surface);
+  font-family: var(--font-ui);
+  font-weight: 500;
+}
+.drawer-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--text-primary);
+}
+
+/* ── 23. Modal ──────────────────────────────────────────── */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(45,45,45,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+.modal {
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  padding: var(--space-5);
+  width: 100%;
+  max-width: 360px;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 44px; height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 20px;
+}
+.modal-heading {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 18px;
+  margin-bottom: var(--space-2);
+  padding-right: var(--space-7);
+}
+.modal-body { font-size: 16px; color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--space-5); }
+.modal-actions { display: flex; gap: var(--space-3); justify-content: flex-end; }
+.modal-actions .btn-primary, .modal-actions .btn-secondary { width: auto; min-width: 100px; }
+.btn-primary.btn-destructive { background: var(--status-rejected); border-color: var(--status-rejected); }
+.btn-primary.btn-destructive:hover { background: var(--white); color: var(--status-rejected); border-color: var(--status-rejected); }
+
+/* ── 24. Toast ──────────────────────────────────────────── */
+.toast {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--text-primary);
+  color: var(--white);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 14px;
+  max-width: 480px;
+  width: 100%;
+}
+.toast-error { background: var(--white); border: 1px solid var(--status-rejected); color: var(--status-rejected); }
+.toast-error .toast-dismiss { color: var(--status-rejected); }
+.toast-dismiss { cursor: pointer; opacity: 0.7; flex-shrink: 0; font-size: 18px; line-height: 1; }
+
+/* ── Seller profile card ────────────────────────────────── */
+.seller-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.seller-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.seller-info { display: flex; flex-direction: column; gap: 2px; }
+.seller-name { font-family: var(--font-ui); font-weight: 500; font-size: 14px; }
+.seller-meta { display: flex; gap: var(--space-3); font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1 style="font-family: var(--font-display); font-weight: 400; font-size: 32px; margin-bottom: 4px; font-variation-settings: 'opsz' 144;">reloved.</h1>
+  <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: var(--space-8);">Component library · v1 · September 2026 · Mobile-first web</p>
+
+  <!-- ══ 1. NAV ══════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Nav</h2>
+    <p class="section-desc">Sticky, 56px mobile. Hamburger + wordmark left, search icon + Sell CTA right.</p>
+    <div class="showcase" style="padding: 0; overflow: hidden; max-width: 375px;">
+      <div class="nav">
+        <div class="nav-left">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </div>
+          <span class="nav-wordmark">reloved.</span>
+        </div>
+        <div class="nav-right">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+          </div>
+          <button class="btn-primary" style="width: auto; min-height: 36px; padding: 0 var(--space-4); font-size: 13px;">Sell</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 2. BUTTONS ══════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Buttons</h2>
+    <p class="section-desc">All buttons are full-width on mobile, min-height 44px. Radius: none (always sharp).</p>
+
+    <div class="subsection">
+      <div class="subsection-title">Primary</div>
+      <div class="showcase">
+        <div class="showcase-col" style="max-width: 375px;">
+          <button class="btn-primary">Continue</button>
+          <button class="btn-primary" disabled>Disabled</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Secondary</div>
+      <div class="showcase">
+        <div class="showcase-col" style="max-width: 375px;">
+          <button class="btn-secondary">Cancel</button>
+          <button class="btn-secondary" disabled>Disabled</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">WhatsApp CTA</div>
+      <div class="showcase">
+        <div style="max-width: 375px;">
+          <button class="btn-whatsapp">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Message seller on WhatsApp
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Text link action</div>
+      <div class="showcase">
+        <div style="max-width: 375px;">
+          <button class="btn-text-link">List another item</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 3. INPUTS ════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Input / search</h2>
+    <p class="section-desc">Min-height 44px. Focus: border shifts to text-primary + 2px outline offset.</p>
+
+    <div class="subsection">
+      <div class="subsection-title">Text input</div>
+      <div class="showcase">
+        <div class="showcase-col" style="max-width: 375px;">
+          <div>
+            <label class="input-label">Item title</label>
+            <input class="input" type="text" placeholder="e.g. Khaadi lawn kurta">
+            <p class="input-hint">Be specific about colour and print.</p>
+          </div>
+          <div>
+            <label class="input-label">Price (Rs)</label>
+            <input class="input input-error" type="text" value="abc">
+            <p class="input-error-msg">Enter a number only.</p>
+          </div>
+          <div>
+            <label class="input-label" style="color: var(--text-tertiary);">City (disabled)</label>
+            <input class="input" type="text" value="Lahore" disabled style="background: var(--surface); color: var(--text-tertiary);">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Textarea</div>
+      <div class="showcase">
+        <div style="max-width: 375px;">
+          <label class="input-label">Description</label>
+          <textarea class="textarea" placeholder="Describe the item, fit, and any flaws."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 4. FILTER CHIPS ══════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Filter chips</h2>
+    <p class="section-desc">Horizontal scroll strip, 44px min-height. Active state: border + text shift to text-primary.</p>
+    <div class="showcase">
+      <div class="chip-row">
+        <div class="filter-chip active">Kurtas</div>
+        <div class="filter-chip">Tops</div>
+        <div class="filter-chip">Bottoms</div>
+        <div class="filter-chip">Dresses</div>
+        <div class="filter-chip">Formal</div>
+        <div class="filter-chip">Casual</div>
+        <div class="filter-chip">Size M</div>
+        <div class="filter-chip">Under Rs 3,000</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 5. STATUS CHIPS ══════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Status chips</h2>
+    <p class="section-desc">Six listing states from the domain model. Small labels only, 12px Inter Medium 500.</p>
+    <div class="showcase">
+      <div class="showcase-row">
+        <span class="status-chip status-pending">Pending</span>
+        <span class="status-chip status-live">Live</span>
+        <span class="status-chip status-rejected">Rejected</span>
+        <span class="status-chip status-sold">Sold</span>
+        <span class="status-chip status-expired">Expired</span>
+        <span class="status-chip status-hidden">Hidden</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 6. BUY / SELL TOGGLE ═════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Buy / Sell toggle</h2>
+    <p class="section-desc">Homepage mode switcher. Surface background, active tab inverts.</p>
+    <div class="showcase">
+      <div class="showcase-row">
+        <div class="toggle-track">
+          <button class="toggle-btn active">Browse</button>
+          <button class="toggle-btn">Sell</button>
+        </div>
+        <div class="toggle-track">
+          <button class="toggle-btn">Browse</button>
+          <button class="toggle-btn active">Sell</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 7. BROWSE GRID ═══════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Browse card grid</h2>
+    <p class="section-desc">2-column on mobile (&lt;640px), 3-column tablet, 4-column desktop. Gap: 12px mobile.</p>
+    <div class="showcase">
+      <div class="browse-grid" style="max-width: 375px;">
+        <div class="browse-card">
+          <div class="browse-card-photo">3:4 photo</div>
+          <div class="browse-card-info">
+            <span class="browse-card-brand">Khaadi</span>
+            <span class="browse-card-title">Lawn kurta, green print</span>
+            <span class="browse-card-price">Rs 3,000</span>
+          </div>
+        </div>
+        <div class="browse-card">
+          <div class="browse-card-photo">3:4 photo</div>
+          <div class="browse-card-info">
+            <span class="browse-card-brand">Sapphire</span>
+            <span class="browse-card-title">Black pret kurta</span>
+            <span class="browse-card-price">Rs 4,500</span>
+          </div>
+        </div>
+        <div class="browse-card">
+          <div class="browse-card-photo">3:4 photo</div>
+          <div class="browse-card-info">
+            <span class="browse-card-brand">Zara</span>
+            <span class="browse-card-title">Pleated midi skirt</span>
+            <span class="browse-card-price">Rs 2,200</span>
+          </div>
+        </div>
+        <div class="browse-card">
+          <div class="browse-card-photo">3:4 photo</div>
+          <div class="browse-card-info">
+            <span class="browse-card-brand">Generation</span>
+            <span class="browse-card-title">Cotton shirt, white</span>
+            <span class="browse-card-price">Rs 1,800</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 8. SEARCH BAR ════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Search bar</h2>
+    <p class="section-desc">Natural language search. AI parses the query and applies filters directly: no secondary chip row shown to the user.</p>
+    <div class="showcase">
+      <div style="max-width: 375px;">
+        <div class="search-bar">
+          <svg class="search-bar-icon" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8.5" cy="8.5" r="5.5"/><line x1="12.5" y1="12.5" x2="17" y2="17"/></svg>
+          <input class="input" type="search" placeholder="Brand, size, colour, price…" style="padding-left: 44px;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 9. LISTING DETAIL ════════════════════════════════ -->
+  <style>
+  .meta-icon-row { display: flex; gap: var(--space-5); flex-wrap: wrap; }
+  .meta-icon-item { display: flex; align-items: center; gap: 6px; }
+  .meta-icon { color: var(--text-tertiary); flex-shrink: 0; }
+  .meta-icon-value { font-family: var(--font-ui); font-weight: 500; font-size: 14px; color: var(--text-primary); }
+  .condition-icon-row { display: flex; align-items: center; gap: 6px; }
+  .condition-icon-label { font-family: var(--font-ui); font-weight: 500; font-size: 14px; }
+  .condition-icon-desc { font-size: 14px; color: var(--text-secondary); }
+  .note-icon-row { display: flex; align-items: flex-start; gap: 6px; }
+  .note-icon-text { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+  .listing-detail-body {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 128px;
+  }
+  .listing-detail-body::-webkit-scrollbar { display: none; }
+  .listing-actions-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--canvas);
+    border-top: 1px solid var(--border);
+    padding: var(--space-3) var(--space-4) var(--space-5);
+  }
+  </style>
+  <div class="section">
+    <h2 class="section-title">Listing detail</h2>
+    <p class="section-desc">Full-width carousel, icon metadata, sticky WhatsApp CTA pinned to the bottom of the screen.</p>
+
+    <div class="showcase" style="padding: 0; overflow: hidden; max-width: 375px;">
+      <div class="phone-frame" style="height: 580px; border-radius: 0; border-left: none; border-right: none;">
+        <div class="listing-detail-body">
+          <div class="listing-carousel">Cover photo</div>
+          <div class="listing-carousel-dots">
+            <div class="listing-carousel-dot active"></div>
+            <div class="listing-carousel-dot"></div>
+            <div class="listing-carousel-dot"></div>
+          </div>
+          <div class="listing-meta" style="padding: 0 var(--space-4);">
+            <span class="listing-brand">Khaadi</span>
+            <h3 class="listing-title">Lawn kurta, green print</h3>
+            <div class="listing-price-block">
+              <span class="listing-price">Rs 3,000</span>
+              <span class="listing-original-price">Rs 8,500</span>
+              <span class="listing-negotiable">Negotiable</span>
+            </div>
+            <hr class="divider">
+            <div class="meta-icon-row">
+              <div class="meta-icon-item">
+                <svg class="meta-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1" y="5.5" width="14" height="5" rx="1"/><line x1="4.5" y1="5.5" x2="4.5" y2="8"/><line x1="8" y1="5.5" x2="8" y2="9"/><line x1="11.5" y1="5.5" x2="11.5" y2="8"/></svg>
+                <span class="meta-icon-value">Size M</span>
+              </div>
+              <div class="meta-icon-item">
+                <svg class="meta-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 3.5h12v6.5a1 1 0 01-1 1H3a1 1 0 01-1-1V3.5z"/><path d="M2 3.5l3-2h6l3 2"/></svg>
+                <span class="meta-icon-value">Kurta</span>
+              </div>
+              <div class="meta-icon-item">
+                <svg class="meta-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6c0 3.5 4.5 8.5 4.5 8.5S12.5 9.5 12.5 6c0-2.5-2-4.5-4.5-4.5z"/><circle cx="8" cy="6" r="1.5" fill="currentColor" stroke="none"/></svg>
+                <span class="meta-icon-value">Lahore</span>
+              </div>
+            </div>
+            <div class="condition-icon-row">
+              <svg class="meta-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1.5L9.8 5.8l4.7.4-3.5 3 1.1 4.6L8 11.3l-4.1 2.5 1.1-4.6-3.5-3 4.7-.4z"/></svg>
+              <span class="condition-icon-label">Excellent:</span>
+              <span class="condition-icon-desc">no tags, worn a few times</span>
+            </div>
+            <div class="note-icon-row">
+              <svg class="meta-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" style="margin-top: 2px; flex-shrink:0;"><circle cx="8" cy="8" r="6"/><line x1="8" y1="7" x2="8" y2="11"/><circle cx="8" cy="5" r="0.5" fill="currentColor" stroke="none"/></svg>
+              <span class="note-icon-text">Roomy: would fit a large too</span>
+            </div>
+          </div>
+        </div>
+        <div class="listing-actions-bar">
+          <button class="btn-whatsapp">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Message seller on WhatsApp
+          </button>
+          <button style="display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; min-height: 36px; background: none; border: none; cursor: pointer; font-family: var(--font-ui); font-weight: 500; font-size: 12px; color: var(--text-tertiary); padding: var(--space-1) 0; margin-top: var(--space-2);">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5l8-3 8 3v7c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V5z"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+            Report listing
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ 10. PHOTO UPLOAD ═════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Photo upload</h2>
+    <p class="section-desc">Mobile 3-column grid of tap targets. The first uploaded photo becomes the cover automatically.</p>
+
+    <div class="subsection">
+      <div class="subsection-title">Default state</div>
+      <div class="showcase">
+        <div style="max-width: 375px;">
+          <div class="photo-grid">
+            <div class="photo-slot has-photo is-cover">
+              Photo 1
+              <div class="photo-slot-remove">&times;</div>
+              <div class="photo-slot-cover-label">Cover</div>
+            </div>
+            <div class="photo-slot has-photo">
+              Photo 2
+              <div class="photo-slot-remove">&times;</div>
+            </div>
+            <div class="photo-slot has-photo">
+              Photo 3
+              <div class="photo-slot-remove">&times;</div>
+            </div>
+            <div class="photo-slot">
+              <div class="photo-slot-add">
+                <svg class="photo-slot-add-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <span class="photo-slot-add-text">Add</span>
+              </div>
+            </div>
+            <div class="photo-slot" style="opacity: 0.3;"></div>
+            <div class="photo-slot" style="opacity: 0.3;"></div>
+          </div>
+          <p class="photo-grid-hint">2–6 photos. Daylight, plain background, full item in frame.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Cover selection</div>
+      <div class="showcase">
+        <div style="max-width: 375px;">
+          <div class="photo-grid">
+            <div class="photo-slot has-photo is-cover">
+              Photo 1
+              <div class="photo-slot-remove">&times;</div>
+              <div class="photo-slot-cover-label">Cover</div>
+            </div>
+            <div class="photo-slot has-photo is-selected">
+              Photo 2
+              <div class="photo-slot-remove">&times;</div>
+              <div class="photo-slot-set-cover">Set as cover</div>
+            </div>
+            <div class="photo-slot has-photo">
+              Photo 3
+              <div class="photo-slot-remove">&times;</div>
+            </div>
+            <div class="photo-slot">
+              <div class="photo-slot-add">
+                <svg class="photo-slot-add-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <span class="photo-slot-add-text">Add</span>
+              </div>
+            </div>
+            <div class="photo-slot" style="opacity: 0.3;"></div>
+            <div class="photo-slot" style="opacity: 0.3;"></div>
+          </div>
+          <p class="photo-grid-hint">Tap any uploaded photo to set it as the cover.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 11. PHOTO QUALITY ADVISORY ══════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Photo quality advisory</h2>
+    <p class="section-desc">AI flags a photo issue as a bottom sheet with two actions: retake or continue.</p>
+    <div class="showcase">
+      <div class="phone-frame" style="height: 600px;">
+        <div class="phone-frame-overlay"></div>
+        <div class="bottom-sheet">
+          <button class="bottom-sheet-close" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <div class="advisory-preview">
+            <div class="advisory-preview-label">Photo 2</div>
+            Photo preview
+          </div>
+          <p class="bottom-sheet-heading">One photo needs attention</p>
+          <p class="bottom-sheet-body">Photo 2 looks a bit dark. Try retaking it near a window in natural light. You can still continue without changing it.</p>
+          <button class="btn-primary">Retake photo</button>
+          <button class="btn-text-link">Continue anyway</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 12. CONDITION PICKER ═════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Condition picker</h2>
+    <p class="section-desc">Four options with descriptions so two sellers mean the same thing.</p>
+    <div class="showcase">
+      <div class="condition-picker" style="max-width: 375px;">
+        <div class="condition-option">
+          <div class="condition-radio"><div class="condition-radio-dot"></div></div>
+          <div class="condition-text">
+            <span class="condition-text-label">Brand new</span>
+            <span class="condition-text-desc">With tags, never worn</span>
+          </div>
+        </div>
+        <div class="condition-option selected">
+          <div class="condition-radio"><div class="condition-radio-dot"></div></div>
+          <div class="condition-text">
+            <span class="condition-text-label">Excellent</span>
+            <span class="condition-text-desc">No tags, worn a few times</span>
+          </div>
+        </div>
+        <div class="condition-option">
+          <div class="condition-radio"><div class="condition-radio-dot"></div></div>
+          <div class="condition-text">
+            <span class="condition-text-label">Very good</span>
+            <span class="condition-text-desc">Light wear, no visible flaws</span>
+          </div>
+        </div>
+        <div class="condition-option">
+          <div class="condition-radio"><div class="condition-radio-dot"></div></div>
+          <div class="condition-text">
+            <span class="condition-text-label">Good</span>
+            <span class="condition-text-desc">Visible wear but still great value</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 13. SUBMISSION CONFIRMATION BOTTOM SHEET ═════════ -->
+  <div class="section">
+    <h2 class="section-title">Submission confirmation</h2>
+    <p class="section-desc">Bottom sheet shown immediately after a listing is submitted. Replaces the "pending" status banner.</p>
+    <div class="showcase">
+      <div class="phone-frame" style="height: 440px; max-width: 375px;">
+        <!-- blurred page content behind overlay -->
+        <div style="padding: 20px; opacity: 0.3;">
+          <div style="height: 14px; background: var(--surface); border-radius: 2px; margin-bottom: 12px;"></div>
+          <div style="height: 14px; background: var(--surface); border-radius: 2px; width: 55%; margin-bottom: 12px;"></div>
+          <div style="height: 180px; background: var(--border); border-radius: 4px;"></div>
+        </div>
+        <div class="phone-frame-overlay"></div>
+        <div class="bottom-sheet">
+          <button class="bottom-sheet-close" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <div class="bottom-sheet-item">
+            <div class="bottom-sheet-thumb"></div>
+            <div>
+              <p class="bottom-sheet-item-name">Khaadi lawn kurta</p>
+              <p class="bottom-sheet-item-price">Rs 3,000</p>
+            </div>
+          </div>
+          <p class="bottom-sheet-heading">We're reviewing your listing.</p>
+          <p class="bottom-sheet-body">We're just going to check a few details and we'll get back to you within 24 hours.</p>
+          <button class="btn-primary">View my listings</button>
+          <button class="btn-text-link">List another item</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 14. MY LISTINGS PAGE ════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">My listings</h2>
+    <p class="section-desc">Seller's view of their own listings. Active tab groups by state: needs attention, under review, live. No red chips — sellers see neutral "Needs attention" in amber.</p>
+    <div class="showcase-row" style="align-items: flex-start;">
+
+      <!-- Active tab -->
+      <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); max-width: 375px; width: 375px; background: var(--canvas); overflow: hidden;">
+        <div class="nav">
+          <div class="nav-left">
+            <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            <span class="nav-wordmark">reloved.</span>
+          </div>
+          <div class="nav-right">
+            <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg></div>
+            <button class="btn-primary" style="width: auto; min-height: 36px; padding: 0 var(--space-4); font-size: 13px;">Sell</button>
+          </div>
+        </div>
+        <div style="padding: 0 var(--space-4) var(--space-7);">
+          <h1 style="font-family: var(--font-display); font-weight: 300; font-size: 32px; line-height: 1.2; font-variation-settings: 'opsz' 144; margin: var(--space-5) 0 var(--space-4);">My listings</h1>
+          <div class="tab-row">
+            <button class="tab-btn active">Active</button>
+            <button class="tab-btn">Sold</button>
+          </div>
+          <div class="listings-page-group">
+            <h2 class="listings-page-group-heading">Needs attention</h2>
+            <div class="listings-grid">
+              <div class="browse-card">
+                <div class="browse-card-photo"></div>
+                <div class="browse-card-info">
+                  <span class="browse-card-brand">Generation</span>
+                  <span class="browse-card-title">Cotton shirt</span>
+                  <span class="browse-card-price">Rs 2,200</span>
+                  <span class="status-chip status-needs-attention" style="margin-top: var(--space-1);">Needs attention</span>
+                  <button class="btn-secondary" style="margin-top: var(--space-2); min-height: 36px; font-size: 13px;">Edit listing</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="listings-page-group">
+            <h2 class="listings-page-group-heading">Under review</h2>
+            <div class="listings-grid">
+              <div class="browse-card">
+                <div class="browse-card-photo"></div>
+                <div class="browse-card-info">
+                  <span class="browse-card-brand">Khaadi</span>
+                  <span class="browse-card-title">Lawn kurta</span>
+                  <span class="browse-card-price">Rs 3,000</span>
+                  <span class="status-chip status-under-review" style="margin-top: var(--space-1);">Under review</span>
+                  <p style="font-size: 12px; color: var(--text-tertiary); margin-top: var(--space-1);">Reply within 24 hours</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="listings-page-group" style="margin-bottom: 0;">
+            <h2 class="listings-page-group-heading">Live</h2>
+            <div class="listings-grid">
+              <div class="browse-card">
+                <div class="browse-card-photo"></div>
+                <div class="browse-card-info">
+                  <span class="browse-card-brand">Sapphire</span>
+                  <span class="browse-card-title">Black pret kurta</span>
+                  <span class="browse-card-price">Rs 4,500</span>
+                  <span class="status-chip status-live" style="margin-top: var(--space-1);">Live</span>
+                  <p style="font-size: 12px; color: var(--text-tertiary); margin-top: var(--space-1);">41 views · 3 messages</p>
+                  <button class="btn-secondary" style="margin-top: var(--space-2); min-height: 36px; font-size: 13px;">Mark as sold</button>
+                </div>
+              </div>
+              <div class="browse-card">
+                <div class="browse-card-photo"></div>
+                <div class="browse-card-info">
+                  <span class="browse-card-brand">Élan</span>
+                  <span class="browse-card-title">Embroidered set</span>
+                  <span class="browse-card-price">Rs 6,500</span>
+                  <span class="status-chip status-live" style="margin-top: var(--space-1);">Live</span>
+                  <p style="font-size: 12px; color: var(--text-tertiary); margin-top: var(--space-1);">12 views · 0 messages</p>
+                  <button class="btn-secondary" style="margin-top: var(--space-2); min-height: 36px; font-size: 13px;">Mark as sold</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sold tab -->
+      <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); max-width: 375px; width: 375px; background: var(--canvas); overflow: hidden;">
+        <div class="nav">
+          <div class="nav-left">
+            <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            <span class="nav-wordmark">reloved.</span>
+          </div>
+          <div class="nav-right">
+            <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg></div>
+            <button class="btn-primary" style="width: auto; min-height: 36px; padding: 0 var(--space-4); font-size: 13px;">Sell</button>
+          </div>
+        </div>
+        <div style="padding: 0 var(--space-4) var(--space-7);">
+          <h1 style="font-family: var(--font-display); font-weight: 300; font-size: 32px; line-height: 1.2; font-variation-settings: 'opsz' 144; margin: var(--space-5) 0 var(--space-4);">My listings</h1>
+          <div class="tab-row">
+            <button class="tab-btn">Active</button>
+            <button class="tab-btn active">Sold</button>
+          </div>
+          <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: var(--space-4);">2 items sold</p>
+          <div class="listings-grid">
+            <div class="browse-card">
+              <div class="browse-card-photo"></div>
+              <div class="browse-card-info">
+                <span class="browse-card-brand">Khaadi</span>
+                <span class="browse-card-title">Printed lawn kurta</span>
+                <span class="browse-card-price">Rs 3,000</span>
+                <span class="status-chip status-sold" style="margin-top: var(--space-1);">Sold</span>
+              </div>
+            </div>
+            <div class="browse-card">
+              <div class="browse-card-photo"></div>
+              <div class="browse-card-info">
+                <span class="browse-card-brand">Zara</span>
+                <span class="browse-card-title">Linen trousers</span>
+                <span class="browse-card-price">Rs 2,500</span>
+                <span class="status-chip status-sold" style="margin-top: var(--space-1);">Sold</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ 16. ADMIN QUEUE ROW ══════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Admin queue row</h2>
+    <p class="section-desc">Desktop view. 3-column grid: cover photo, listing details with AI notes, actions. Approve / Reject / WhatsApp in the right column.</p>
+    <div class="showcase" style="padding: 0; overflow: hidden;">
+      <div class="queue-panel">
+
+        <!-- Flagged row -->
+        <div class="queue-row">
+          <div class="queue-cover"></div>
+          <div>
+            <p class="queue-timestamp">Submitted 21h ago</p>
+            <p class="queue-title">Zara pleated midi skirt</p>
+            <p class="queue-details">Skirt &middot; S &middot; Very good</p>
+            <p class="queue-price">Rs 2,200</p>
+            <p class="queue-seller-name">Ayesha, Karachi</p>
+            <ul class="queue-ai-list">
+              <li>Studio-lit photos on a white background.</li>
+              <li>Zara not verifiable from the photos.</li>
+              <li>Asking price is 60% below the original.</li>
+            </ul>
+          </div>
+          <div class="queue-col-actions">
+            <button class="btn-primary">Approve</button>
+            <button class="btn-secondary">Reject</button>
+            <a class="queue-whatsapp-link">Open WhatsApp</a>
+          </div>
+        </div>
+
+        <!-- Clear row -->
+        <div class="queue-row">
+          <div class="queue-cover"></div>
+          <div>
+            <p class="queue-timestamp">Submitted 3h ago</p>
+            <p class="queue-title">Khaadi lawn kurta, green print</p>
+            <p class="queue-details">Kurta &middot; M &middot; Excellent</p>
+            <p class="queue-price">Rs 3,000</p>
+            <p class="queue-seller-name">Sara, Lahore</p>
+            <ul class="queue-ai-list">
+              <li>Green printed kurta, photographed in daylight.</li>
+              <li>Khaadi not verifiable from the photos.</li>
+              <li>Asking price is 65% below the original.</li>
+            </ul>
+          </div>
+          <div class="queue-col-actions">
+            <button class="btn-primary">Approve</button>
+            <button class="btn-secondary">Reject</button>
+            <a class="queue-whatsapp-link">Open WhatsApp</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 16. REJECTION MODAL ═════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Rejection modal</h2>
+    <p class="section-desc">Triggered when admin clicks Reject. Reason chips + free-text message to the seller. One of four canned reasons required.</p>
+    <div class="showcase" style="padding: 0; overflow: hidden; position: relative; min-height: 440px; display: flex; align-items: center; justify-content: center; background: var(--canvas);">
+      <div style="position: absolute; inset: 0; padding: var(--space-5); opacity: 0.5;">
+        <div style="height: 12px; background: var(--surface); border-radius: var(--radius-sm); margin-bottom: var(--space-2); width: 55%;"></div>
+        <div style="height: 12px; background: var(--surface); border-radius: var(--radius-sm); width: 40%;"></div>
+      </div>
+      <div class="modal-overlay" style="position: absolute; border-radius: var(--radius-sm);">
+        <div class="modal">
+          <button class="modal-close" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <p class="modal-heading">Reject this listing</p>
+          <label class="input-label">Reason</label>
+          <div style="display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5);">
+            <button class="filter-chip active">Bad photos</button>
+            <button class="filter-chip">Missing details</button>
+            <button class="filter-chip">Not allowed</button>
+            <button class="filter-chip">Suspected counterfeit</button>
+          </div>
+          <label class="input-label">Message to seller</label>
+          <textarea class="textarea" placeholder="Write a short note for the seller" style="margin-bottom: var(--space-5);"></textarea>
+          <div class="modal-actions">
+            <button class="btn-secondary" style="width: auto; min-width: 100px;">Cancel</button>
+            <button class="btn-primary btn-destructive" style="width: auto; min-width: 120px;">Reject listing</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 17. ADMIN REPORT ROW ═════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Admin report row</h2>
+    <p class="section-desc">Buyer or seller report on a listing. Auto-hidden flag appears when 2+ unresolved reports exist.</p>
+    <div class="showcase">
+      <div class="showcase-col" style="gap: var(--space-3);">
+
+        <div class="report-row">
+          <div class="report-photo"></div>
+          <div class="report-body">
+            <div class="report-listing-title">Khaadi lawn kurta, green print</div>
+            <div class="report-reason">Suspected replica</div>
+            <div class="report-detail">"The embroidery looks machine-printed, not hand-done."</div>
+            <div class="report-meta">Reported 2h ago</div>
+          </div>
+          <div class="report-action">
+            <button class="btn-sm">Review</button>
+          </div>
+        </div>
+
+        <div class="report-row">
+          <div class="report-photo"></div>
+          <div class="report-body">
+            <div class="report-listing-title">Zara pleated midi skirt</div>
+            <div class="report-reason">Misleading description</div>
+            <div class="report-detail">"Listed as 'excellent' but has a visible stain."</div>
+            <div class="auto-hidden-flag">Auto-hidden</div>
+            <div class="report-meta">2 reports &middot; 6h ago</div>
+          </div>
+          <div class="report-action">
+            <button class="btn-sm">Review</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 18. EMAIL VERIFICATION ════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Email verification</h2>
+    <p class="section-desc">Step shown before phone verification. Seller flow only.</p>
+    <div class="showcase">
+      <div class="auth-card">
+        <p class="auth-heading">Check your email.</p>
+        <p class="auth-body">We sent a link to <strong>sara@example.com</strong>. Click it to verify your account, then come back here.</p>
+        <button class="btn-primary">I've verified my email</button>
+        <button class="btn-text-link" style="margin-top: var(--space-2);">Resend email</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 19. PHONE CODE INPUT ══════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Phone code input</h2>
+    <p class="section-desc">6-digit SMS code. Each box is a separate input, 56px tall. Auto-advances on entry.</p>
+    <div class="showcase">
+      <div class="auth-card">
+        <p class="auth-heading">Enter your code.</p>
+        <p class="auth-body">We texted a 6-digit code to +92 321 000 0000.</p>
+        <div class="otp-row">
+          <input class="otp-box filled" type="text" maxlength="1" value="4">
+          <input class="otp-box filled" type="text" maxlength="1" value="8">
+          <input class="otp-box filled" type="text" maxlength="1" value="3">
+          <input class="otp-box" type="text" maxlength="1" placeholder="">
+          <input class="otp-box" type="text" maxlength="1" placeholder="">
+          <input class="otp-box" type="text" maxlength="1" placeholder="">
+        </div>
+        <button class="btn-text-link" style="margin-top: var(--space-4);">Resend code</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 20. PROPOSITION SWITCHER ══════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Proposition switcher</h2>
+    <p class="section-desc">Homepage hero. Toggle switches the proposition copy between buyer and seller.</p>
+    <div class="showcase">
+      <div class="prop-switcher">
+        <div class="toggle-track" style="margin-bottom: var(--space-4);">
+          <button class="toggle-btn active">Browse</button>
+          <button class="toggle-btn">Sell</button>
+        </div>
+        <div class="prop-panel">
+          <h2 class="prop-headline">Your brands. Your size. Your price.</h2>
+          <p class="prop-body">Every listing is checked by a real person before it goes live. We don't take a commission or charge sellers to list.</p>
+          <button class="btn-primary">Start browsing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 21. CURATED SELECTION CARDS ══════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Curated selection cards</h2>
+    <p class="section-desc">Editorial entry points on the homepage. Square photo + label.</p>
+    <div class="showcase">
+      <div class="curated-grid" style="max-width: 375px;">
+        <div class="curated-card">
+          <div class="curated-card-photo">Photo</div>
+          <div class="curated-card-info">
+            <div class="curated-card-label">Formals under Rs 5k</div>
+            <div class="curated-card-desc">24 listings</div>
+          </div>
+        </div>
+        <div class="curated-card">
+          <div class="curated-card-photo">Photo</div>
+          <div class="curated-card-info">
+            <div class="curated-card-label">Brand new with tags</div>
+            <div class="curated-card-desc">31 listings</div>
+          </div>
+        </div>
+        <div class="curated-card">
+          <div class="curated-card-photo">Photo</div>
+          <div class="curated-card-info">
+            <div class="curated-card-label">Khaadi & Sapphire</div>
+            <div class="curated-card-desc">18 listings</div>
+          </div>
+        </div>
+        <div class="curated-card">
+          <div class="curated-card-photo">Photo</div>
+          <div class="curated-card-info">
+            <div class="curated-card-label">Size S / XS</div>
+            <div class="curated-card-desc">12 listings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 22. REPORT FORM ═══════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Report form</h2>
+    <p class="section-desc">Buyer reports a listing. Select a reason, optional detail text.</p>
+    <div class="showcase">
+      <div class="report-form">
+        <div>
+          <label class="input-label">Reason</label>
+          <select class="select-input">
+            <option>Select a reason</option>
+            <option selected>Suspected replica</option>
+            <option>Misleading description</option>
+            <option>Photo taken from web</option>
+            <option>Not allowed on Reloved</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="input-label">Details (optional)</label>
+          <textarea class="textarea" placeholder="Add any details that might help us investigate."></textarea>
+        </div>
+        <button class="btn-primary">Submit report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 23. EMPTY STATE ═══════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Empty state</h2>
+    <p class="section-desc">Zero-result browse and empty seller dashboard. Illustration TBD.</p>
+    <div class="showcase">
+      <div class="empty-state">
+        <div class="empty-state-illustration">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        </div>
+        <h3 class="empty-state-heading">Nothing here yet</h3>
+        <p class="empty-state-body">Try a different filter, or check back later. We're adding new stuff all the time.</p>
+        <div class="empty-state-cta">
+          <button class="btn-primary">Clear filters</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 24. NAVIGATION DRAWER ════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Navigation drawer</h2>
+    <p class="section-desc">Slides from left on hamburger tap. 280px wide. Overlay dims the page behind it.</p>
+    <div class="showcase" style="padding: 0; overflow: hidden; max-width: 375px; height: 360px; position: relative;">
+      <div class="drawer-overlay"></div>
+      <div class="drawer">
+        <div class="drawer-header">
+          <span class="drawer-wordmark">reloved.</span>
+          <div class="drawer-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+        </div>
+        <nav class="drawer-nav">
+          <div class="drawer-nav-item active">Browse</div>
+          <div class="drawer-nav-item">My listings</div>
+          <div class="drawer-nav-item">Sell an item</div>
+          <div class="drawer-nav-item">How it works</div>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 25. MODAL ═════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Modal</h2>
+    <p class="section-desc">For: rejection detail, listing confirmation, destructive action prompts. Max-width 480px.</p>
+    <div class="showcase" style="padding: 0; overflow: hidden; max-width: 375px; height: 360px; position: relative;">
+      <div class="modal-overlay">
+        <div class="modal">
+          <div class="modal-close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <h3 class="modal-heading">Delete this listing?</h3>
+          <p class="modal-body">This can't be undone. The listing will be removed permanently.</p>
+          <div class="modal-actions">
+            <button class="btn-secondary" style="width: auto; min-width: 80px;">Cancel</button>
+            <button class="btn-primary btn-destructive" style="width: auto; min-width: 80px;">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 26. TOAST ═════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Toast</h2>
+    <p class="section-desc">Single-line feedback. Appears below nav, auto-dismisses at 4s. One at a time.</p>
+    <div class="showcase">
+      <div class="showcase-col" style="max-width: 375px;">
+        <div class="toast">
+          <span>Listing saved as draft.</span>
+          <span class="toast-dismiss">&times;</span>
+        </div>
+        <div class="toast toast-error">
+          <span>Something went wrong. Please try again.</span>
+          <span class="toast-dismiss">&times;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
