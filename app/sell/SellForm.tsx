@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import PrimaryButton from "@/components/ui/PrimaryButton";
-import TextLink from "@/components/ui/TextLink";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import Select from "@/components/ui/Select";
 import FilterChip from "@/components/ui/FilterChip";
 import ChipRow from "@/components/ui/ChipRow";
-import BottomSheet from "@/components/ui/BottomSheet";
 import ConditionPicker from "@/components/seller/ConditionPicker";
 import ReplicaPicker from "@/components/seller/ReplicaPicker";
 import { CouldItBe, labelWithMark } from "./AiHints";
@@ -48,6 +46,9 @@ type Props = {
   /** Set when Call 1 failed. Shown once, quietly: the form still works. */
   prefillError: string | null;
   onBackToPhotos: () => void;
+  /** Called once every field validates. SellFlow takes her to the account
+   *  step from here: this form no longer ends the flow. */
+  onSubmit: () => void;
 };
 
 export default function SellForm({
@@ -58,6 +59,7 @@ export default function SellForm({
   prefilled,
   prefillError,
   onBackToPhotos,
+  onSubmit,
 }: Props) {
   const {
     title, category, brand, brandOther, size,
@@ -71,7 +73,6 @@ export default function SellForm({
   const [takenChips, setTakenChips] = useState<Record<string, boolean>>({});
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
 
   // null means this category has no size at all: bags and dupattas.
   const sizeOptions = category ? SIZE_OPTIONS[category] : null;
@@ -109,12 +110,10 @@ export default function SellForm({
       });
       return;
     }
-    // TODO: this is where POST /api/listings/submit goes, writing status
-    // "pending" with the Admin SDK. Nothing persists until Firebase exists.
-    setSubmitted(true);
+    // Her listing is complete. The account step is what actually submits it,
+    // because until she has an account there is nobody to own the listing.
+    onSubmit();
   }
-
-  const cover = photos.find((photo) => photo.id === coverId);
 
   return (
     <>
@@ -336,29 +335,6 @@ export default function SellForm({
 
         <PrimaryButton type="submit">Submit listing</PrimaryButton>
       </form>
-
-      <BottomSheet
-        open={submitted}
-        onClose={() => setSubmitted(false)}
-        heading="All good so far!"
-        body="We'll review your listing and get back to you within a day."
-        media={
-          <div className="bottom-sheet-item">
-            {cover ? (
-              <img className="bottom-sheet-thumb" src={cover.url} alt="" />
-            ) : (
-              <div className="bottom-sheet-thumb" />
-            )}
-            <div>
-              <p className="bottom-sheet-item-name">{title}</p>
-              <p className="bottom-sheet-item-price">Rs {Number(price).toLocaleString("en-PK")}</p>
-            </div>
-          </div>
-        }
-      >
-        <PrimaryButton onClick={() => setSubmitted(false)}>View my listings</PrimaryButton>
-        <TextLink onClick={() => setSubmitted(false)}>List another item</TextLink>
-      </BottomSheet>
     </>
   );
 }

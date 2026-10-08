@@ -11,11 +11,14 @@ import { preparePhotos } from "@/lib/photos";
 import { MIN_LISTING_PHOTOS, MAX_LISTING_PHOTOS } from "@/lib/constants";
 import ReadingPhotos from "./ReadingPhotos";
 import SellForm from "./SellForm";
+import AccountFlow from "./AccountFlow";
 import { requestPhotoQuality, requestPrefill } from "./aiRequests";
 import type { QualityFlag } from "./aiRequests";
 import { EMPTY_PREFILL, prefillToForm, type Prefilled } from "./prefillToForm";
 import { flagFor, flaggedCount, qualityHeading, slotNote } from "./qualityWording";
 import { EMPTY_FIELDS, mergePrefill, type FormFields, type SellPhoto } from "./types";
+import { EMPTY_ACCOUNT, formatPhone, type AccountFields } from "./account";
+import { DEV_FIELDS, DEV_PREFILLED } from "./devFixture";
 
 // Path 1, the whole seller flow on one page.
 //
@@ -23,12 +26,18 @@ import { EMPTY_FIELDS, mergePrefill, type FormFields, type SellPhoto } from "./t
 //   photos    take or choose photos, pick the cover
 //   reading   both Gemini calls, side by side
 //   details   the form, already part filled
+//   account   name, email and password, then the phone number and its code
 //
 // It is one component with a `step` rather than four routes because the photos
 // only exist as object URLs in this tab. A real navigation would throw them
 // away and she would have to shoot the item again.
 
-type Step = "intro" | "photos" | "reading" | "details";
+type Step = "intro" | "photos" | "reading" | "details" | "account";
+
+/** DEVELOPMENT ONLY. Reaching the form normally costs two Gemini calls, so
+ *  testing anything after it was burning credits on a photo read nobody needed.
+ *  Next strips this branch from the production bundle. */
+const DEV_SKIP = process.env.NODE_ENV !== "production";
 
 /** Remembering she has seen the guide is a convenience, not a setting, so
  *  localStorage is enough. A new phone showing it again is the right outcome. */
@@ -72,6 +81,13 @@ export default function SellFlow() {
   const [slow, setSlow] = useState(false);
   const [retakeTip, setRetakeTip] = useState<string | null>(null);
   const [qualitySheetOpen, setQualitySheetOpen] = useState(false);
+
+  // The account answers live up here for the same reason the form's do: she can
+  // step back to her listing and return without retyping any of it.
+  const [account, setAccount] = useState<AccountFields>(EMPTY_ACCOUNT);
+  // Set once the account step finishes. Owned here rather than in SellForm
+  // because that form unmounts when she moves on to the account step.
+  const [submitted, setSubmitted] = useState<AccountFields | null>(null);
 
   // Every object URL we have handed out, so none leak when the tab closes.
   const urlsRef = useRef<string[]>([]);
@@ -215,6 +231,19 @@ export default function SellFlow() {
     setStep("details");
   }
 
+  /** DEVELOPMENT ONLY. Straight to the form with a listing already filled in,
+   *  so the account step can be walked through without paying for a photo
+   *  read. Photos are optional here: with none added the form simply shows an
+   *  empty thumbnail strip. */
+  function devSkipToForm() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setPrefillError(null);
+    setPrefilled(DEV_PREFILLED);
+    setFields(DEV_FIELDS);
+    setStep("details");
+  }
+
   if (step === null) {
     // One tick, while localStorage is read. Deliberately blank rather than a
     // skeleton: anything drawn here would be replaced before it was seen.
@@ -283,6 +312,16 @@ export default function SellFlow() {
             >
               {`Build my listing (${photos.length}/${MAX_LISTING_PHOTOS})`}
             </PrimaryButton>
+
+            {/* DEVELOPMENT ONLY, and deliberately ugly so it is never mistaken
+                for part of the design. Skips both Gemini calls and lands on a
+                filled-in form, which is the only cheap way to reach the
+                account step. Not in the production bundle. */}
+            {DEV_SKIP && (
+              <button type="button" className="dev-skip" onClick={devSkipToForm}>
+                Dev: skip the AI, fill the form
+              </button>
+            )}
           </div>
         </div>
 
@@ -305,6 +344,64 @@ export default function SellFlow() {
     );
   }
 
+  const cover = photos.find((photo) => photo.id === coverId);
+  const priceLabel = fields.price
+    ? `Rs ${Number(fields.price).toLocaleString("en-PK")}`
+    : "No price yet";
+
+  /* The account step. Reached from Submit listing on the form and nowhere
+     else, so her listing is complete by the time she gets here. */
+  if (step === "account") {
+    return (
+      <>
+        <AccountFlow
+          listing={{
+            title: fields.title,
+            price: fields.price,
+            coverUrl: cover?.url,
+            summary: priceLabel,
+          }}
+          fields={account}
+          onChange={(patch) => setAccount((current) => ({ ...current, ...patch }))}
+          onBack={() => setStep("details")}
+          onDone={(finished) => {
+            // TODO: POST /api/listings/submit goes here, writing status
+            // "pending" with the Admin SDK, now that there is a user to own it.
+            setAccount(finished);
+            setSubmitted(finished);
+          }}
+        />
+
+        <BottomSheet
+          open={submitted !== null}
+          onClose={() => setSubmitted(null)}
+          heading="All good so far!"
+          body={
+            submitted?.phone
+              ? "We'll review your listing and get back to you within a day."
+              : "We'll review your listing and get back to you within a day. Add your number from your listings page and buyers can WhatsApp you."
+          }
+          media={
+            <div className="bottom-sheet-item">
+              {cover ? (
+                <img className="bottom-sheet-thumb" src={cover.url} alt="" />
+              ) : (
+                <div className="bottom-sheet-thumb" />
+              )}
+              <div>
+                <p className="bottom-sheet-item-name">{fields.title}</p>
+                <p className="bottom-sheet-item-price">{priceLabel}</p>
+              </div>
+            </div>
+          }
+        >
+          <PrimaryButton onClick={() => setSubmitted(null)}>View my listings</PrimaryButton>
+          <TextLink onClick={() => setSubmitted(null)}>List another item</TextLink>
+        </BottomSheet>
+      </>
+    );
+  }
+
   return (
     <>
       <div className="sell-step">
@@ -321,6 +418,9 @@ export default function SellFlow() {
           prefilled={prefilled}
           prefillError={prefillError}
           onBackToPhotos={() => setStep("photos")}
+          // Submit no longer finishes the flow: it hands her to the account
+          // step, which is the last thing between her and a pending listing.
+          onSubmit={() => setStep("account")}
         />
       </div>
 

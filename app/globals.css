@@ -1110,3 +1110,157 @@ img { max-width: 100%; display: block; }
   background: var(--surface);
 }
 .quality-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── Account step ────────────────────────────────────────── */
+/* NEW, 9 Oct. components.html has no design for sign-up, and design-system.md
+ * lists auth UI under its anti-goals, so every block here says what it is built
+ * from. All of it is flagged for Bismah.
+ *
+ * Three steps: name/email/password, then the number, then the code. */
+
+/* Three dots, the current one filled. Built from .condition-radio, which is
+ * already the system's "small round marker" at 20px, shrunk to a non
+ * interactive 6px. Decorative: the real step count is on the list's
+ * aria-label, because a screen reader cannot see a filled dot. */
+.account-steps {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.account-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.account-dot.is-done { background: var(--text-secondary); }
+.account-dot.is-now  { background: var(--text-primary); }
+
+/* Her listing, so she can see what the account is for. Same shape and the same
+ * two text classes as .bottom-sheet-item, which already summarises a listing
+ * next to its cover. Boxed here because it sits on the page rather than inside
+ * a sheet, so it needs its own edge. */
+.account-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.account-summary-thumb {
+  width: 56px;
+  height: 72px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+}
+
+/* Same stacking and spacing as .sell-form, so the account screens and the
+ * listing form feel like one flow. */
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  flex: 1;
+}
+
+/* Show/hide on a password field. NEW CONTROL: nothing in components.html or
+ * design-system.md covers one. Deliberately a word rather than an eye icon,
+ * because an eye with a line through it is ambiguous about which state it is
+ * describing. Mirrors .input-with-prefix, on the other edge of the field. */
+.input-with-reveal { position: relative; }
+.input-with-reveal .input { padding-right: 68px; }
+.input-reveal {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  padding: 0 var(--space-4);
+  background: none;
+  border: none;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-caption);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.input-reveal:hover { color: var(--text-primary); }
+
+/* One box per digit, so a six digit code stays readable on a phone. Built from
+ * .input: same border, radius, focus treatment and error colour, just square
+ * and centred. 56px rather than 44px because the digits are set at 20px. */
+.otp-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.otp-box {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 56px;
+  text-align: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+/* A filled box darkens its border, the same signal .filter-chip.active and
+ * .condition-option.selected already use for "this one has an answer". */
+.otp-box.is-filled { border-color: var(--text-primary); }
+.otp-box:focus {
+  border-color: var(--text-primary);
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+/* The countdown on the left, the way out on the right. */
+.otp-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--size-caption);
+  line-height: var(--lh-caption);
+  color: var(--text-tertiary);
+}
+/* .btn-text-link is full width and 44px tall by design, which would stack
+ * these two and push the row apart. Same underline, sized for a meta row. */
+.otp-meta-action {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-caption);
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ── Dev only ────────────────────────────────────────────── */
+/* The AI skip on the photos step. Deliberately outside the design system and
+ * deliberately ugly, so it can never be mistaken for a real control. The
+ * button itself is behind a NODE_ENV check and is not in the production
+ * bundle; this rule is dead weight there and nothing else. */
+.dev-skip {
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  background: repeating-linear-gradient(
+    45deg, #FFF3C4, #FFF3C4 6px, #FFE69A 6px, #FFE69A 12px
+  );
+  border: 1px dashed #B45309;
+  color: #7C2D12;
+  font-family: var(--font-ui);
+  font-size: var(--size-caption);
+  cursor: pointer;
+}
