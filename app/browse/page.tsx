@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Nav from "@/components/ui/Nav";
 import BrowseCard from "@/components/buyer/BrowseCard";
 import FilterChip from "@/components/ui/FilterChip";
@@ -232,14 +233,16 @@ const DEFAULT_SORT = "newest";
 type PriceRange = {
   value: string;
   label: string;
+  /** Lower bound of the range, used to work out which ranges a maxPrice link covers. */
+  min: number;
   test: (price: number) => boolean;
 };
 
 const PRICE_RANGES: PriceRange[] = [
-  { value: "under_1000", label: "Under Rs 1,000", test: (p) => p < 1000 },
-  { value: "1000_3000", label: "Rs 1,000 – 3,000", test: (p) => p >= 1000 && p <= 3000 },
-  { value: "3000_5000", label: "Rs 3,000 – 5,000", test: (p) => p >= 3000 && p <= 5000 },
-  { value: "5000_plus", label: "Rs 5,000+", test: (p) => p > 5000 },
+  { value: "under_1000", label: "Under Rs 1,000", min: 0, test: (p) => p < 1000 },
+  { value: "1000_3000", label: "Rs 1,000 to 3,000", min: 1000, test: (p) => p >= 1000 && p <= 3000 },
+  { value: "3000_5000", label: "Rs 3,000 to 5,000", min: 3000, test: (p) => p >= 3000 && p <= 5000 },
+  { value: "5000_plus", label: "Rs 5,000+", min: 5000, test: (p) => p > 5000 },
 ];
 
 type FilterKey = "sort" | "category" | "brand" | "size" | "condition" | "price" | "city";
@@ -290,6 +293,16 @@ function summarize(selected: string[], labels: Map<string, string>): string {
 }
 
 export default function BrowsePage() {
+  return (
+    <Suspense>
+      <BrowseContent />
+    </Suspense>
+  );
+}
+
+function BrowseContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -301,6 +314,81 @@ export default function BrowsePage() {
   const [selectedCities, setSelectedCities] = useState<City[]>([]);
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string>(DEFAULT_SORT);
+  // Set only when price ranges come from a ?maxPrice= link, so the heading can
+  // show "Under PKR X" instead of a generic label. Cleared on any manual price edit.
+  const [maxPriceLabel, setMaxPriceLabel] = useState<string | null>(null);
+
+  const initializedFromUrl = useRef(false);
+  const isFirstUrlWrite = useRef(true);
+
+  // Read the landing page's links once on mount: ?q=, ?category=, ?brand=,
+  // ?maxPrice= and ?city=. Values that are not real enum members are ignored
+  // rather than applied, so a bad link shows everything instead of nothing.
+  useEffect(() => {
+    if (initializedFromUrl.current) return;
+    initializedFromUrl.current = true;
+
+    const q = searchParams.get("q");
+    if (q) setSearch(q);
+
+    const categoryParam = searchParams.get("category");
+    if (categoryParam && (CATEGORIES as readonly string[]).includes(categoryParam)) {
+      setSelectedCategories([categoryParam as Category]);
+    }
+
+    const brandParam = searchParams.get("brand");
+    if (brandParam && (BRANDS as readonly string[]).includes(brandParam)) {
+      setSelectedBrands([brandParam as Brand]);
+    }
+
+    const cityParam = searchParams.get("city");
+    if (cityParam && CITIES.some((c) => c.value === cityParam)) {
+      setSelectedCities([cityParam as City]);
+    }
+
+    const maxPriceParam = searchParams.get("maxPrice");
+    if (maxPriceParam) {
+      const n = Number(maxPriceParam);
+      if (Number.isFinite(n) && n > 0) {
+        const ranges = PRICE_RANGES.filter((r) => r.min < n).map((r) => r.value);
+        if (ranges.length > 0) {
+          setSelectedPriceRanges(ranges);
+          setMaxPriceLabel(`Under PKR ${n.toLocaleString("en")}`);
+        }
+      }
+    }
+  }, [searchParams]);
+
+  // Keep the URL in sync with whatever the user has selected, so the page can
+  // be shared with filters intact. Skips the very first effect pass, which
+  // would otherwise fire before the read above has had a chance to apply.
+  useEffect(() => {
+    if (isFirstUrlWrite.current) {
+      isFirstUrlWrite.current = false;
+      return;
+    }
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("q", search.trim());
+    if (selectedCategories.length) params.set("category", selectedCategories.join(","));
+    if (selectedBrands.length) params.set("brand", selectedBrands.join(","));
+    if (selectedSizes.length) params.set("size", selectedSizes.join(","));
+    if (selectedConditions.length) params.set("condition", selectedConditions.join(","));
+    if (selectedCities.length) params.set("city", selectedCities.join(","));
+    if (selectedPriceRanges.length) params.set("price", selectedPriceRanges.join(","));
+    if (sortBy !== DEFAULT_SORT) params.set("sort", sortBy);
+    const qs = params.toString();
+    router.replace(qs ? `/browse?${qs}` : "/browse", { scroll: false });
+  }, [
+    search,
+    selectedCategories,
+    selectedBrands,
+    selectedSizes,
+    selectedConditions,
+    selectedCities,
+    selectedPriceRanges,
+    sortBy,
+    router,
+  ]);
 
   const hasActiveFilters =
     selectedCategories.length > 0 ||
@@ -364,8 +452,14 @@ export default function BrowsePage() {
     setSelectedConditions([]);
     setSelectedCities([]);
     setSelectedPriceRanges([]);
+    setMaxPriceLabel(null);
     setSortBy(DEFAULT_SORT);
     setSearch("");
+  }
+
+  function handlePriceChange(values: string[]) {
+    setSelectedPriceRanges(values);
+    setMaxPriceLabel(null);
   }
 
   function handleNavSearch(query: string) {
@@ -420,6 +514,17 @@ export default function BrowsePage() {
     setPanelOpen(false);
   }
 
+  // Priority matches how a single landing-page link maps to one filter at a
+  // time: a typed search beats everything, then a single category or brand,
+  // then a price link, then the default.
+  function pageHeading(): string {
+    if (search.trim()) return search.trim();
+    if (selectedCategories.length === 1) return CATEGORY_LABELS[selectedCategories[0]];
+    if (selectedBrands.length === 1) return formatBrandName(selectedBrands[0]);
+    if (maxPriceLabel && selectedPriceRanges.length > 0) return maxPriceLabel;
+    return "All items";
+  }
+
   return (
     <>
       <Nav onSearch={handleNavSearch} />
@@ -432,11 +537,7 @@ export default function BrowsePage() {
       >
 
         <div className="browse-header">
-          <h1 className="browse-heading">
-            {selectedCategories.length === 1
-              ? CATEGORY_LABELS[selectedCategories[0]]
-              : "All items"}
-          </h1>
+          <h1 className="browse-heading">{pageHeading()}</h1>
           <div className="browse-header-right">
             <span className="browse-count">
               {filtered.length} {filtered.length === 1 ? "item" : "items"}
@@ -682,7 +783,7 @@ export default function BrowsePage() {
           title="Price"
           options={PRICE_RANGES}
           selected={selectedPriceRanges}
-          onChange={(v) => setSelectedPriceRanges(v)}
+          onChange={handlePriceChange}
           onBack={backFromSubFilter}
           onClose={closeAllFilters}
           resultCount={filtered.length}

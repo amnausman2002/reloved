@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import Nav from "@/components/ui/Nav";
+import BrowseCard from "@/components/buyer/BrowseCard";
 import type { Brand, Category, ConditionValue, City } from "@/lib/constants";
 import { BRAND_LABELS, CONDITIONS, CITIES } from "@/lib/constants";
 
@@ -491,6 +492,38 @@ function ReportIcon() {
   );
 }
 
+function CloseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M12 4l-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M8 4l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ForwardArrowIcon() {
+  return (
+    <svg width="14" height="10" viewBox="0 0 24 14" fill="none" aria-hidden="true">
+      <path d="M1 7h22M23 7l-5.5-6M23 7l-5.5 6" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function InfoIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true" style={{ marginTop: 2, flexShrink: 0 }}>
@@ -510,8 +543,12 @@ export default function ItemDetailPage() {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement>(null);
-  const touchXRef = useRef<number | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const dragOffsetRef = useRef(0);
 
   const listing = MOCK_LISTINGS.find((l) => l.id === id);
 
@@ -526,6 +563,15 @@ export default function ItemDetailPage() {
     return () => document.removeEventListener("pointerdown", handleClick);
   }, [overflowOpen]);
 
+  useEffect(() => {
+    if (lightboxOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [lightboxOpen]);
+
   const handleShare = useCallback(async () => {
     const url = window.location.href;
     try {
@@ -535,7 +581,7 @@ export default function ItemDetailPage() {
         await navigator.clipboard.writeText(url);
       }
     } catch {
-      // user cancelled — fine
+      // user cancelled
     }
     setOverflowOpen(false);
   }, [listing?.title]);
@@ -559,20 +605,65 @@ export default function ItemDetailPage() {
   );
   const whatsappUrl = `https://wa.me/923001234567?text=${whatsappMessage}`;
 
+  const sellerListings = MOCK_LISTINGS.filter(
+    (l) => l.seller.id === seller.id && l.id !== listing.id
+  );
+  const similarListings = MOCK_LISTINGS.filter(
+    (l) => l.category === listing.category && l.id !== listing.id && l.seller.id !== seller.id
+  ).slice(0, 8);
+
   function handleSwipeStart(e: React.TouchEvent) {
-    touchXRef.current = e.touches[0].clientX;
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    isDraggingRef.current = false;
+    dragOffsetRef.current = 0;
   }
-  function handleSwipeEnd(e: React.TouchEvent) {
-    if (touchXRef.current === null) return;
-    const diff = e.changedTouches[0].clientX - touchXRef.current;
-    touchXRef.current = null;
-    if (Math.abs(diff) > 40) {
-      if (diff < 0 && photoIndex < photos.length - 1) {
+  function handleSwipeMove(e: React.TouchEvent) {
+    if (!touchStartRef.current) return;
+    const dx = e.touches[0].clientX - touchStartRef.current.x;
+    const dy = e.touches[0].clientY - touchStartRef.current.y;
+    if (!isDraggingRef.current && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 5) {
+      isDraggingRef.current = true;
+    }
+    if (isDraggingRef.current && trackRef.current) {
+      dragOffsetRef.current = dx;
+      const base = -photoIndex * 100;
+      const pct = (dx / trackRef.current.parentElement!.clientWidth) * 100;
+      trackRef.current.style.transition = "none";
+      trackRef.current.style.transform = `translateX(${base + pct}%)`;
+    }
+  }
+  function handleSwipeEnd() {
+    if (!touchStartRef.current) return;
+    const dx = dragOffsetRef.current;
+    touchStartRef.current = null;
+    if (trackRef.current) {
+      trackRef.current.style.transition = "";
+    }
+    if (isDraggingRef.current && Math.abs(dx) > 40) {
+      if (dx < 0 && photoIndex < photos.length - 1) {
         setPhotoIndex(photoIndex + 1);
-      } else if (diff > 0 && photoIndex > 0) {
+      } else if (dx > 0 && photoIndex > 0) {
         setPhotoIndex(photoIndex - 1);
       }
     }
+    if (trackRef.current) {
+      trackRef.current.style.transform = `translateX(${-photoIndex * 100}%)`;
+    }
+    isDraggingRef.current = false;
+    dragOffsetRef.current = 0;
+  }
+
+  function handleImageTap() {
+    if (!isDraggingRef.current) {
+      setLightboxOpen(true);
+    }
+  }
+
+  function lightboxPrev() {
+    setPhotoIndex((i) => Math.max(0, i - 1));
+  }
+  function lightboxNext() {
+    setPhotoIndex((i) => Math.min(photos.length - 1, i + 1));
   }
 
   return (
@@ -584,16 +675,31 @@ export default function ItemDetailPage() {
         <div
           className="listing-carousel"
           onTouchStart={handleSwipeStart}
+          onTouchMove={handleSwipeMove}
           onTouchEnd={handleSwipeEnd}
         >
-          <Image
-            src={photos[photoIndex].url}
-            alt={`${listing.title}, photo ${photoIndex + 1} of ${photos.length}`}
-            fill
-            sizes="100vw"
-            style={{ objectFit: "cover" }}
-            priority={photoIndex === 0}
-          />
+          <div
+            ref={trackRef}
+            className="listing-carousel-track"
+            style={{ transform: `translateX(${-photoIndex * 100}%)` }}
+          >
+            {photos.map((photo, i) => (
+              <div
+                key={i}
+                className="listing-carousel-slide"
+                onClick={handleImageTap}
+              >
+                <Image
+                  src={photo.url}
+                  alt={`${listing.title}, photo ${i + 1} of ${photos.length}`}
+                  fill
+                  sizes="100vw"
+                  style={{ objectFit: "cover" }}
+                  priority={i === 0}
+                />
+              </div>
+            ))}
+          </div>
 
           <div className="listing-header">
             <Link href="/browse" className="listing-back" aria-label="Back">
@@ -647,9 +753,6 @@ export default function ItemDetailPage() {
             <span className="listing-price">
               {formatPrice(listing.askingPrice)}
             </span>
-            {listing.isNegotiable && (
-              <span className="listing-negotiable">Negotiable</span>
-            )}
           </div>
 
           <span className="listing-listed-at">
@@ -704,12 +807,6 @@ export default function ItemDetailPage() {
                 <>
                   <div className="listing-notes">
                     <p className="listing-condition-desc">{cond.description}</p>
-                    {listing.fitNote && (
-                      <div className="listing-note-row">
-                        <InfoIcon />
-                        <span className="listing-note-text">{listing.fitNote}</span>
-                      </div>
-                    )}
                     {listing.flawNote && (
                       <div className="listing-note-row">
                         <InfoIcon />
@@ -747,6 +844,58 @@ export default function ItemDetailPage() {
           </div>
         </div>
 
+        {/* ── More from this seller ── */}
+        {sellerListings.length > 0 && (
+          <section className="reco-section">
+            <div className="reco-header">
+              <h2 className="reco-heading">More from {seller.displayName}</h2>
+              <Link href={`/seller/${seller.id}`} className="reco-see-all">
+                See all <ForwardArrowIcon />
+              </Link>
+            </div>
+            <div className="reco-scroll">
+              {sellerListings.map((l) => (
+                <BrowseCard
+                  key={l.id}
+                  id={l.id}
+                  title={l.title}
+                  brand={l.brand}
+                  brandOther={l.brandOther}
+                  category={l.category}
+                  askingPrice={l.askingPrice}
+                  coverPhoto={l.photos.find((p) => p.isCover)?.url ?? l.photos[0].url}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── You may also like ── */}
+        {similarListings.length > 0 && (
+          <section className="reco-section">
+            <div className="reco-header">
+              <h2 className="reco-heading">You may also like</h2>
+              <Link href={`/browse?category=${listing.category}`} className="reco-see-all">
+                See all <ForwardArrowIcon />
+              </Link>
+            </div>
+            <div className="reco-scroll">
+              {similarListings.map((l) => (
+                <BrowseCard
+                  key={l.id}
+                  id={l.id}
+                  title={l.title}
+                  brand={l.brand}
+                  brandOther={l.brandOther}
+                  category={l.category}
+                  askingPrice={l.askingPrice}
+                  coverPhoto={l.photos.find((p) => p.isCover)?.url ?? l.photos[0].url}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Sticky WhatsApp CTA */}
         <div className="listing-actions-bar">
           <a
@@ -761,6 +910,56 @@ export default function ItemDetailPage() {
         </div>
 
       </main>
+
+      {/* ── Fullscreen lightbox ── */}
+      {lightboxOpen && (
+        <div className="lightbox-overlay">
+          <div className="lightbox-header">
+            <span className="lightbox-counter">
+              {photoIndex + 1}/{photos.length}
+            </span>
+            <button
+              type="button"
+              className="lightbox-close"
+              aria-label="Close"
+              onClick={() => setLightboxOpen(false)}
+            >
+              <CloseIcon />
+            </button>
+          </div>
+          <div className="lightbox-body">
+            <div className="lightbox-image-wrap">
+              <Image
+                src={photos[photoIndex].url}
+                alt={`${listing.title}, photo ${photoIndex + 1} of ${photos.length}`}
+                fill
+                sizes="100vw"
+                style={{ objectFit: "contain" }}
+              />
+            </div>
+            {photoIndex > 0 && (
+              <button
+                type="button"
+                className="lightbox-arrow lightbox-arrow-prev"
+                aria-label="Previous photo"
+                onClick={lightboxPrev}
+              >
+                <ChevronLeftIcon />
+              </button>
+            )}
+            {photoIndex < photos.length - 1 && (
+              <button
+                type="button"
+                className="lightbox-arrow lightbox-arrow-next"
+                aria-label="Next photo"
+                onClick={lightboxNext}
+              >
+                <ChevronRightIcon />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
