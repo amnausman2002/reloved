@@ -46,11 +46,21 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // A seller's display name and city show on her public profile, so her
-      // document is readable. It also holds her email and phone, which is why
-      // the client must never query the whole collection: see the note in
-      // lib/data. Tightening this to a public subset is a known follow-up.
-      allow read: if true;
+      // She reads her own record, and we read anyone's. Nobody else reads
+      // anything.
+      //
+      // This was `if true` for a few hours on 12 Oct, on the reasoning that a
+      // seller's display name and city are public anyway. That was wrong: a
+      // user document also holds her email and her phone number, and Firestore
+      // rules cannot hide individual fields. Anyone who knew the project id,
+      // which ships in the browser bundle of every Firebase web app, could
+      // list the whole collection over the REST API and walk off with every
+      // seller's phone number. Verified by doing exactly that.
+      //
+      // The public profile page needs display_name, city, bio and avatar_url.
+      // Those are served from the server with the Admin SDK, which picks the
+      // safe fields explicitly, rather than by opening the document up here.
+      allow read: if isSelf(userId) || isAdmin();
 
       // She creates her own record at sign-up, and can never grant herself
       // admin or mark her own phone verified.
