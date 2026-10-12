@@ -111,6 +111,24 @@ export const LISTING_STATUS_LABELS: Record<ListingStatus, string> = {
   hidden: "Hidden",
 };
 
+// Canned reasons an admin picks when rejecting a pending listing. The same
+// list is reused as ModerationAction's `reason`.
+export const REJECTION_REASONS = [
+  "bad_photos",
+  "missing_details",
+  "not_allowed",
+  "suspected_counterfeit",
+] as const;
+
+export type RejectionReason = (typeof REJECTION_REASONS)[number];
+
+export const REJECTION_REASON_LABELS: Record<RejectionReason, string> = {
+  bad_photos: "Photos need work",
+  missing_details: "Missing details",
+  not_allowed: "Not an allowed item",
+  suspected_counterfeit: "Suspected counterfeit",
+};
+
 // Clothes XS-XL, shoes UK 3-9, bags have no size at all.
 export const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL"] as const;
 
