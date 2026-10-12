@@ -8,39 +8,7 @@ import Nav from "@/components/ui/Nav";
 import BrowseCard from "@/components/buyer/BrowseCard";
 import type { Brand, Category, ConditionValue, City } from "@/lib/constants";
 import { BRAND_LABELS, CONDITIONS, CITIES } from "@/lib/constants";
-
-type MockPhoto = {
-  url: string;
-  isCover: boolean;
-};
-
-type MockSeller = {
-  id: string;
-  displayName: string;
-  city: City;
-  listingCount: number;
-  soldCount: number;
-};
-
-type MockListing = {
-  id: string;
-  title: string;
-  description: string;
-  brand: Brand;
-  brandOther?: string;
-  category: Category;
-  size: string | null;
-  condition: ConditionValue;
-  flawNote?: string;
-  fitNote?: string;
-  isReplica: boolean;
-  askingPrice: number;
-  isNegotiable: boolean;
-  city: City;
-  photos: MockPhoto[];
-  seller: MockSeller;
-  createdAt: string;
-};
+import { MOCK_LISTINGS, getSellerListings, getSoldCount } from "@/lib/sample-data";
 
 const CATEGORY_LABELS: Record<string, string> = {
   kurta: "Kurta",
@@ -57,333 +25,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   shoes: "Shoes",
   bag: "Bag",
 };
-
-const MOCK_LISTINGS: MockListing[] = [
-  {
-    id: "1",
-    title: "Printed lawn kurta, mustard",
-    description:
-      "Beautiful printed lawn kurta in mustard tones. Lightweight fabric, perfect for everyday wear. Worn a handful of times, still in great condition. The print is a small floral motif on a warm mustard base. Pairs nicely with white or beige bottoms.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "M",
-    condition: "very_good",
-    fitNote: "Roomy: would fit a large too",
-    isReplica: false,
-    askingPrice: 2500,
-    isNegotiable: true,
-    city: "lahore",
-    photos: [
-      { url: "/photos/listings/IMG_6511.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6512.jpg", isCover: false },
-      { url: "/photos/listings/IMG_6513.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s1",
-      displayName: "Ayesha",
-      city: "lahore",
-      listingCount: 8,
-      soldCount: 4,
-    },
-    createdAt: "2026-10-04",
-  },
-  {
-    id: "2",
-    title: "Block print sleeveless kurta",
-    description:
-      "Khaadi sleeveless kurta with block print. Never worn, bought last summer and it has been sitting in my closet.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "S",
-    condition: "brand_new_without_tags",
-    isReplica: false,
-    askingPrice: 3200,
-    isNegotiable: false,
-    city: "karachi",
-    photos: [
-      { url: "/photos/listings/IMG_6513.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6511.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s2",
-      displayName: "Sara",
-      city: "karachi",
-      listingCount: 12,
-      soldCount: 7,
-    },
-    createdAt: "2026-10-02",
-  },
-  {
-    id: "3",
-    title: "Monochrome floral shirt dress",
-    description:
-      "Cute floral button-up dress. Bought from Quiz in London. Tags still attached, never worn.",
-    brand: "other",
-    brandOther: "Quiz",
-    category: "dress",
-    size: "M",
-    condition: "brand_new_with_tags",
-    isReplica: false,
-    askingPrice: 1800,
-    isNegotiable: true,
-    city: "islamabad",
-    photos: [
-      { url: "/photos/listings/IMG_6516.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6517.jpg", isCover: false },
-      { url: "/photos/listings/IMG_6519.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s3",
-      displayName: "Nadia",
-      city: "islamabad",
-      listingCount: 14,
-      soldCount: 2,
-    },
-    createdAt: "2026-10-05",
-  },
-  {
-    id: "4",
-    title: "Ribbed polo crop top, lilac",
-    description:
-      "Light lilac ribbed polo crop top. Goes with everything. Worn a few times but still looks fresh.",
-    brand: "unknown",
-    category: "top",
-    size: "S",
-    condition: "very_good",
-    isReplica: false,
-    askingPrice: 900,
-    isNegotiable: true,
-    city: "lahore",
-    photos: [
-      { url: "/photos/listings/IMG_6514.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6515.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s1",
-      displayName: "Ayesha",
-      city: "lahore",
-      listingCount: 8,
-      soldCount: 4,
-    },
-    createdAt: "2026-09-29",
-  },
-  {
-    id: "5",
-    title: "Printed lawn kurta, worn",
-    description:
-      "Khaadi printed lawn kurta. Shows some wear on the cuffs, reflected in the price. Still has a lot of life in it.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "L",
-    condition: "fair",
-    flawNote: "Minor pilling on the cuffs",
-    isReplica: false,
-    askingPrice: 2800,
-    isNegotiable: true,
-    city: "faisalabad",
-    photos: [
-      { url: "/photos/listings/IMG_6511.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6512.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s4",
-      displayName: "Hina",
-      city: "faisalabad",
-      listingCount: 1,
-      soldCount: 0,
-    },
-    createdAt: "2026-09-25",
-  },
-  {
-    id: "6",
-    title: "Printed lawn kurta, multicolour",
-    description:
-      "Khaadi printed lawn kurta in vibrant multicolour print. Tags removed but never worn.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "M",
-    condition: "brand_new_without_tags",
-    isReplica: false,
-    askingPrice: 3500,
-    isNegotiable: false,
-    city: "rawalpindi",
-    photos: [
-      { url: "/photos/listings/IMG_6512.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6511.jpg", isCover: false },
-      { url: "/photos/listings/IMG_6513.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s5",
-      displayName: "Maira",
-      city: "rawalpindi",
-      listingCount: 5,
-      soldCount: 2,
-    },
-    createdAt: "2026-10-01",
-  },
-  {
-    id: "7",
-    title: "Cropped collar top, lilac",
-    description:
-      "Cropped collar top in soft lilac. Worn twice, basically new. Great for pairing with wide-leg trousers.",
-    brand: "unknown",
-    category: "top",
-    size: "XS",
-    condition: "very_good",
-    isReplica: false,
-    askingPrice: 1200,
-    isNegotiable: true,
-    city: "karachi",
-    photos: [
-      { url: "/photos/listings/IMG_6515.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6514.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s2",
-      displayName: "Sara",
-      city: "karachi",
-      listingCount: 12,
-      soldCount: 7,
-    },
-    createdAt: "2026-10-03",
-  },
-  {
-    id: "8",
-    title: "Monochrome floral dress",
-    description:
-      "Quiz monochrome floral dress. Tags removed but never worn, still in perfect condition.",
-    brand: "other",
-    brandOther: "Quiz",
-    category: "dress",
-    size: "S",
-    condition: "brand_new_without_tags",
-    isReplica: false,
-    askingPrice: 2200,
-    isNegotiable: true,
-    city: "lahore",
-    photos: [
-      { url: "/photos/listings/IMG_6519.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6516.jpg", isCover: false },
-      { url: "/photos/listings/IMG_6518.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s1",
-      displayName: "Ayesha",
-      city: "lahore",
-      listingCount: 8,
-      soldCount: 4,
-    },
-    createdAt: "2026-09-28",
-  },
-  {
-    id: "9",
-    title: "Ribbed collar top, lavender",
-    description:
-      "Lavender ribbed collar top. Some light bobbling on the front, shown in photos.",
-    brand: "unknown",
-    category: "top",
-    size: "M",
-    condition: "fair",
-    flawNote: "Light bobbling on the front",
-    isReplica: false,
-    askingPrice: 750,
-    isNegotiable: true,
-    city: "islamabad",
-    photos: [
-      { url: "/photos/listings/IMG_6514.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6515.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s3",
-      displayName: "Nadia",
-      city: "islamabad",
-      listingCount: 14,
-      soldCount: 2,
-    },
-    createdAt: "2026-09-30",
-  },
-  {
-    id: "10",
-    title: "Embroidered lawn kurta",
-    description:
-      "Khaadi embroidered lawn kurta. Brand new with tags, bought in the sale but never got around to wearing it.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "L",
-    condition: "brand_new_with_tags",
-    isReplica: false,
-    askingPrice: 4000,
-    isNegotiable: false,
-    city: "multan",
-    photos: [
-      { url: "/photos/listings/IMG_6511.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6513.jpg", isCover: false },
-      { url: "/photos/listings/IMG_6512.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s6",
-      displayName: "Zara",
-      city: "multan",
-      listingCount: 6,
-      soldCount: 3,
-    },
-    createdAt: "2026-09-22",
-  },
-  {
-    id: "11",
-    title: "Button-up floral dress",
-    description:
-      "Quiz button-up floral dress. Fits beautifully, worn three times. Great for both casual and semi-formal occasions.",
-    brand: "other",
-    brandOther: "Quiz",
-    category: "dress",
-    size: "S",
-    condition: "very_good",
-    fitNote: "True to size",
-    isReplica: false,
-    askingPrice: 1500,
-    isNegotiable: true,
-    city: "peshawar",
-    photos: [
-      { url: "/photos/listings/IMG_6516.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6518.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s7",
-      displayName: "Fatima",
-      city: "peshawar",
-      listingCount: 2,
-      soldCount: 0,
-    },
-    createdAt: "2026-09-18",
-  },
-  {
-    id: "12",
-    title: "Printed lawn kurta, summer",
-    description:
-      "Khaadi printed lawn kurta. Tags removed, never worn. Perfect for the heat.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "M",
-    condition: "brand_new_without_tags",
-    isReplica: false,
-    askingPrice: 1900,
-    isNegotiable: true,
-    city: "hyderabad",
-    photos: [
-      { url: "/photos/listings/IMG_6513.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6512.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s8",
-      displayName: "Amna",
-      city: "hyderabad",
-      listingCount: 9,
-      soldCount: 5,
-    },
-    createdAt: "2026-10-05",
-  },
-];
 
 const BRAND_SPECIAL: Record<string, string> = {
   hm: "H&M",
@@ -425,6 +66,11 @@ function formatPrice(price: number): string {
 function cityLabel(city: City): string {
   const found = CITIES.find((c) => c.value === city);
   return found?.label ?? city;
+}
+
+// Lowercase to match the Fraunces-styled initial on the seller profile page.
+function initials(name: string): string {
+  return name.trim().charAt(0).toLowerCase() || "?";
 }
 
 function conditionInfo(value: ConditionValue) {
@@ -608,6 +254,9 @@ export default function ItemDetailPage() {
   const sellerListings = MOCK_LISTINGS.filter(
     (l) => l.seller.id === seller.id && l.id !== listing.id
   );
+  // Computed, never stored, per the PRD.
+  const sellerListingCount = getSellerListings(seller.id).length;
+  const sellerSoldCount = getSoldCount(seller.id);
   const similarListings = MOCK_LISTINGS.filter(
     (l) => l.category === listing.category && l.id !== listing.id && l.seller.id !== seller.id
   ).slice(0, 8);
@@ -833,13 +482,14 @@ export default function ItemDetailPage() {
           <div className="seller-section">
             <span className="seller-section-label">Seller</span>
             <Link href={`/seller/${seller.id}`} className="seller-box">
+              <span className="seller-box-avatar" aria-hidden="true">{initials(seller.displayName)}</span>
               <span className="seller-name">{seller.displayName}</span>
               <span className="seller-box-sep" aria-hidden="true" />
               <span className="seller-box-detail">{cityLabel(seller.city)}</span>
               <span className="seller-box-sep" aria-hidden="true" />
-              <span className="seller-box-detail">{seller.listingCount} listings</span>
+              <span className="seller-box-detail">{sellerListingCount} listings</span>
               <span className="seller-box-sep" aria-hidden="true" />
-              <span className="seller-box-detail">{seller.soldCount} sold</span>
+              <span className="seller-box-detail">{sellerSoldCount} sold</span>
             </Link>
           </div>
         </div>
