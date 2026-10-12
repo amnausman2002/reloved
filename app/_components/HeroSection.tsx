@@ -11,7 +11,18 @@ const SUGGESTIONS = [
   'Y2K crop top XS',
 ];
 
+const TICKER_PHRASE = 'a more circular way to shop';
+const TICKER_REPEAT = 6;
+
 type Phase = 'typing' | 'pause' | 'deleting';
+
+function HeartIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 21s-7.5-4.6-10.2-9.3C.1 8.7 1.3 5 5 4.1c2.2-.5 4.2.5 5.6 2.3C11.8 4.6 13.8 3.6 16 4.1c3.7.9 4.9 4.6 3.2 7.6C19.5 16.4 12 21 12 21z" />
+    </svg>
+  );
+}
 
 export default function HeroSection() {
   const [query, setQuery] = useState('');
@@ -22,32 +33,10 @@ export default function HeroSection() {
   const [suggIndex, setSuggIndex] = useState(0);
   const router = useRouter();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sectionRef = useRef<HTMLElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const dissolveRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     setReducedMotion(mq.matches);
-    if (mq.matches) return;
-
-    const onScroll = () => {
-      if (!sectionRef.current || !contentRef.current || !dissolveRef.current) return;
-      const heroH = sectionRef.current.offsetHeight;
-      const y = window.scrollY;
-
-      // Content drifts up and fades out over first 35% of hero height
-      const contentProgress = Math.max(0, Math.min(1, y / (heroH * 0.35)));
-      contentRef.current.style.opacity = String(1 - contentProgress);
-      contentRef.current.style.transform = `translateY(${-contentProgress * 20}px)`;
-
-      // White overlay fades in from 10% to 75% of hero height — hero dissolves to canvas
-      const dissolveProgress = Math.max(0, Math.min(1, (y - heroH * 0.1) / (heroH * 0.65)));
-      dissolveRef.current.style.opacity = String(dissolveProgress);
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -93,17 +82,16 @@ export default function HeroSection() {
   const showPlaceholder = !focused && !query;
 
   return (
-    <section ref={sectionRef} className={styles.hero}>
+    <section className={styles.hero}>
       <div className={styles.heroOverlay} aria-hidden="true" />
-      <div ref={dissolveRef} className={styles.heroDissolveOverlay} aria-hidden="true" />
 
-      <div ref={contentRef} className={styles.heroContent}>
+      <div className={styles.heroContent}>
         <div className={styles.heroIntro}>
           <h1 className={styles.heroHeadline}>
             great style doesn&rsquo;t have to cost full price.
           </h1>
           <p className={styles.heroSubheading}>
-            Buy and sell secondhand fashion in Pakistan.
+            Buy and sell preloved women&rsquo;s fashion in Pakistan
           </p>
         </div>
 
@@ -138,8 +126,23 @@ export default function HeroSection() {
         </form>
 
         <Link href="/browse" className={styles.heroCta}>
-          Browse all listings &rarr;
+          Browse all
         </Link>
+      </div>
+
+      <div className={styles.tickerTape} aria-hidden="true">
+        <div className={styles.tickerTrack}>
+          {[0, 1].map((group) => (
+            <div key={group} className={styles.tickerGroup}>
+              {Array.from({ length: TICKER_REPEAT }).flatMap((_, i) => [
+                <span key={`p-${i}`} className={styles.tickerItem}>{TICKER_PHRASE}</span>,
+                <span key={`h-${i}`} className={styles.tickerHeart}>
+                  <HeartIcon />
+                </span>,
+              ])}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

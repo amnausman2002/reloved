@@ -1,40 +1,81 @@
 /* ─── Hero ─────────────────────────────────────────── */
 
 .hero {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  position: relative;
+  margin-top: calc(-1 * var(--nav-height));
   height: 100svh;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: #1A1A18;
   color: var(--white);
-  padding: calc(56px + var(--space-7)) var(--space-4) var(--space-8);
+  padding: calc(var(--nav-height) + var(--space-7)) var(--space-4) var(--space-8);
 }
 
 .heroOverlay {
   position: absolute;
   inset: 0;
-  /*
-   * Layered background: dark overlay on top, photo underneath.
-   * CSS multiple backgrounds render in order — first entry is topmost.
-   * Place reloved-hero.png in /public/ to activate the photo.
-   * Until then: hero's #1A1A18 background-color shows through.
-   */
-  background:
-    linear-gradient(rgba(10, 10, 8, 0.3), rgba(10, 10, 8, 0.3)),
-    url('/reloved-hero.png') center / cover no-repeat;
+  /* Place reloved-hero.png in /public/ to activate the photo. */
+  background: url('/reloved-hero.png') center / cover no-repeat;
 }
 
-/* White dissolve overlay — fades in on scroll to blend hero into canvas */
-.heroDissolveOverlay {
+/* ─── Ticker tape ──────────────────────────────────── */
+
+.tickerTape {
   position: absolute;
-  inset: 0;
-  background: var(--canvas);
-  opacity: 0;
-  z-index: 2;
-  pointer-events: none;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  overflow: hidden;
+  background: #1A1A18;
+  padding: var(--space-3) 0;
+}
+
+.tickerTrack {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: max-content;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tickerTrack {
+    animation: tickerScroll 32s linear infinite;
+  }
+}
+
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.tickerGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.tickerItem {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-family: var(--font-fraunces, serif);
+  font-weight: 300;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: lowercase;
+  color: var(--white);
+  font-variation-settings: 'opsz' 30;
+}
+
+.tickerHeart {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--white);
 }
 
 .heroContent {
@@ -63,6 +104,7 @@
   line-height: 1.1;
   letter-spacing: -0.02em;
   font-variation-settings: 'opsz' 144;
+  max-width: 9.5em;
 }
 
 
@@ -80,9 +122,10 @@
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-radius: 0;
   padding: var(--space-3) var(--space-4);
   min-height: 52px;
@@ -90,7 +133,7 @@
 
 .heroSearchIcon {
   flex-shrink: 0;
-  color: var(--text-secondary);
+  color: var(--white);
 }
 
 .heroInputWrap {
@@ -108,7 +151,8 @@
   background: none;
   border: none;
   outline: none;
-  color: var(--text-primary);
+  color: var(--white);
+  caret-color: var(--white);
   font-family: var(--font-inter, sans-serif);
   font-weight: 400;
   font-size: 16px;
@@ -120,7 +164,7 @@
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.95);
   font-family: var(--font-inter, sans-serif);
   font-weight: 400;
   font-size: 16px;
@@ -135,7 +179,7 @@
   display: inline-block;
   width: 1.5px;
   height: 1.1em;
-  background: var(--text-secondary);
+  background: var(--white);
   margin-left: 1px;
   vertical-align: text-bottom;
   flex-shrink: 0;
@@ -152,24 +196,32 @@
   }
 }
 
-/* Hero CTA — tertiary: white text + arrow, no fill */
+/* Hero CTA — secondary button, per design-system.md, adapted for the dark hero */
 .heroCta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: transparent;
+  border: 1px solid var(--white);
+  border-radius: 0;
   color: var(--white);
   font-family: var(--font-inter, sans-serif);
-  font-weight: 400;
-  font-size: 15px;
+  font-weight: 500;
+  font-size: 14px;
+  min-height: 44px;
+  min-width: 140px;
+  text-decoration: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .heroCta {
-    transition: opacity var(--duration-fast, 100ms) ease;
+    transition: background var(--duration-fast, 100ms) ease,
+                color var(--duration-fast, 100ms) ease;
   }
   .heroCta:hover {
-    opacity: 0.75;
+    background: var(--white);
+    color: var(--text-primary);
   }
 }
 
@@ -221,11 +273,25 @@
 }
 
 .browseAll {
+  position: relative;
   font-family: var(--font-inter, sans-serif);
   font-weight: 400;
   font-size: 14px;
   color: var(--text-secondary);
   white-space: nowrap;
+  text-decoration: none;
+}
+
+/* Expands the tap target to 44px without changing the link's own box, so
+   layout and appearance stay exactly as they were. */
+.browseAll::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -256,10 +322,11 @@
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .tileImg {
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 16 / 9;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -272,16 +339,27 @@
 
 @media (min-width: 640px) {
   .tileImg {
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 3 / 2;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .tile {
+    opacity: 0;
+    transform: scale(1.06);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .tileRevealed {
+    opacity: 1;
+    transform: scale(1);
+  }
   .tileImg {
-    transition: border-color var(--duration-fast, 100ms) ease;
+    transition: border-color var(--duration-fast, 100ms) ease,
+                transform 0.3s ease;
   }
   .tile:hover .tileImg {
     border-color: var(--text-primary);
+    transform: scale(1.03);
   }
 }
 
@@ -348,6 +426,7 @@
   flex-shrink: 0;
   width: 140px;
   scroll-snap-align: start;
+  text-decoration: none;
 }
 
 @media (min-width: 640px) {
@@ -357,13 +436,30 @@
 }
 
 .categoryTileImg {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 3 / 4;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.categoryTilePhoto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.categoryTileLabel {
+  display: block;
+  margin-top: var(--space-2);
+  font-family: var(--font-inter, sans-serif);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: left;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -372,6 +468,9 @@
   }
   .categoryTile:hover .categoryTileImg {
     border-color: var(--text-primary);
+  }
+  .categoryTile:hover .categoryTileLabel {
+    color: var(--text-primary);
   }
 }
 
@@ -409,6 +508,8 @@
 .priceBand {
   display: block;
   border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text-primary);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -456,48 +557,46 @@
   flex-shrink: 0;
 }
 
-/* ─── Breathing moment ──────────────────────────────── */
+/* ─── Quote ──────────────────────────────────────────── */
 
-.breathingMoment {
-  padding: 96px var(--space-4);
-  text-align: center;
-  border-top: 1px solid var(--border);
+.quoteSection {
+  padding: 96px 0;
 }
 
 @media (min-width: 640px) {
-  .breathingMoment {
-    padding: 120px var(--space-4);
+  .quoteSection {
+    padding: 120px 0;
   }
 }
 
-.breathingText {
+.quoteText {
   font-family: var(--font-fraunces, serif);
   font-weight: 300;
-  font-size: clamp(28px, 6vw, 48px);
+  font-size: clamp(26px, 7vw, 38px);
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   font-variation-settings: 'opsz' 144;
   color: var(--text-primary);
+  max-width: 720px;
+  text-indent: 1.4em;
+}
+
+.quoteText em {
+  font-style: italic;
+  font-weight: inherit;
 }
 
 /* ─── Closing section ───────────────────────────────── */
 
 .closingSection {
   position: relative;
-  min-height: 60vh;
+  min-height: 75vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Fallback: #2D2A26 until gradient-warm.jpg is placed in /public/ */
-  background-color: #2D2A26;
-  background-image: url('/gradient-warm.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  flex-direction: column;
+  background-color: #1A1A18;
   overflow: hidden;
 }
 
-/* Video background — uncomment <video> in page.tsx when ready */
 .closingBgVideo {
   position: absolute;
   inset: 0;
@@ -509,102 +608,75 @@
 .closingOverlay {
   position: absolute;
   inset: 0;
-  background: rgba(18, 14, 10, 0.65);
+  background: rgba(10, 10, 8, 0.55);
 }
 
 .closingContent {
   position: relative;
   z-index: 1;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
   padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+
+.closingTagline {
+  color: var(--white);
+  font-family: var(--font-fraunces, serif);
+  font-weight: 300;
+  font-size: clamp(28px, 6.5vw, 42px);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'opsz' 144;
+  max-width: 480px;
 }
 
 .closingCta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-3) var(--space-7);
-  background: var(--white);
-  color: var(--text-primary);
+  padding: var(--space-3) var(--space-6);
+  background: none;
+  color: var(--white);
   font-family: var(--font-inter, sans-serif);
   font-weight: 500;
   font-size: 14px;
+  border: 1px solid var(--white);
   border-radius: 0;
-  min-height: 50px;
-  min-width: 240px;
-  text-align: center;
+  min-height: 44px;
+  text-decoration: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .closingCta {
-    transition: opacity var(--duration-fast, 100ms) ease;
+    transition: background var(--duration-fast, 100ms) ease,
+                color var(--duration-fast, 100ms) ease;
   }
   .closingCta:hover {
-    opacity: 0.88;
-  }
-}
-
-/* ─── Footer ────────────────────────────────────────── */
-
-.footer {
-  position: relative;
-  z-index: 2;
-  background: var(--canvas);
-  border-top: 1px solid var(--border);
-  padding: var(--space-7) var(--space-4);
-}
-
-.footerInner {
-  max-width: 1280px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-@media (min-width: 640px) {
-  .footerInner {
-    flex-direction: row;
-    justify-content: space-between;
-  }
-}
-
-.footerLinks {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.footerLink {
-  font-family: var(--font-inter, sans-serif);
-  font-weight: 400;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .footerLink {
-    transition: color var(--duration-fast, 100ms) ease;
-  }
-  .footerLink:hover {
+    background: var(--white);
     color: var(--text-primary);
   }
 }
 
-.footerDot {
-  color: var(--border);
-  font-size: 12px;
-  user-select: none;
+/* ─── Footer: pinned to the bottom of the closing section */
+
+.closingFooter {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
 }
 
 .footerCopyright {
   font-family: var(--font-inter, sans-serif);
   font-weight: 400;
   font-size: 13px;
-  color: var(--text-tertiary);
+  color: rgba(255, 255, 255, 0.65);
 }

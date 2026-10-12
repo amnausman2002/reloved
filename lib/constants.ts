@@ -4,6 +4,7 @@ export const BRANDS = [
   "khaadi",
   "sapphire",
   "generation",
+  "lama",
   "elan",
   "gul_ahmed",
   "ideas_by_gul_ahmed",
@@ -85,7 +86,7 @@ export const CONDITIONS: { value: ConditionValue; label: string; description: st
   { value: "brand_new_with_tags", label: "Brand new with tags", description: "With tags, never worn" },
   { value: "brand_new_without_tags", label: "Brand new without tags", description: "No tags, never worn" },
   { value: "very_good", label: "Very good", description: "Well worn, but still in great shape" },
-  { value: "fair", label: "Fair", description: "Shows some signs of wear — please photograph the areas that show it" },
+  { value: "fair", label: "Fair", description: "Shows some signs of wear. Please photograph the areas that show it." },
 ];
 
 // Listing status. Only admins set `live` and `rejected`. Browse shows `live`

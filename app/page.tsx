@@ -2,6 +2,8 @@ import Link from 'next/link';
 import Nav from '@/components/ui/Nav';
 import HeroSection from './_components/HeroSection';
 import BuySellToggle from './_components/BuySellToggle';
+import BrandGrid from './_components/BrandGrid';
+import ClosingSection from './_components/ClosingSection';
 import styles from './page.module.css';
 
 const BRANDS: { name: string; slug: string; image?: string; logo?: string }[] = [
@@ -13,13 +15,11 @@ const BRANDS: { name: string; slug: string; image?: string; logo?: string }[] = 
 ];
 
 const CATEGORIES = [
-  { name: 'Kurta / Pret', slug: 'kurta' },
-  { name: 'Co-ords', slug: 'co_ord_set' },
-  { name: 'Tops', slug: 'top' },
-  { name: 'Bottoms', slug: 'bottoms' },
-  { name: 'Dresses', slug: 'dress' },
-  { name: 'Shoes', slug: 'shoes' },
-  { name: 'Bags', slug: 'bag' },
+  { name: 'Tops', slug: 'top', image: '/photos/categories/tops.png' },
+  { name: 'Bottoms', slug: 'bottoms', image: '/photos/categories/bottoms.png' },
+  { name: 'Dresses', slug: 'dress', image: '/photos/categories/dresses.png' },
+  { name: 'Outerwear', slug: 'jacket', image: '/photos/categories/outerwear.png' },
+  { name: 'Pret', slug: 'pret', image: '/photos/categories/pret.png' },
 ];
 
 const PRICE_BANDS = [
@@ -31,7 +31,7 @@ const PRICE_BANDS = [
 export default function HomePage() {
   return (
     <>
-      <Nav />
+      <Nav transparent />
 
       <main>
         {/* 1. Hero */}
@@ -50,34 +50,7 @@ export default function HomePage() {
               <h2 className={styles.sectionHeading}>Explore brands</h2>
               <Link href="/browse" className={styles.browseAll}>Browse all →</Link>
             </div>
-            <div className={styles.brandGrid}>
-              {BRANDS.map((brand) => (
-                <Link
-                  key={brand.slug}
-                  href={`/browse?brand=${brand.slug}`}
-                  className={styles.tile}
-                  aria-label={`Browse ${brand.name}`}
-                >
-                  <div className={styles.tileImg}>
-                    {brand.image ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={brand.image} alt="" className={styles.tilePhoto} />
-                        <div className={styles.tileOverlay} />
-                        {brand.logo && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={brand.logo} alt={brand.name} className={styles.tileLogo} />
-                        )}
-                      </>
-                    ) : (
-                      <div className={styles.tileInner}>
-                        <span className={styles.tileName}>{brand.name}</span>
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
+            <BrandGrid brands={BRANDS} />
           </div>
         </section>
 
@@ -97,8 +70,10 @@ export default function HomePage() {
                   aria-label={`Browse ${cat.name}`}
                 >
                   <div className={styles.categoryTileImg}>
-                    <span className={styles.tileName}>{cat.name}</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={cat.image} alt="" className={styles.categoryTilePhoto} />
                   </div>
+                  <span className={styles.categoryTileLabel}>{cat.name}</span>
                 </Link>
               ))}
             </div>
@@ -127,40 +102,23 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 6. Breathing moment */}
-        <section className={styles.breathingMoment}>
-          <p className={styles.breathingText}>preloved is the move.</p>
-        </section>
-
-        {/* 7. Closing full-bleed section */}
-        {/* Background: CSS url('/gradient-warm.jpg') in page.module.css — no img tag so no broken-image fallback */}
-        {/* To add video later: uncomment the <video> inside .closingSection and set src="/closing.mp4" */}
-        <section className={styles.closingSection}>
-          {/* <video autoPlay muted loop playsInline src="" className={styles.closingBgVideo} aria-hidden="true" /> */}
-          <div className={styles.closingOverlay} aria-hidden="true" />
-          <div className={styles.closingContent}>
-            <Link href="/browse" className={styles.closingCta}>
-              Browse all listings
-            </Link>
+        {/* 6. Quote */}
+        <section className={styles.quoteSection}>
+          <div className={styles.container}>
+            <p className={styles.quoteText}>
+              Everything you want is already out there, sitting in{' '}
+              <em>someone else&rsquo;s closet</em>. We&rsquo;re building the
+              place where it finds its next owner, so clothes get a longer
+              life and preloved feels <em>as good as new</em>.
+            </p>
           </div>
         </section>
 
         </div>
       </main>
 
-      {/* 8. Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerInner}>
-          <nav aria-label="Footer" className={styles.footerLinks}>
-            <a href="#" className={styles.footerLink}>How it works</a>
-            <span className={styles.footerDot} aria-hidden="true">·</span>
-            <a href="#" className={styles.footerLink}>Instagram</a>
-            <span className={styles.footerDot} aria-hidden="true">·</span>
-            <a href="#" className={styles.footerLink}>Contact</a>
-          </nav>
-          <p className={styles.footerCopyright}>© Reloved 2026</p>
-        </div>
-      </footer>
+      {/* 7. Closing section: video background, footer pinned to the bottom */}
+      <ClosingSection />
     </>
   );
 }

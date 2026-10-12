@@ -226,7 +226,7 @@ Everything else in this file is the plan, not the code. Do not assume a file exi
 
 **Working and tested end to end:**
 - `lib/ai/client.ts`, `GET /api/health/gemini` — Gemini on Vertex AI, location `global`, via Application Default Credentials
-- `lib/constants.ts` — brands (40 + `other` + `unknown`), 13 categories, 4 conditions, 5 photo tips, clothes and shoe sizes with `SIZE_OPTIONS` per category, 33 cities + `other`
+- `lib/constants.ts` — brands (41 + `other` + `unknown`), 13 categories, 4 conditions, 5 photo tips, clothes and shoe sizes with `SIZE_OPTIONS` per category, 33 cities + `other`
 - `app/globals.css` + `app/layout.tsx` — every token from `design-system.md`, the type scale as `.text-*` classes, Fraunces and Inter self-hosted via `next/font/google`. Verified in the browser: tokens resolve, the type scale matches the spec, and both of Fraunces' variable axes (`opsz` and weight) are live
 - `design-system.md`, `components.html` — Bismah's design system and the 25-component visual reference
 - `components/ui/` — the 8 shared components, ported from `components.html` with its class names unchanged: `PrimaryButton`, `SecondaryButton`, `TextLink`, `Input`, `Textarea`, `FilterChip` (+ `ChipRow`), `StatusChip`, `BottomSheet`. Checked in a browser against the showcase
