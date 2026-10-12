@@ -27,6 +27,14 @@ export type QueueItem = {
   city: string;
   is_replica: boolean;
   created_at_ms: number;
+  /** "3h ago", already worded. Computed here rather than in the component
+   *  because anything derived from the clock renders differently on the server
+   *  and again in the browser a moment later, which React treats as a
+   *  hydration error. Computing it once, server side, means both halves agree.
+   *
+   *  It goes stale on a page left open for hours. For a queue that is checked
+   *  and acted on that is the right trade, and every approve refreshes it. */
+  waiting_label: string;
   photos: Array<{ url: string; is_cover: boolean; position: number }>;
   seller: {
     id: string;
@@ -47,6 +55,20 @@ export type QueueItem = {
  *  Next can only pass plain data. Milliseconds survive the trip. */
 function toMillis(value: unknown): number {
   return value instanceof Timestamp ? value.toMillis() : 0;
+}
+
+/** How long she has been waiting, worded. The queue is sorted oldest first, so
+ *  this is the number we are judged on: the PRD's target is 24 hours and
+ *  silence is what makes sellers give up. */
+function waitingLabel(ms: number): string {
+  if (!ms) return "just now";
+  const minutes = Math.floor((Date.now() - ms) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 /** The queue. Pending only, oldest first, because the oldest submission is the
@@ -108,6 +130,7 @@ export async function pendingQueue(max = 50): Promise<QueueItem[]> {
         city: listing.city ?? "",
         is_replica: listing.is_replica === true,
         created_at_ms: toMillis(listing.created_at),
+        waiting_label: waitingLabel(toMillis(listing.created_at)),
         photos,
         seller: {
           id: sellerId,

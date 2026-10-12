@@ -8,6 +8,7 @@ import {
   REJECTION_REASONS,
   brandLabel,
   categoryLabel,
+  cityLabel,
   CONDITIONS,
   type RejectionReason,
 } from "@/lib/constants";
@@ -32,17 +33,11 @@ function conditionLabel(value: string): string {
   return CONDITIONS.find((item) => item.value === value)?.label ?? value;
 }
 
-/** "3h ago", "2d ago". The queue is sorted oldest first, so this is the number
- *  we are actually judged on: it is how long she has been waiting. */
-function ago(ms: number): string {
-  if (!ms) return "just now";
-  const minutes = Math.floor((Date.now() - ms) / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
+// How long she has been waiting is worded on the server, in lib/data/admin.ts,
+// and arrives as item.waiting_label. Nothing in this file may read the clock:
+// a value from Date.now() renders one way during the server render and
+// another when the browser hydrates a moment later, which React reports as a
+// hydration mismatch. It did exactly that here on 12 Oct.
 
 /** WhatsApp's click-to-chat link. Digits only, no plus. Opening this is how we
  *  check the number is real before anything goes live. */
@@ -167,7 +162,7 @@ export default function AdminQueue({ items }: Props) {
               <div>
                 {item.is_replica && <span className="queue-flag">Declared replica</span>}
 
-                <p className="queue-timestamp">Submitted {ago(item.created_at_ms)}</p>
+                <p className="queue-timestamp">Submitted {item.waiting_label}</p>
                 <p className="queue-title">{item.title}</p>
                 <p className="queue-details">
                   {[
@@ -181,7 +176,7 @@ export default function AdminQueue({ items }: Props) {
                 </p>
                 <p className="queue-price">Rs {item.asking_price.toLocaleString("en-PK")}</p>
                 <p className="queue-seller-name">
-                  {item.seller.display_name}, {item.city}
+                  {item.seller.display_name}, {cityLabel(item.city)}
                   {item.seller.sold_count > 0 && ` · ${item.seller.sold_count} sold`}
                 </p>
 

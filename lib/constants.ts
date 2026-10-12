@@ -74,6 +74,13 @@ export function categoryLabel(category: Category): string {
   return titleCaseValue(category);
 }
 
+/** Display label for a city. CITIES already carries proper labels, because
+ *  several are multi-word, so this reads them rather than title-casing: it is
+ *  the difference between "Rahim Yar Khan" and "Rahim_yar_khan". */
+export function cityLabel(city: string): string {
+  return CITIES.find((item) => item.value === city)?.label ?? titleCaseValue(city);
+}
+
 function titleCaseValue(value: string): string {
   return value
     .split("_")
