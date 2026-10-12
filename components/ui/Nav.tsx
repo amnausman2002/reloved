@@ -26,12 +26,8 @@ const UTILITY_ITEMS: { label: string; href: string }[] = [
 
 function MenuSearchIcon() {
   return (
-    <svg width="22" height="18" viewBox="0 0 22 18" fill="none" aria-hidden="true">
-      <path d="M1 2h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M1 9h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M1 16h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <circle cx="16" cy="9" r="4" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M19 12.5l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <path d="M32,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H40A8,8,0,0,1,32,64Zm8,72h72a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16Zm88,48H40a8,8,0,0,0,0,16h88a8,8,0,0,0,0-16Zm109.66,13.66a8,8,0,0,1-11.32,0L206,177.36A40,40,0,1,1,217.36,166l20.3,20.3A8,8,0,0,1,237.66,197.66ZM184,168a24,24,0,1,0-24-24A24,24,0,0,0,184,168Z" />
     </svg>
   );
 }

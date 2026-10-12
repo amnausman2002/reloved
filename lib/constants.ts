@@ -206,6 +206,22 @@ export type City = (typeof CITIES)[number]["value"];
 // brand_other. Adding it changes the domain model, so it needs a PRD update and
 // Bismah's agreement first (buyers see the city on browse and item detail).
 
+export const REPORT_REASON_VALUES = [
+  "counterfeit",
+  "not_as_described",
+  "inappropriate",
+  "spam",
+] as const;
+
+export type ReportReason = (typeof REPORT_REASON_VALUES)[number];
+
+export const REPORT_REASONS: { value: ReportReason; label: string; hint?: string }[] = [
+  { value: "counterfeit", label: "Fake or replica" },
+  { value: "not_as_described", label: "Not as described", hint: "Photos or details don't match the item." },
+  { value: "inappropriate", label: "Not appropriate" },
+  { value: "spam", label: "Spam" },
+];
+
 export const PHOTO_TIPS = [
   "Daylight",
   "Plain background",

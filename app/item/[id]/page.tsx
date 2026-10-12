@@ -6,8 +6,11 @@ import Image from "next/image";
 import Link from "next/link";
 import Nav from "@/components/ui/Nav";
 import BrowseCard from "@/components/buyer/BrowseCard";
-import type { Brand, Category, ConditionValue, City } from "@/lib/constants";
-import { BRAND_LABELS, CONDITIONS, CITIES } from "@/lib/constants";
+import BottomSheet from "@/components/ui/BottomSheet";
+import Textarea from "@/components/ui/Textarea";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import type { Brand, Category, ConditionValue, City, ReportReason } from "@/lib/constants";
+import { BRAND_LABELS, CONDITIONS, CITIES, REPORT_REASONS } from "@/lib/constants";
 import { MOCK_LISTINGS, getSellerListings, getSoldCount } from "@/lib/sample-data";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -121,19 +124,16 @@ function OverflowIcon() {
 
 function ShareIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M16 6l-4-4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="12" y1="2" x2="12" y2="15" strokeLinecap="round" />
+    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <path d="M237.66,106.35l-80-80A8,8,0,0,0,144,32V72.35c-25.94,2.22-54.59,14.92-78.16,34.91-28.38,24.08-46.05,55.11-49.76,87.37a12,12,0,0,0,20.68,9.58h0c11-11.71,50.14-48.74,107.24-52V192a8,8,0,0,0,13.66,5.65l80-80A8,8,0,0,0,237.66,106.35ZM160,172.69V144a8,8,0,0,0-8-8c-28.08,0-55.43,7.33-81.29,21.8a196.17,196.17,0,0,0-36.57,26.52c5.8-23.84,20.42-46.51,42.05-64.86C99.41,99.77,127.75,88,152,88a8,8,0,0,0,8-8V51.32L220.69,112Z" />
     </svg>
   );
 }
 
 function ReportIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path d="M4 5l8-3 8 3v7c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V5z" />
-      <line x1="9" y1="12" x2="15" y2="12" />
+    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <path d="M242.63,96.44l-184-64A8,8,0,0,0,48,40V216a8,8,0,0,0,16,0V173.69l178.63-62.13a8,8,0,0,0,0-15.12ZM64,156.75V51.25L215.65,104Z" />
     </svg>
   );
 }
@@ -190,6 +190,11 @@ export default function ItemDetailPage() {
   const [descExpanded, setDescExpanded] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<ReportReason | null>(null);
+  const [reportDetail, setReportDetail] = useState("");
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const overflowRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -218,19 +223,54 @@ export default function ItemDetailPage() {
     return () => { document.body.style.overflow = ""; };
   }, [lightboxOpen]);
 
+  const showToast = useCallback((message: string, duration = 4000) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(message);
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), duration);
+  }, []);
+
   const handleShare = useCallback(async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: listing?.title, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-      }
-    } catch {
-      // user cancelled
-    }
     setOverflowOpen(false);
-  }, [listing?.title]);
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: listing?.title, url });
+      } catch {
+        // user cancelled the share sheet
+      }
+      return;
+    }
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      copied = document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    if (copied) showToast("Link copied");
+  }, [listing?.title, showToast]);
+
+  function handleOpenReport() {
+    setOverflowOpen(false);
+    setReportOpen(true);
+  }
+
+  function handleSubmitReport() {
+    if (!reportReason) return;
+    // TODO: POST to /api/reports once Firebase is wired up.
+    // For now, close the sheet and confirm.
+    setReportOpen(false);
+    setReportReason(null);
+    setReportDetail("");
+    showToast("Thanks! We'll look into it.");
+  }
 
   if (!listing) {
     return (
@@ -370,7 +410,7 @@ export default function ItemDetailPage() {
                     <ShareIcon />
                     Share listing
                   </button>
-                  <button type="button" className="overflow-menu-item" role="menuitem" onClick={() => setOverflowOpen(false)}>
+                  <button type="button" className="overflow-menu-item" role="menuitem" onClick={handleOpenReport}>
                     <ReportIcon />
                     Report listing
                   </button>
@@ -560,6 +600,62 @@ export default function ItemDetailPage() {
         </div>
 
       </main>
+
+      {/* Toast */}
+      <div className={`toast${toastMessage ? " visible" : ""}`} role="status" aria-live="polite">
+        {toastMessage}
+      </div>
+
+      {/* Report sheet */}
+      <BottomSheet
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        heading="Report this listing"
+        body="Something not right? Tell us what's up and we'll take a look."
+      >
+        <div className="report-form">
+          <div className="reason-picker" role="radiogroup" aria-label="Report reason">
+            {REPORT_REASONS.map((reason) => {
+              const selected = reportReason === reason.value;
+              return (
+                <label
+                  key={reason.value}
+                  className={selected ? "reason-option selected" : "reason-option"}
+                >
+                  <input
+                    className="sr-only"
+                    type="radio"
+                    name="report-reason"
+                    value={reason.value}
+                    checked={selected}
+                    onChange={() => setReportReason(reason.value)}
+                  />
+                  <span className="reason-radio">
+                    <span className="reason-radio-dot" />
+                  </span>
+                  {reason.hint ? (
+                    <span className="reason-text">
+                      <span className="reason-label">{reason.label}</span>
+                      <span className="reason-hint">{reason.hint}</span>
+                    </span>
+                  ) : (
+                    <span className="reason-label">{reason.label}</span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+          <Textarea
+            label="Details (optional)"
+            placeholder="Anything else we should know?"
+            value={reportDetail}
+            onChange={(e) => setReportDetail(e.target.value)}
+          />
+          <PrimaryButton onClick={handleSubmitReport} disabled={!reportReason}>
+            Send report
+          </PrimaryButton>
+        </div>
+      </BottomSheet>
 
       {/* ── Fullscreen lightbox ── */}
       {lightboxOpen && (
