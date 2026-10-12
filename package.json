@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "try-prefill": "tsx --env-file=.env.local scripts/try-prefill.ts"
+    "try-prefill": "tsx --env-file=.env.local scripts/try-prefill.ts",
+    "make-admin": "tsx --env-file=.env.local scripts/make-admin.ts"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

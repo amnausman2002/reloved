@@ -2177,3 +2177,252 @@ img { max-width: 100%; display: block; }
   touch-action: manipulation;
 }
 .listing-back:hover { opacity: 0.8; }
+
+/* ═══════════════════════════════════════════════════════════
+ * Admin. Lifted from components.html sections 14 (queue row),
+ * 15 (rejection modal) and 23 (modal), class names unchanged.
+ * Additions the PRD needs but the static design has no drawing
+ * for are marked NEW and flagged for Bismah.
+ * ═══════════════════════════════════════════════════════════ */
+
+/* DESKTOP-FIRST, deliberately and unlike every other screen. The queue row is
+ * a 128px/1fr/140px grid in components.html and the job it does, reading six
+ * photos and a description before deciding, is a laptop job. It still has to
+ * not break on a phone, hence the stacking rule at the end. */
+.admin-page {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-8);
+}
+.admin-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.admin-count {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-ui);
+  color: var(--text-secondary);
+}
+.admin-error { margin-bottom: var(--space-4); }
+.admin-signin { max-width: 360px; margin: var(--space-8) auto 0; }
+.admin-signin .sell-sub { margin-bottom: var(--space-6); }
+
+/* NEW: an empty queue is the normal state, not an error, so it gets the
+ * empty-state treatment from design-system.md rather than a blank panel. */
+.admin-empty {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+}
+.admin-empty-body {
+  color: var(--text-secondary);
+  max-width: 280px;
+  margin: var(--space-2) auto 0;
+}
+
+/* ── Queue row (components.html section 14) ──────────────── */
+.queue-panel {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--white);
+}
+.queue-row {
+  display: grid;
+  grid-template-columns: 128px 1fr 140px;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+}
+.queue-row:last-child { border-bottom: none; }
+.queue-cover {
+  width: 128px;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+}
+.queue-flag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px var(--space-2);
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-caption);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+.queue-timestamp { font-size: var(--size-caption); color: var(--text-tertiary); margin-bottom: var(--space-1); }
+.queue-title { font-family: var(--font-ui); font-weight: 500; font-size: var(--size-h3); line-height: var(--lh-h3); margin-bottom: 4px; }
+.queue-details { font-size: var(--size-body-sm); color: var(--text-secondary); margin-bottom: 4px; }
+.queue-price { font-family: var(--font-ui); font-weight: 500; font-size: var(--size-ui); margin-bottom: var(--space-2); }
+.queue-seller-name { font-size: var(--size-body-sm); }
+.queue-col-actions { display: flex; flex-direction: column; gap: var(--space-3); }
+.queue-whatsapp-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-ui);
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* NEW: her own words, which is where a flaw she mentioned would be. Needed to
+ * judge a listing and absent from the static row. */
+.queue-description {
+  font-size: var(--size-body-sm);
+  line-height: var(--lh-body-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-3);
+}
+/* NEW: the rest of her photos. The static row shows the cover only, which is
+ * not enough to approve on. */
+.queue-thumbs { display: flex; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
+.queue-thumb {
+  width: 56px;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+}
+/* NEW: "her other active listings beside it", which the PRD calls the
+ * duplicate check at this scale. */
+.queue-other { margin-top: var(--space-3); }
+.queue-other-label {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-micro);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.queue-other-list {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
+  font-size: var(--size-meta);
+  line-height: var(--lh-body-sm);
+  color: var(--text-secondary);
+}
+/* NEW: the WhatsApp check, which replaced the SMS code. */
+.queue-phone-ok {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-caption);
+  color: var(--status-live);
+}
+.queue-no-phone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  font-size: var(--size-caption);
+  color: var(--status-rejected);
+}
+
+/* ── Small buttons (components.html section 2) ───────────── */
+.btn-sm {
+  min-height: 36px;
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-meta);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-sm:hover { border-color: var(--text-primary); }
+.btn-sm:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-sm.btn-approve { background: var(--text-primary); color: var(--white); border-color: var(--text-primary); }
+.btn-sm.btn-reject { color: var(--status-rejected); border-color: var(--status-rejected); }
+
+/* ── Modal (components.html sections 15 and 23) ──────────── */
+/* CHANGED: position fixed, not absolute. components.html draws it inside a
+ * mock frame that only exists in that file. Same change BottomSheet needed. */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(45, 45, 45, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+.modal-overlay.is-fixed { position: fixed; z-index: var(--z-modal); }
+.modal {
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  padding: var(--space-5);
+  width: 100%;
+  max-width: 360px;
+  position: relative;
+  /* Added: the reason chips plus a preview plus a textarea can outgrow a
+     laptop screen, which the static mock never had to handle. */
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.modal-heading {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-h3);
+  margin-bottom: var(--space-2);
+  padding-right: var(--space-7);
+}
+.modal-body { font-size: var(--size-body); color: var(--text-secondary); line-height: var(--lh-body); margin-bottom: var(--space-5); }
+.modal-actions { display: flex; gap: var(--space-3); justify-content: flex-end; margin-top: var(--space-5); }
+.modal-actions .btn-primary, .modal-actions .btn-secondary { width: auto; min-width: 100px; }
+.btn-primary.btn-destructive { background: var(--status-rejected); border-color: var(--status-rejected); }
+.btn-primary.btn-destructive:hover { background: var(--white); color: var(--status-rejected); border-color: var(--status-rejected); }
+.btn-primary.btn-destructive:disabled:hover { background: var(--status-rejected); color: var(--white); }
+.modal-reasons { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
+/* NEW: what the seller will actually be told, shown before we send it. */
+.modal-preview {
+  font-size: var(--size-meta);
+  line-height: var(--lh-body-sm);
+  color: var(--text-secondary);
+  padding: var(--space-3);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-4);
+}
+
+/* Phones. The three-column row cannot survive 375px, so it stacks and the
+ * actions go full width. Not a design in components.html: the queue is drawn
+ * desktop-only there. */
+@media (max-width: 719px) {
+  .queue-row { grid-template-columns: 1fr; gap: var(--space-4); }
+  .queue-cover { width: 96px; }
+  .queue-col-actions { flex-direction: row; flex-wrap: wrap; }
+  .queue-col-actions .btn-sm { flex: 1 1 auto; }
+}
