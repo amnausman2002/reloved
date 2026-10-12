@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { isAdmin, userFromIdToken } from "@/lib/firebase/admin";
 import { pendingQueue } from "@/lib/data/admin";
@@ -14,8 +13,17 @@ export const metadata = { title: "Queue | Reloved admin" };
 // seeing them. The page decides whether you are an admin before it renders a
 // single row.
 //
-// A non-admin gets a 404 rather than "forbidden". There is no reason to tell
-// anyone that an admin area exists here.
+// A signed-in non-admin gets the sign-in screen back, not a 404.
+//
+// CHANGED 12 Oct: this used to be notFound(), on the reasoning that there was
+// no point advertising an admin area. That reasoning was already broken, since
+// anyone signed out can see this sign-in page, and it had a real cost: a
+// seller who wandered to /admin, or any of us carrying a seller's session,
+// hit a dead 404 with no way to sign in as anyone else until the cookie
+// expired an hour later.
+//
+// Nothing is weaker for it. /api/admin/moderate still answers 404 to a
+// non-admin, and the queue below is only ever built after isAdmin passes.
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +35,9 @@ export default async function AdminPage() {
   const user = await userFromIdToken(token);
 
   if (!user) return <AdminSignIn />;
-  if (!(await isAdmin(user.uid))) notFound();
+  if (!(await isAdmin(user.uid))) {
+    return <AdminSignIn wrongAccount={user.email ?? "That account"} />;
+  }
 
   const queue = await pendingQueue();
 

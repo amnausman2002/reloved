@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase/client";
 import PrimaryButton from "@/components/ui/PrimaryButton";
@@ -19,11 +19,26 @@ import Input from "@/components/ui/Input";
 // it is the weakest part of this and worth replacing with a proper session
 // cookie (adminAuth().createSessionCookie) before launch.
 
-export default function AdminSignIn() {
+type Props = {
+  /** Set when someone is signed in but cannot review listings, so she is told
+   *  which account she is carrying rather than just being refused again. */
+  wrongAccount?: string;
+};
+
+export default function AdminSignIn({ wrongAccount }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Drop the stale token straight away. Without this, signing in as an admin
+  // from here would race the old cookie and she could bounce back to this
+  // screen for no visible reason.
+  useEffect(() => {
+    if (wrongAccount) {
+      document.cookie = "reloved_admin_token=; path=/; max-age=0; samesite=strict";
+    }
+  }, [wrongAccount]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -46,7 +61,11 @@ export default function AdminSignIn() {
     <main className="admin-page">
       <div className="admin-signin">
         <h1 className="text-h1">Queue.</h1>
-        <p className="sell-sub">Sign in to review listings.</p>
+        <p className="sell-sub">
+          {wrongAccount
+            ? `${wrongAccount} cannot review listings. Sign in with your admin account.`
+            : "Sign in to review listings."}
+        </p>
 
         <form className="account-form" onSubmit={handleSubmit} noValidate>
           <Input
