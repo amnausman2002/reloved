@@ -89,10 +89,19 @@ service cloud.firestore {
     }
 
     match /photos/{photoId} {
-      // Readable alongside the listing they belong to. Checking the parent
-      // listing's status here would cost a read per photo, so this is open and
-      // a photo URL is treated as unguessable rather than secret.
-      allow read: if true;
+      // Served with the listing, from the server, never read from a browser.
+      //
+      // This was `if true` on 12 Oct, reasoning that a photo URL is not a
+      // secret. That holds for fetching a photo you already know about, but
+      // not for listing the collection, which anyone could do: every photo
+      // ever written, including listings still pending review, ones we
+      // rejected, and ones auto-hidden after two reports. Plus quality_flags,
+      // which is the AI's private opinion of a seller's photography.
+      //
+      // The images themselves stay publicly fetchable by URL, per
+      // storage.rules. That is deliberate and normal: browse has to show them
+      // to people with no account. What is closed here is enumeration.
+      allow read: if false;
       allow write: if false;
     }
 
