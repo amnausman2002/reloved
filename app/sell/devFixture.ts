@@ -31,6 +31,50 @@ export const DEV_FIELDS: FormFields = {
   material: "lawn",
 };
 
+/** Two drawn-on-the-spot photos, so the dev route can reach Submit.
+ *
+ *  A real listing needs MIN_LISTING_PHOTOS, and the server enforces it, so a
+ *  dev skip with no photos could fill the form but never finish. These are
+ *  real JPEGs made in a canvas: they upload to Cloud Storage like any other
+ *  photo, which means the dev route exercises the actual upload rather than
+ *  pretending to.
+ *
+ *  Deliberately ugly flat colours. Anything that looked like a real garment
+ *  would end up in a screenshot one day and confuse somebody. */
+export async function devPhotoFiles(): Promise<File[]> {
+  const swatches: Array<[string, string]> = [
+    ["#4A5D4E", "DEV PHOTO 1"],
+    ["#7A5C4F", "DEV PHOTO 2"],
+  ];
+
+  const files = await Promise.all(
+    swatches.map(async ([colour, label], index) => {
+      // 3:4, the same shape as a browse card, so the thumbnails are not a lie
+      // about how a real photo will crop.
+      const canvas = document.createElement("canvas");
+      canvas.width = 600;
+      canvas.height = 800;
+      const context = canvas.getContext("2d");
+      if (context) {
+        context.fillStyle = colour;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = "#FFFFFF";
+        context.font = "bold 44px sans-serif";
+        context.textAlign = "center";
+        context.fillText(label, canvas.width / 2, canvas.height / 2);
+      }
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", 0.8),
+      );
+      if (!blob) throw new Error("Could not draw a dev photo");
+      return new File([blob], `dev-photo-${index + 1}.jpg`, { type: "image/jpeg" });
+    }),
+  );
+
+  return files;
+}
+
 /** Marked as if Call 1 had filled them, so the sparkles and the line under the
  *  heading are on screen too. Without this the dev route would draw a form that
  *  no seller ever sees. */

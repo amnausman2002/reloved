@@ -17,8 +17,9 @@ import type { QualityFlag } from "./aiRequests";
 import { EMPTY_PREFILL, prefillToForm, type Prefilled } from "./prefillToForm";
 import { flagFor, flaggedCount, qualityHeading, slotNote } from "./qualityWording";
 import { EMPTY_FIELDS, mergePrefill, type FormFields, type SellPhoto } from "./types";
-import { EMPTY_ACCOUNT, formatPhone, type AccountFields } from "./account";
-import { DEV_FIELDS, DEV_PREFILLED } from "./devFixture";
+import { EMPTY_ACCOUNT, type AccountFields } from "./account";
+import { submitListing } from "./submitListing";
+import { DEV_FIELDS, DEV_PREFILLED, devPhotoFiles } from "./devFixture";
 
 // Path 1, the whole seller flow on one page.
 //
@@ -85,9 +86,11 @@ export default function SellFlow() {
   // The account answers live up here for the same reason the form's do: she can
   // step back to her listing and return without retyping any of it.
   const [account, setAccount] = useState<AccountFields>(EMPTY_ACCOUNT);
-  // Set once the account step finishes. Owned here rather than in SellForm
-  // because that form unmounts when she moves on to the account step.
+  // Set once the listing is actually in Firestore. Owned here rather than in
+  // SellForm because that form unmounts when she moves on to the account step.
   const [submitted, setSubmitted] = useState<AccountFields | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Every object URL we have handed out, so none leak when the tab closes.
   const urlsRef = useRef<string[]>([]);
@@ -231,16 +234,43 @@ export default function SellFlow() {
     setStep("details");
   }
 
+  /** Creates her account, uploads the photos and writes the listing as
+   *  "pending". The last thing the seller flow does.
+   *
+   *  Everything happens here rather than inside AccountFlow because the photos
+   *  and the form live at this level. It is also the only place that knows
+   *  whether all three steps succeeded, which is what the success sheet is
+   *  claiming when it says the listing is under review. */
+  async function finishSubmit(finished: AccountFields) {
+    setAccount(finished);
+    setSubmitting(true);
+    setSubmitError(null);
+
+    const result = await submitListing(finished, fields, photos, coverId);
+
+    setSubmitting(false);
+    if (!result.ok) {
+      setSubmitError(result.error);
+      return;
+    }
+    setSubmitted(finished);
+  }
+
   /** DEVELOPMENT ONLY. Straight to the form with a listing already filled in,
    *  so the account step can be walked through without paying for a photo
    *  read. Photos are optional here: with none added the form simply shows an
    *  empty thumbnail strip. */
-  function devSkipToForm() {
+  async function devSkipToForm() {
     abortRef.current?.abort();
     abortRef.current = null;
     setPrefillError(null);
     setPrefilled(DEV_PREFILLED);
     setFields(DEV_FIELDS);
+    // A listing needs MIN_LISTING_PHOTOS and the server enforces it, so
+    // without these the dev route could fill the form but never submit. Goes
+    // through handleAdd like any other photo, so the real prepare-and-upload
+    // path is what gets tested.
+    if (photos.length === 0) await handleAdd(await devPhotoFiles());
     setStep("details");
   }
 
@@ -318,7 +348,7 @@ export default function SellFlow() {
                 filled-in form, which is the only cheap way to reach the
                 account step. Not in the production bundle. */}
             {DEV_SKIP && (
-              <button type="button" className="dev-skip" onClick={devSkipToForm}>
+              <button type="button" className="dev-skip" onClick={() => void devSkipToForm()}>
                 Dev: skip the AI, fill the form
               </button>
             )}
@@ -364,23 +394,19 @@ export default function SellFlow() {
           fields={account}
           onChange={(patch) => setAccount((current) => ({ ...current, ...patch }))}
           onBack={() => setStep("details")}
-          onDone={(finished) => {
-            // TODO: POST /api/listings/submit goes here, writing status
-            // "pending" with the Admin SDK, now that there is a user to own it.
-            setAccount(finished);
-            setSubmitted(finished);
-          }}
+          busy={submitting}
+          submitError={submitError}
+          onDone={(finished) => void finishSubmit(finished)}
         />
 
         <BottomSheet
           open={submitted !== null}
           onClose={() => setSubmitted(null)}
           heading="All good so far!"
-          body={
-            submitted?.phone
-              ? "We'll review your listing and get back to you within a day."
-              : "We'll review your listing and get back to you within a day. Add your number from your listings page and buyers can WhatsApp you."
-          }
+          // The number is always collected now, so there is no second version
+          // of this. We check it is on WhatsApp as part of the review, which
+          // is why the copy promises a day rather than minutes.
+          body="We'll review your listing and check your number is on WhatsApp. You'll hear from us within a day."
           media={
             <div className="bottom-sheet-item">
               {cover ? (

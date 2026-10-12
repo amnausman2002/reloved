@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import TextLink from "@/components/ui/TextLink";
 import Input from "@/components/ui/Input";
 import {
   DIAL_CODE,
   MIN_PASSWORD,
-  OTP_LENGTH,
-  formatPhone,
   normalisePhone,
   validateIdentity,
   validatePhone,
@@ -22,48 +20,50 @@ import {
 // Flagged for Bismah, along with the password reveal toggle, which is the one
 // control here with no precedent anywhere in the design system.
 //
-// NOT WIRED UP. Nothing below creates a user, sends an SMS or checks a code.
-// Where Firebase goes is marked with TODO. Until then any 6 digits are
-// accepted, so the flow can be walked end to end on a laptop.
+// CHANGED 12 Oct: the SMS code screen is gone. Amna and Bismah verify numbers
+// by hand from the admin queue, by tapping the WhatsApp link before approving,
+// so the number is saved with phone_verified_at null and stays that way until
+// one of them confirms it.
+//
+// The code screen it replaced accepted any six digits, which was worse than
+// having no screen: it told a seller her number was confirmed when nothing had
+// been checked. It is still in git if SMS ever comes back, along with
+// OTP_LENGTH and the .otp-* CSS.
 
-type Step = "identity" | "phone" | "code";
+type Step = "identity" | "phone";
 
-const STEPS: Step[] = ["identity", "phone", "code"];
-
-/** How long before Resend becomes tappable. Long enough that she gives the SMS
- *  a chance to arrive, short enough that a failed send is not a dead end. */
-const RESEND_SECONDS = 45;
+const STEPS: Step[] = ["identity", "phone"];
 
 type Props = {
   /** For the card at the top of the first screen, so she can see what she is
    *  saving. Her listing is the reason she is filling this in. */
   listing: { title: string; price: string; coverUrl?: string; summary: string };
-  /** Called once the number is verified. SellFlow shows the success sheet. */
+  /** Hands the finished answers back. SellFlow does the actual submitting,
+   *  because it owns the photos and the form. */
   onDone: (account: AccountFields) => void;
   /** Back to the form. Her answers survive, because they live up in SellFlow. */
   onBack: () => void;
   fields: AccountFields;
   onChange: (patch: Partial<AccountFields>) => void;
+  /** True while her account is being made and the photos are uploading. */
+  busy?: boolean;
+  /** Whatever went wrong in SellFlow's submit, shown on whichever screen she
+   *  is standing on. */
+  submitError?: string | null;
 };
 
-export default function AccountFlow({ listing, onDone, onBack, fields, onChange }: Props) {
+export default function AccountFlow({
+  listing,
+  onDone,
+  onBack,
+  fields,
+  onChange,
+  busy = false,
+  submitError = null,
+}: Props) {
   const [step, setStep] = useState<Step>("identity");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
-  const [digits, setDigits] = useState<string[]>(() => Array(OTP_LENGTH).fill(""));
-  const [codeError, setCodeError] = useState<string | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
-
-  const boxesRef = useRef<Array<HTMLInputElement | null>>([]);
-
-  // The resend countdown. Restarts whenever we land on the code step, which is
-  // also what happens after she taps Resend.
-  useEffect(() => {
-    if (step !== "code") return;
-    if (secondsLeft <= 0) return;
-    const timer = window.setTimeout(() => setSecondsLeft((current) => current - 1), 1000);
-    return () => window.clearTimeout(timer);
-  }, [step, secondsLeft]);
 
   function goTo(next: Step) {
     setErrors({});
@@ -75,76 +75,23 @@ export default function AccountFlow({ listing, onDone, onBack, fields, onChange 
     const found = validateIdentity(fields);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    // TODO: createUserWithEmailAndPassword here, so a taken address is caught
-    // now rather than after she has also waited for an SMS.
+    // The account itself is created at the end, in SellFlow, together with the
+    // photo upload and the listing write. Creating it here would leave an
+    // orphan account behind every time someone abandoned the next screen.
     goTo("phone");
   }
 
+  /** Last screen. Hands everything back to SellFlow, which signs her up,
+   *  uploads the photos and writes the listing. */
   function submitPhone(event: React.FormEvent) {
     event.preventDefault();
     const found = validatePhone(fields);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    // TODO: signInWithPhoneNumber, with invisible reCAPTCHA. Invisible: there
-    // is no "I'm not a robot" checkbox to draw.
-    setDigits(Array(OTP_LENGTH).fill(""));
-    setCodeError(null);
-    setSecondsLeft(RESEND_SECONDS);
-    goTo("code");
-  }
-
-  /** One box per digit. Typing moves forward, Backspace on an empty box moves
-   *  back, and a pasted code fills the row. */
-  function setDigit(index: number, value: string) {
-    const typed = value.replace(/\D/g, "");
-    if (!typed) {
-      setDigits((current) => current.map((digit, i) => (i === index ? "" : digit)));
-      return;
-    }
-    setDigits((current) => {
-      const next = [...current];
-      // A paste lands entirely in the box that was focused, so spread it.
-      for (let i = 0; i < typed.length && index + i < OTP_LENGTH; i += 1) {
-        next[index + i] = typed[i];
-      }
-      return next;
-    });
-    setCodeError(null);
-    const landed = Math.min(index + typed.length, OTP_LENGTH - 1);
-    boxesRef.current[landed]?.focus();
-  }
-
-  function handleDigitKeyDown(index: number, event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Backspace" && !digits[index] && index > 0) {
-      boxesRef.current[index - 1]?.focus();
-    }
-    if (event.key === "ArrowLeft" && index > 0) boxesRef.current[index - 1]?.focus();
-    if (event.key === "ArrowRight" && index < OTP_LENGTH - 1) boxesRef.current[index + 1]?.focus();
-  }
-
-  function submitCode(event: React.FormEvent) {
-    event.preventDefault();
-    const code = digits.join("");
-    if (code.length < OTP_LENGTH) {
-      setCodeError("Pop in all six digits.");
-      return;
-    }
-    // TODO: confirmationResult.confirm(code), then write phone_verified_at.
-    // Until Firebase exists any six digits are treated as correct, so the rest
-    // of the flow can be walked through on a laptop.
     onDone(fields);
   }
 
-  /** The PRD's own fallback: a broken code service must never block a listing.
-   *  OPEN QUESTION for Amna and Bismah. Her listing goes to review either way,
-   *  but with no verified number there is no WhatsApp button on it, so it
-   *  cannot go live as it stands. */
-  function carryOnWithout() {
-    onDone({ ...fields, phone: "" });
-  }
-
   const stepIndex = STEPS.indexOf(step);
-  const code = digits.join("");
 
   return (
     <div className="sell-step">
@@ -303,84 +250,20 @@ export default function AccountFlow({ listing, onDone, onBack, fields, onChange 
                 </p>
               ) : (
                 <p className="input-hint" id="account-phone-hint">
-                  We text a {OTP_LENGTH} digit code to check it is yours.
+                  We check this number is on WhatsApp before your listing goes live.
                 </p>
               )}
             </div>
 
-            <div className="sell-footer">
-              <PrimaryButton type="submit">Send me the code</PrimaryButton>
-              <TextLink onClick={() => goTo("identity")}>Back</TextLink>
-            </div>
-          </form>
-        </>
-      )}
-
-      {step === "code" && (
-        <>
-          <h1 className="text-h1 sell-heading">Pop in the code.</h1>
-          <p className="sell-sub">
-            Sent to {formatPhone(fields.phone)}. It should land in a few seconds.
-          </p>
-
-          <form className="account-form" onSubmit={submitCode} noValidate>
-            <div>
-              {/* One box per digit rather than a single field, so a six digit
-                  code is readable at a glance on a phone. */}
-              <div className="otp-row" role="group" aria-label="Verification code">
-                {digits.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(node) => {
-                      boxesRef.current[index] = node;
-                    }}
-                    className={digit ? "otp-box is-filled" : "otp-box"}
-                    inputMode="numeric"
-                    autoComplete={index === 0 ? "one-time-code" : "off"}
-                    // Not maxLength={1}: a pasted or autofilled code arrives in
-                    // one box and setDigit spreads it across the row.
-                    value={digit}
-                    aria-label={`Digit ${index + 1}`}
-                    onChange={(event) => setDigit(index, event.target.value)}
-                    onKeyDown={(event) => handleDigitKeyDown(index, event)}
-                  />
-                ))}
-              </div>
-
-              <div className="otp-meta">
-                {secondsLeft > 0 ? (
-                  <span>
-                    Resend in 0:{String(secondsLeft).padStart(2, "0")}
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="otp-meta-action"
-                    onClick={() => {
-                      // TODO: send again. Resetting the clock is all it does
-                      // until Firebase is wired up.
-                      setSecondsLeft(RESEND_SECONDS);
-                      setDigits(Array(OTP_LENGTH).fill(""));
-                      setCodeError(null);
-                    }}
-                  >
-                    Send it again
-                  </button>
-                )}
-                <button type="button" className="otp-meta-action" onClick={() => goTo("phone")}>
-                  Change number
-                </button>
-              </div>
-
-              {codeError && <p className="input-error-msg">{codeError}</p>}
-            </div>
+            {submitError && <p className="input-error-msg">{submitError}</p>}
 
             <div className="sell-footer">
-              <PrimaryButton type="submit" disabled={code.length < OTP_LENGTH}>
-                Submit my listing
+              <PrimaryButton type="submit" disabled={busy}>
+                {busy ? "Saving your listing..." : "Submit my listing"}
               </PrimaryButton>
-              {/* OPEN QUESTION, see carryOnWithout above. */}
-              <TextLink onClick={carryOnWithout}>Code not arriving? Carry on without it</TextLink>
+              <TextLink onClick={() => goTo("identity")} disabled={busy}>
+                Back
+              </TextLink>
             </div>
           </form>
         </>
