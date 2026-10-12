@@ -1654,3 +1654,91 @@ img { max-width: 100%; display: block; }
   max-width: 200px;
   scroll-snap-align: start;
 }
+
+/* ── Toast / feedback banner ───────────────────────────── */
+.toast {
+  position: fixed;
+  top: calc(var(--nav-height) + var(--space-3));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-ui);
+  line-height: var(--lh-ui);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  max-width: 480px;
+  width: max-content;
+  z-index: var(--z-toast);
+  pointer-events: none;
+  opacity: 0;
+}
+.toast.visible {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .toast {
+    transition: opacity var(--dur-base) var(--ease);
+  }
+}
+
+/* ── Reason picker (radio group, same pattern as condition picker on seller) ── */
+.reason-picker { display: flex; flex-direction: column; gap: var(--space-1); }
+.reason-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  min-height: 44px;
+}
+.reason-option.selected { border-color: var(--text-primary); }
+.reason-option:has(:focus-visible) {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+.reason-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.reason-option.selected .reason-radio { border-color: var(--text-primary); }
+.reason-radio-dot {
+  display: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-primary);
+}
+.reason-option.selected .reason-radio-dot { display: block; }
+.reason-text { display: flex; flex-direction: column; gap: 2px; }
+.reason-label {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-ui);
+}
+.reason-hint {
+  font-size: var(--size-meta);
+  color: var(--text-secondary);
+}
+
+/* ── Report sheet ──────────────────────────────────────── */
+.report-form { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* ── Utility ───────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
