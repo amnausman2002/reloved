@@ -12,8 +12,10 @@
   "dependencies": {
     "@google/genai": "^2.24.0",
     "browser-image-compression": "^2.0.2",
+    "firebase": "^13.0.0",
+    "firebase-admin": "^14.5.0",
     "heic2any": "^0.0.4",
-    "next": "^16.3.7",
+    "next": "^16.3.8",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "zod": "^4.6.5"
@@ -24,5 +26,9 @@
     "@types/react-dom": "^19.3.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.6",
+    "source-map-js": "^1.2.2"
   }
 }

@@ -1,0 +1,119 @@
+rules_version = '2';
+
+// Firestore security rules for Reloved.
+//
+// These are the real permission boundary. The app's buttons are a convenience;
+// anyone can open a console and talk to Firestore directly with the public web
+// config, so whatever is allowed here is allowed full stop.
+//
+// The shape follows the PRD:
+//   - Browse shows live listings only, and needs no account at all.
+//   - Listings and their status are written only by the server (Admin SDK),
+//     which bypasses these rules entirely. So the rules below say "nobody",
+//     and that is correct, not an oversight.
+//   - An admin is a user with is_admin true. There is no role field.
+//
+// Deploy with:  firebase deploy --only firestore:rules
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    // Reads the caller's own user document. Costs one read per call, which at
+    // two admins is not worth optimising away.
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_admin == true;
+    }
+
+    // The fields a user is never allowed to set on herself. is_admin is the
+    // dangerous one: without this, anyone could promote herself and start
+    // approving listings. phone_verified_at matters too, because Amna and
+    // Bismah now set it by hand after checking the number on WhatsApp, so a
+    // seller writing it herself would skip the only check there is.
+    function noPrivilegedFields() {
+      return !request.resource.data.diff(resource.data)
+        .affectedKeys()
+        .hasAny(['is_admin', 'phone_verified_at', 'email_verified_at']);
+    }
+
+    match /users/{userId} {
+      // A seller's display name and city show on her public profile, so her
+      // document is readable. It also holds her email and phone, which is why
+      // the client must never query the whole collection: see the note in
+      // lib/data. Tightening this to a public subset is a known follow-up.
+      allow read: if true;
+
+      // She creates her own record at sign-up, and can never grant herself
+      // admin or mark her own phone verified.
+      allow create: if isSelf(userId)
+        && request.resource.data.is_admin == false
+        && request.resource.data.phone_verified_at == null;
+
+      allow update: if (isSelf(userId) && noPrivilegedFields()) || isAdmin();
+
+      // Nobody deletes a user from the browser. Deleting one would orphan her
+      // listings and every ContactEvent that counts toward the week 3 metric.
+      allow delete: if false;
+    }
+
+    match /listings/{listingId} {
+      // Browse needs no account, so live listings are public. A seller sees
+      // her own at any status, and so does an admin.
+      allow read: if resource.data.status == 'live'
+        || isSelf(resource.data.seller_id)
+        || isAdmin();
+
+      // Written only by the server. The Admin SDK ignores these rules, so a
+      // listing can still be created at submit; what this blocks is a browser
+      // writing status 'live' and skipping the queue entirely.
+      allow create, update, delete: if false;
+    }
+
+    match /photos/{photoId} {
+      // Readable alongside the listing they belong to. Checking the parent
+      // listing's status here would cost a read per photo, so this is open and
+      // a photo URL is treated as unguessable rather than secret.
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /contact_events/{eventId} {
+      // The week 3 success metric. A buyer must never see how many people
+      // contacted a seller, and a seller sees only her own listings' counts,
+      // so this is admin-only on read and server-only on write. The daily
+      // limit of 10 per buyer is enforced on the server, not here: rules
+      // cannot count documents.
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /moderation_actions/{actionId} {
+      // Append-only, and only ever written by the server. Readable by us so
+      // the history of why something was rejected is visible in the queue.
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      // A report is created through the server too, so it can count existing
+      // reports and auto-hide at two. A browser cannot do that safely.
+      allow write: if false;
+    }
+
+    // Anything not named above is denied. New collections have to be added
+    // here deliberately.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

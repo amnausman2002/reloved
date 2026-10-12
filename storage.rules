@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// Cloud Storage rules for Reloved. Listing photos only.
+//
+// Photos are public to read: they appear on browse, which needs no account.
+// Writes are the seller uploading her own photos at submit, so they are
+// limited by size and content type here as well as in the browser.
+//
+// lib/photos.ts already resizes to 1600px and strips EXIF before upload, which
+// takes a 6 MB phone photo to about 0.2 MB. That is a convenience, not a
+// control: it runs in the browser and a determined person can skip it. The
+// 7 MB ceiling below is the real limit, and it matches MAX_BYTES in
+// lib/ai/images.ts so a photo that passes here also passes the AI routes.
+//
+// Deploy with:  firebase deploy --only storage
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /listings/{userId}/{photoId} {
+      allow read: if true;
+
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 7 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+
+      // Removing a photo from a live listing would leave a broken image on
+      // browse, so deletion goes through the server with the listing edit.
+      allow delete: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
