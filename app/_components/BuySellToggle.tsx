@@ -58,25 +58,28 @@ const SELL_BENEFITS = [
 export default function BuySellToggle() {
   const [tab, setTab] = useState<'buy' | 'sell'>('buy');
   const [activeIndex, setActiveIndex] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const id = useId();
 
+  // Uses the page's own scroll, not a contained scroller, so a normal swipe
+  // or wheel gesture carries straight through this section and on into the
+  // rest of the page without getting stuck.
   useEffect(() => {
-    const root = scrollRef.current;
     const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
-    if (!root || !cards.length) return;
+    if (!cards.length) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          const idx = cards.indexOf(entry.target as HTMLDivElement);
+          if (idx === -1) return;
           if (entry.isIntersecting) {
-            const idx = cards.indexOf(entry.target as HTMLDivElement);
-            if (idx !== -1) setActiveIndex(idx);
+            setActiveIndex(idx);
+            entry.target.classList.add(styles.benefitCardRevealed);
           }
         });
       },
-      { root, threshold: 0.6 }
+      { threshold: 0.5 }
     );
 
     cards.forEach((card) => observer.observe(card));
@@ -123,8 +126,8 @@ export default function BuySellToggle() {
         </div>
       </div>
 
-      {/* Benefit cards: snap-scrolls one full card at a time */}
-      <div id={`${id}-panel`} key={tab} className={styles.benefitsScroll} ref={scrollRef}>
+      {/* Benefit cards: each appears in place as the page scrolls to it */}
+      <div id={`${id}-panel`} key={tab}>
         {benefits.map((b, i) => (
           <div
             key={i}

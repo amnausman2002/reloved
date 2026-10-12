@@ -753,9 +753,6 @@ export default function ItemDetailPage() {
             <span className="listing-price">
               {formatPrice(listing.askingPrice)}
             </span>
-            {listing.isNegotiable && (
-              <span className="listing-negotiable">Negotiable</span>
-            )}
           </div>
 
           <span className="listing-listed-at">
@@ -810,12 +807,6 @@ export default function ItemDetailPage() {
                 <>
                   <div className="listing-notes">
                     <p className="listing-condition-desc">{cond.description}</p>
-                    {listing.fitNote && (
-                      <div className="listing-note-row">
-                        <InfoIcon />
-                        <span className="listing-note-text">{listing.fitNote}</span>
-                      </div>
-                    )}
                     {listing.flawNote && (
                       <div className="listing-note-row">
                         <InfoIcon />

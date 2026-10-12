@@ -3,15 +3,15 @@ import Nav from '@/components/ui/Nav';
 import HeroSection from './_components/HeroSection';
 import BuySellToggle from './_components/BuySellToggle';
 import BrandGrid from './_components/BrandGrid';
+import QuoteSection from './_components/QuoteSection';
 import ClosingSection from './_components/ClosingSection';
 import styles from './page.module.css';
 
 const BRANDS: { name: string; slug: string; image?: string; logo?: string }[] = [
   { name: 'Khaadi', slug: 'khaadi', image: '/photos/brands/khaadi.png', logo: '/photos/brands/khaadi-logo.png' },
-  { name: 'Sapphire', slug: 'sapphire', image: '/photos/brands/sapphire.png', logo: '/photos/brands/sapphire-logo.png' },
-  { name: 'Generation', slug: 'generation', image: '/photos/brands/generation.png', logo: '/photos/brands/generation-logo.png' },
   { name: 'Lama', slug: 'lama', image: '/photos/brands/lama.png', logo: '/photos/brands/lama-logo.png' },
   { name: 'Outfitters', slug: 'outfitters', image: '/photos/brands/outfitters.png', logo: '/photos/brands/outfitters-logo.png' },
+  { name: 'Sapphire', slug: 'sapphire', image: '/photos/brands/sapphire.png', logo: '/photos/brands/sapphire-logo.png' },
 ];
 
 const CATEGORIES = [
@@ -103,16 +103,7 @@ export default function HomePage() {
         </section>
 
         {/* 6. Quote */}
-        <section className={styles.quoteSection}>
-          <div className={styles.container}>
-            <p className={styles.quoteText}>
-              Everything you want is already out there, sitting in{' '}
-              <em>someone else&rsquo;s closet</em>. We&rsquo;re building the
-              place where it finds its next owner, so clothes get a longer
-              life and preloved feels <em>as good as new</em>.
-            </p>
-          </div>
-        </section>
+        <QuoteSection />
 
         </div>
       </main>

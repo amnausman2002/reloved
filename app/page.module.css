@@ -586,6 +586,18 @@
   font-weight: inherit;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .quoteText {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .quoteRevealed .quoteText {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ─── Closing section ───────────────────────────────── */
 
 .closingSection {
