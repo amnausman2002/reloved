@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin, userFromIdToken } from "@/lib/firebase/admin";
 import { moderate, setPhoneVerified } from "@/lib/data/admin";
-import { REJECTION_REASON_VALUES } from "@/lib/constants";
+import { REJECTION_REASONS } from "@/lib/constants";
 
 // POST /api/admin/moderate
 //
@@ -20,7 +20,7 @@ const bodySchema = z.discriminatedUnion("kind", [
     idToken: z.string().min(1),
     listingId: z.string().min(1),
     action: z.enum(["approved", "rejected", "hidden", "restored"]),
-    reason: z.enum(REJECTION_REASON_VALUES).nullable(),
+    reason: z.enum(REJECTION_REASONS).nullable(),
   }),
   z.object({
     kind: z.literal("phone"),

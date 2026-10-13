@@ -192,14 +192,30 @@ img { max-width: 100%; display: block; }
   .filter-page-option, .filter-page-checkbox, .filter-panel-row,
   .seller-box, .overflow-menu-item, .listing-back,
   .listing-overflow-btn, .desc-see-more,
-  .clear-filters-btn {
+  .clear-filters-btn,
+  .menu-list-item,
+  .menu-search-item-btn,
+  .menu-search-clear,
+  .menu-search-submit,
+  .lightbox-close,
+  .lightbox-arrow,
+  .reco-see-all {
     transition: border-color var(--dur-fast) var(--ease),
                 background var(--dur-fast) var(--ease),
                 color var(--dur-fast) var(--ease);
   }
   .toggle-track { transition: background var(--dur-base) var(--ease); }
+  .nav { transition: background var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease); }
+  .nav-wordmark, .nav-icon { transition: color var(--dur-base) var(--ease); }
+  .nav-sell { transition: color var(--dur-base) var(--ease), opacity var(--dur-fast) var(--ease); }
   .bottom-sheet { transition: transform var(--dur-base) var(--ease); }
   .menu-overlay { transition: opacity var(--dur-base) var(--ease); }
+  .listing-carousel-track { transition: transform 300ms ease; }
+  .lightbox-overlay { animation: lightbox-in 200ms ease forwards; }
+}
+@keyframes lightbox-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -328,6 +344,15 @@ img { max-width: 100%; display: block; }
 .textarea::placeholder { color: var(--text-tertiary); }
 .textarea:focus { border-color: var(--text-primary); outline: 2px solid var(--text-primary); outline-offset: 2px; }
 .textarea.input-error { border-color: var(--status-rejected); }
+
+/* ── Report form (components.html section 20) ────────────── */
+/* A generic "stacked fields, gap-4" form layout. Named for its original use
+ * (the not-yet-built report form) but reused here for profile editing, since
+ * both are just a short column of fields. */
+.report-form { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* ── Select (components.html section 20, report form) ───── */
+.select-input:focus { border-color: var(--text-primary); outline: 2px solid var(--text-primary); outline-offset: 2px; }
 
 /* ── Filter chips (components.html section 4) ───────────── */
 .chip-row {
@@ -1325,18 +1350,26 @@ img { max-width: 100%; display: block; }
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
-  padding: var(--space-2) var(--space-4);
-  background: var(--text-primary);
-  color: var(--white);
+  height: 44px;
+  padding: 0 var(--space-2);
+  background: none;
+  color: var(--text-primary);
   font-family: var(--font-ui);
   font-weight: 500;
   font-size: var(--size-ui);
-  border-radius: 0;
-  border: 1px solid transparent;
   text-decoration: none;
 }
-.nav-sell:hover { background: var(--white); color: var(--text-primary); border-color: var(--text-primary); }
+.nav-sell:hover { opacity: 0.65; }
+
+.nav-transparent {
+  background: transparent;
+  border-bottom-color: transparent;
+}
+.nav-transparent .nav-wordmark,
+.nav-transparent .nav-icon,
+.nav-transparent .nav-sell {
+  color: var(--white);
+}
 
 /* ── Search bar (components.html section 8) ────────────── */
 .search-ai {
@@ -1562,6 +1595,22 @@ img { max-width: 100%; display: block; }
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+.menu-heading {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--size-h2);
+  line-height: var(--lh-h2);
+  font-variation-settings: "opsz" 144;
+}
+.menu-header-borderless {
+  border-bottom: none;
+}
+.menu-wordmark-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
 .menu-close {
   width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
@@ -1572,7 +1621,7 @@ img { max-width: 100%; display: block; }
   display: flex;
   align-items: center;
   margin: var(--space-4);
-  background: var(--surface);
+  background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   min-height: 44px;
@@ -1598,16 +1647,28 @@ img { max-width: 100%; display: block; }
   outline: none;
 }
 .menu-search-input::placeholder { color: var(--text-tertiary); }
-.menu-nav {
-  flex: 1;
-  padding: var(--space-2) 0;
-}
-.menu-nav-item {
+.menu-search-submit {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.menu-search-submit:hover { color: var(--text-secondary); }
+
+/* ── Menu list (no dividers between items) ───────────── */
+.menu-list {
+  flex: 1;
+  padding: 0;
+}
+.menu-list-item {
+  display: flex;
+  align-items: center;
   width: 100%;
-  min-height: 52px;
+  min-height: 48px;
   padding: 0 var(--space-4);
   font-family: var(--font-body);
   font-size: var(--size-body);
@@ -1615,16 +1676,79 @@ img { max-width: 100%; display: block; }
   color: var(--text-primary);
   cursor: pointer;
   text-decoration: none;
-  border-bottom: 1px solid var(--border);
   background: none;
   text-align: left;
 }
-.menu-nav-item:hover { background: var(--surface); }
-.menu-nav-item svg { color: var(--text-tertiary); flex-shrink: 0; }
-.menu-footer {
-  border-top: 1px solid var(--border);
-  padding: var(--space-2) 0;
+.menu-list-item:hover { color: var(--text-secondary); }
+.menu-list-divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-2) var(--space-4);
 }
+
+/* ── Search results (trending + recent) ──────────────── */
+.menu-search-body {
+  flex: 1;
+  overflow-y: auto;
+  touch-action: pan-y;
+  padding: var(--space-4) 0;
+}
+.menu-search-section {
+  padding: 0 var(--space-4);
+}
+.menu-search-section + .menu-search-section {
+  margin-top: var(--space-5);
+}
+.menu-search-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+.menu-search-section-label {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-caption);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.menu-search-list {
+  list-style: none;
+}
+.menu-search-item {
+  display: flex;
+  align-items: center;
+}
+.menu-search-item-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-search-item-btn:hover { color: var(--text-secondary); }
+.menu-search-clear {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-body-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.menu-search-clear:hover { color: var(--text-primary); }
 
 /* ── Filter page (full-screen filter overlay) ─────────── */
 .filter-page {
@@ -2107,6 +2231,265 @@ img { max-width: 100%; display: block; }
   color: var(--text-secondary);
 }
 
+/* ── Seller profile page (components.html "Seller profile card" +
+   "My listings page" sections, ported and adapted) ──────── */
+.seller-profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.seller-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--size-h2);
+  font-variation-settings: "opsz" 144;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.seller-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.seller-name-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.seller-profile-name {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--size-h2);
+  font-variation-settings: "opsz" 144;
+}
+.seller-meta { font-size: var(--size-caption); color: var(--text-secondary); }
+.seller-profile-bio {
+  font-size: var(--size-body-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-3);
+}
+.seller-profile-stats {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-body-sm);
+  margin-top: var(--space-3);
+}
+/* Icon-only, same 36px/transparent/hover-opacity pattern as .listing-overflow-btn. */
+.seller-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+.seller-edit-btn:hover { opacity: 0.8; }
+/* Smaller avatar for the compact seller-box row on item detail — same white
+ * circle / dark Fraunces initial, just sized for a single text line, with
+ * its own right margin since .seller-box's small gap-1 reads too tight next
+ * to a circle this size. */
+.seller-box-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--size-ui);
+  font-variation-settings: "opsz" 144;
+  flex-shrink: 0;
+  margin-right: var(--space-1);
+  padding-top: 1px;
+}
+.owner-content-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-4);
+  margin-top: var(--space-4);
+}
+.owner-content-card .tab-row { margin: 0; }
+.owner-content-card .listing-row:first-of-type { border-top: none; }
+.owner-content-card .empty-state { padding: var(--space-5) 0; }
+
+/* ── Edit profile page ─────────────────────────────────── */
+.profile-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-5);
+}
+.profile-edit-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+}
+.profile-edit-back {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  color: var(--text-primary);
+  text-decoration: none;
+  margin-left: calc(var(--space-2) * -1);
+  flex-shrink: 0;
+}
+.profile-edit-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--size-h2);
+  font-variation-settings: "opsz" 144;
+}
+.avatar-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.avatar-edit-wrap {
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.avatar-edit-preview {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--size-h2);
+  font-variation-settings: "opsz" 144;
+  overflow: hidden;
+  padding-top: 2px;
+}
+.avatar-edit-preview img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-edit-badge {
+  position: absolute;
+  bottom: -2px; right: -2px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--canvas);
+}
+.avatar-name-field { flex: 1; min-width: 0; }
+
+/* Active/Sold toggle, and the status-grouped sections below it. */
+.tab-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin: var(--space-5) 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+.tab-row::-webkit-scrollbar { display: none; }
+.tab-btn {
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-body-sm);
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tab-btn.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
+/* The count after a tab's label, e.g. "Live · 3". */
+.tab-btn-count { color: var(--text-tertiary); }
+.tab-btn.active .tab-btn-count { color: var(--text-secondary); }
+/* Seller-facing relabels: no red "Rejected" on her own listings. */
+.status-needs-attention { color: var(--status-pending); border: 1px solid var(--status-pending); }
+.status-under-review { color: var(--text-tertiary); border: 1px solid var(--border); }
+
+/* ── Owner-view listing row (adapted from components.html's "Admin report
+   row", ~line 866 — a flex row with a small fixed photo, a flexible text
+   column and a trailing action, which fits 375px unlike the admin queue
+   row's fixed-width desktop grid) ───────────────────────── */
+.listing-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.listing-row:last-child { border-bottom: none; }
+.listing-row-photo {
+  width: 56px; height: 72px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: block;
+}
+.listing-row-photo img { width: 100%; height: 100%; object-fit: cover; }
+.listing-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.listing-row-title {
+  display: block;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-body-sm);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.listing-row-price-line { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+/* Regular weight, lighter than the title — price is secondary information in
+ * a management row, not the thing she's scanning for. */
+.listing-row-price { font-family: var(--font-ui); font-weight: 400; font-size: var(--size-body-sm); }
+/* The rejection reason, the review-turnaround line, the hidden explanation,
+ * or the view/contact count. Never an error colour — this is information,
+ * not something gone wrong on her end. */
+.listing-row-meta { font-size: var(--size-caption); color: var(--text-tertiary); }
+.listing-row-action { flex-shrink: 0; min-height: 36px; font-size: var(--size-body-sm); }
+/* Mark as sold / Relist / Make changes: .btn-text-link is built for a
+ * full-width, centered, underlined, stacked bottom-sheet action. This row
+ * action is the same shape as .reco-see-all instead — no underline, icon
+ * trailing the text with a small gap — so it overrides both the layout and
+ * the underline. */
+.listing-row-action-link {
+  width: auto;
+  min-height: auto;
+  padding: 0;
+  gap: 4px;
+  font-size: var(--size-body-sm);
+  text-decoration: none;
+}
+/* Public view reuses BrowseCard (same component as /browse), but on a
+ * seller's profile the price shouldn't outweigh the title the way it does
+ * browsing a grid of different sellers' items — scoped to this page only so
+ * /browse's cards are untouched. */
+.seller-profile-grid .browse-card-price { font-weight: 400; }
+
 /* ── Sticky actions bar ──────────────────────────────────── */
 .listing-actions-bar {
   position: fixed;
@@ -2477,37 +2860,6 @@ img { max-width: 100%; display: block; }
 }
 .input-with-prefix:has(.input:-webkit-autofill) .input-prefix { background: transparent; }
 
-/* ── Toast (components.html section 24) ──────────────────── */
-/* CHANGED: fixed and in a portal, under the nav. components.html draws it
- * inline in a mock frame, which only exists in that file. */
-.toast-layer {
-  position: fixed;
-  top: calc(var(--nav-height) + var(--space-3));
-  left: 0;
-  right: 0;
-  z-index: var(--z-toast);
-  display: flex;
-  justify-content: center;
-  padding: 0 var(--space-4);
-  pointer-events: none;
-}
-.toast {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background: var(--text-primary);
-  color: var(--white);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-ui);
-  font-weight: 500;
-  font-size: var(--size-ui);
-  line-height: var(--lh-ui);
-  max-width: 480px;
-  width: 100%;
-  pointer-events: auto;
-}
 .toast-error { background: var(--white); border: 1px solid var(--status-rejected); color: var(--status-rejected); }
 .toast-error .toast-dismiss { color: var(--status-rejected); }
 .toast-dismiss {
@@ -2521,3 +2873,248 @@ img { max-width: 100%; display: block; }
   border: none;
 }
 .toast-dismiss:hover { opacity: 1; }
+
+/* ── Gradient overlay on carousel top ──────────────────── */
+.listing-carousel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.35), transparent);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── Carousel swipe animation ──────────────────────────── */
+.listing-carousel-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+.listing-carousel-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.listing-carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Fullscreen lightbox ───────────────────────────────── */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: var(--black, #000);
+  display: flex;
+  flex-direction: column;
+}
+.lightbox-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  z-index: 2;
+}
+.lightbox-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--white);
+  padding: 0;
+}
+.lightbox-counter {
+  font-family: var(--font-ui);
+  font-size: var(--size-body-sm);
+  color: rgba(255, 255, 255, 0.7);
+}
+.lightbox-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y pinch-zoom;
+}
+.lightbox-image-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-image-wrap img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lightbox-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--white);
+  z-index: 2;
+}
+.lightbox-arrow-prev { left: var(--space-3); }
+.lightbox-arrow-next { right: var(--space-3); }
+
+/* ── Recommendation carousels ──────────────────────────── */
+.reco-section {
+  padding: var(--space-5) 0 var(--space-3);
+  border-top: 1px solid var(--border);
+}
+.reco-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 var(--space-4) var(--space-3);
+}
+.reco-heading {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--size-h2);
+  line-height: var(--lh-h2);
+  font-variation-settings: "opsz" 144;
+}
+.reco-see-all {
+  font-family: var(--font-ui);
+  font-size: var(--size-body-sm);
+  color: var(--text-primary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+.reco-scroll {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: var(--space-4);
+  scroll-padding-right: var(--space-4);
+  padding: 0 var(--space-4);
+  scrollbar-width: none;
+}
+.reco-scroll::-webkit-scrollbar { display: none; }
+.reco-scroll .browse-card {
+  flex: 0 0 55%;
+  max-width: 200px;
+  scroll-snap-align: start;
+}
+
+/* ── Toast / feedback banner ───────────────────────────── */
+.toast {
+  position: fixed;
+  top: calc(var(--nav-height) + var(--space-3));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-ui);
+  line-height: var(--lh-ui);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  max-width: 480px;
+  width: max-content;
+  z-index: var(--z-toast);
+  pointer-events: none;
+  opacity: 0;
+  /* MERGED 13 Oct: the three below are Amna's, folded into Bismah's rule.
+     The shared Toast component adds a dismiss button, so the toast has two
+     children to lay out and the button has to be clickable even though the
+     toast itself ignores pointer events. */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.toast.visible { pointer-events: auto; }
+.toast.visible {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .toast {
+    transition: opacity var(--dur-base) var(--ease);
+  }
+}
+
+/* ── Reason picker (radio group, same pattern as condition picker on seller) ── */
+.reason-picker { display: flex; flex-direction: column; gap: var(--space-1); }
+.reason-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  min-height: 44px;
+}
+.reason-option.selected { border-color: var(--text-primary); }
+.reason-option:has(:focus-visible) {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+.reason-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.reason-option.selected .reason-radio { border-color: var(--text-primary); }
+.reason-radio-dot {
+  display: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-primary);
+}
+.reason-option.selected .reason-radio-dot { display: block; }
+.reason-text { display: flex; flex-direction: column; gap: 2px; }
+.reason-label {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-ui);
+}
+.reason-hint {
+  font-size: var(--size-meta);
+  color: var(--text-secondary);
+}
+
+/* ── Report sheet ──────────────────────────────────────── */
+.report-form { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* ── Utility ───────────────────────────────────────────── */

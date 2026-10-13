@@ -4,6 +4,7 @@ export const BRANDS = [
   "khaadi",
   "sapphire",
   "generation",
+  "lama",
   "elan",
   "gul_ahmed",
   "ideas_by_gul_ahmed",
@@ -119,7 +120,10 @@ export const CONDITIONS: { value: ConditionValue; label: string; description: st
   { value: "brand_new_with_tags", label: "Brand new with tags", description: "With tags, never worn" },
   { value: "brand_new_without_tags", label: "Brand new without tags", description: "No tags, never worn" },
   { value: "very_good", label: "Very good", description: "Well worn, but still in great shape" },
-  { value: "fair", label: "Fair", description: "Shows some signs of wear" },
+  // Bismah's wording wins: it keeps the instruction that was dropped when the
+  // em dash was removed, and loses the dash. That clears the one known em-dash
+  // exception CLAUDE.md records in this file.
+  { value: "fair", label: "Fair", description: "Shows some signs of wear. Please photograph the areas that show it." },
 ];
 
 // Photos per listing, enforced at submit, with exactly one cover.
@@ -151,56 +155,50 @@ export const LISTING_STATUS_LABELS: Record<ListingStatus, string> = {
   hidden: "Hidden",
 };
 
-// The four canned rejection reasons. Canned on purpose: a free-text rejection
-// would be written differently every time and half of them would say nothing
-// useful. The seller's email is built from whichever one we pick.
+// Canned reasons an admin picks when rejecting a pending listing. The same
+// list is reused as ModerationAction's `reason`.
 //
-// SHARED FILE. These values and their wording come straight from the PRD and
-// CLAUDE.md, so this implements an agreed list rather than inventing one.
-// Flagging it for Bismah all the same.
-export const REJECTION_REASON_VALUES = [
+// MERGED 13 Oct: Amna and Bismah built this independently and at the same
+// time, with the same name and different shapes. Bismah's is the one kept,
+// because the seller profile already reads REJECTION_REASON_LABELS to tell an
+// owner why her listing was rejected, and that code is pushed and shared.
+// Amna's seller-facing wording survives as REJECTION_REASON_MESSAGES below:
+// a label names the reason for us, a message is what the seller is told.
+export const REJECTION_REASONS = [
   "bad_photos",
   "missing_details",
   "not_allowed",
   "suspected_counterfeit",
 ] as const;
 
-export type RejectionReason = (typeof REJECTION_REASON_VALUES)[number];
+export type RejectionReason = (typeof REJECTION_REASONS)[number];
 
-/** `label` is the chip in the queue. `sellerMessage` is what she is told, and
- *  is the draft for the email: it says what happened, how to fix it and when
- *  she will hear back, which is the tone design-system.md asks for. The first
- *  two are lifted from its copy samples unchanged. */
-export const REJECTION_REASONS: {
-  value: RejectionReason;
-  label: string;
-  sellerMessage: string;
-}[] = [
-  {
-    value: "bad_photos",
-    label: "Bad photos",
-    sellerMessage:
-      "We couldn't see the item clearly enough. Try retaking your photos in natural light and resubmit. We'll review it again within 24 hours!",
-  },
-  {
-    value: "missing_details",
-    label: "Missing details",
-    sellerMessage:
-      "Almost there! A few details are missing. Fill those in and resubmit, and we'll take another look within 24 hours.",
-  },
-  {
-    value: "not_allowed",
-    label: "Not allowed",
-    sellerMessage:
-      "This one isn't something we can list on Reloved. Have a look at what we accept, and do send us anything else you're clearing out!",
-  },
-  {
-    value: "suspected_counterfeit",
-    label: "Suspected counterfeit",
-    sellerMessage:
-      "We couldn't confirm this is the brand on the listing. If you have a label or tag, add a close-up photo of it and resubmit.",
-  },
-];
+/** How a reason reads to us: the chip in the admin queue, and the line on a
+ *  seller's own listing telling her what happened. */
+export const REJECTION_REASON_LABELS: Record<RejectionReason, string> = {
+  bad_photos: "Photos need work",
+  missing_details: "Missing details",
+  not_allowed: "Not an allowed item",
+  suspected_counterfeit: "Suspected counterfeit",
+};
+
+/** What the seller is actually told, and the draft for the rejection email.
+ *  A label names the problem; this says what to do about it and when she will
+ *  hear back, which is the tone design-system.md asks for. The first two are
+ *  lifted from its copy samples unchanged.
+ *
+ *  Shown in the rejection modal before sending, so we see the message rather
+ *  than compose one each time. */
+export const REJECTION_REASON_MESSAGES: Record<RejectionReason, string> = {
+  bad_photos:
+    "We couldn't see the item clearly enough. Try retaking your photos in natural light and resubmit. We'll review it again within 24 hours!",
+  missing_details:
+    "Almost there! A few details are missing. Fill those in and resubmit, and we'll take another look within 24 hours.",
+  not_allowed:
+    "This one isn't something we can list on Reloved. Have a look at what we accept, and do send us anything else you're clearing out!",
+  suspected_counterfeit:
+    "We couldn't confirm this is the brand on the listing. If you have a label or tag, add a close-up photo of it and resubmit.",
+};
 
 // Clothes XS-XL, shoes UK 3-9, bags have no size at all.
 export const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL"] as const;
@@ -310,6 +308,22 @@ export const MATERIALS = [
 ] as const;
 
 export type Material = (typeof MATERIALS)[number]["value"];
+
+export const REPORT_REASON_VALUES = [
+  "counterfeit",
+  "not_as_described",
+  "inappropriate",
+  "spam",
+] as const;
+
+export type ReportReason = (typeof REPORT_REASON_VALUES)[number];
+
+export const REPORT_REASONS: { value: ReportReason; label: string; hint?: string }[] = [
+  { value: "counterfeit", label: "Fake or replica" },
+  { value: "not_as_described", label: "Not as described", hint: "Photos or details don't match the item." },
+  { value: "inappropriate", label: "Not appropriate" },
+  { value: "spam", label: "Spam" },
+];
 
 export const PHOTO_TIPS = [
   "Daylight",

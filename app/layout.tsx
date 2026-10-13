@@ -6,10 +6,13 @@ import "./globals.css";
 // no request to Google Fonts at runtime. Weight is omitted on purpose: these
 // are variable fonts, so omitting it loads the full range (Fraunces 300 and
 // 400, Inter 400 and 500 are all used). Fraunces also needs its optical size
-// axis, which design-system.md sets to 144 at display sizes.
+// axis, which design-system.md sets to 144 at display sizes. Italic style is
+// loaded too, so <em> picks up Fraunces' real italic face instead of a
+// faux-oblique fallback.
 const fraunces = Fraunces({
   subsets: ["latin"],
   axes: ["opsz"],
+  style: ["normal", "italic"],
   variable: "--font-fraunces",
   display: "swap",
 });

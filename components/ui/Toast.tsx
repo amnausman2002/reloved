@@ -27,15 +27,21 @@ export default function Toast({ message, onDismiss, variant = "default" }: Props
 
   if (!message || typeof document === "undefined") return null;
 
+  // MERGED 13 Oct: `visible` is required. Bismah's .toast rule positions
+  // itself and sits at opacity 0 until .visible is added, which is what
+  // app/item/[id]/page.tsx renders inline. This component mounts only when
+  // there is a message, so it is always visible once rendered.
+  const className = ["toast", "visible", variant === "error" && "toast-error"]
+    .filter(Boolean)
+    .join(" ");
+
   return createPortal(
-    <div className="toast-layer">
-      {/* assertive, not polite: she is mid-form and about to act on this. */}
-      <div className={variant === "error" ? "toast toast-error" : "toast"} role="alert">
-        <span>{message}</span>
-        <button type="button" className="toast-dismiss" aria-label="Dismiss" onClick={onDismiss}>
-          &times;
-        </button>
-      </div>
+    // assertive, not polite: she is mid-form and about to act on this.
+    <div className={className} role="alert">
+      <span>{message}</span>
+      <button type="button" className="toast-dismiss" aria-label="Dismiss" onClick={onDismiss}>
+        &times;
+      </button>
     </div>,
     document.body,
   );

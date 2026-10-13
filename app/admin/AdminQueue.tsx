@@ -6,6 +6,8 @@ import FilterChip from "@/components/ui/FilterChip";
 import Textarea from "@/components/ui/Textarea";
 import {
   REJECTION_REASONS,
+  REJECTION_REASON_LABELS,
+  REJECTION_REASON_MESSAGES,
   brandLabel,
   categoryLabel,
   cityLabel,
@@ -291,13 +293,13 @@ export default function AdminQueue({ items }: Props) {
 
             <label className="input-label">Reason</label>
             <div className="modal-reasons">
-              {REJECTION_REASONS.map((item) => (
+              {REJECTION_REASONS.map((value) => (
                 <FilterChip
-                  key={item.value}
-                  active={reason === item.value}
-                  onClick={() => setReason(item.value)}
+                  key={value}
+                  active={reason === value}
+                  onClick={() => setReason(value)}
                 >
-                  {item.label}
+                  {REJECTION_REASON_LABELS[value]}
                 </FilterChip>
               ))}
             </div>
@@ -307,7 +309,7 @@ export default function AdminQueue({ items }: Props) {
                 milestone: the Trigger Email extension is not installed. */}
             {reason && (
               <p className="modal-preview">
-                {REJECTION_REASONS.find((item) => item.value === reason)?.sellerMessage}
+                {REJECTION_REASON_MESSAGES[reason]}
               </p>
             )}
 

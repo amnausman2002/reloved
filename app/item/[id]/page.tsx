@@ -5,41 +5,13 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import Nav from "@/components/ui/Nav";
-import type { Brand, Category, ConditionValue, City } from "@/lib/constants";
-import { BRAND_LABELS, CONDITIONS, CITIES } from "@/lib/constants";
-
-type MockPhoto = {
-  url: string;
-  isCover: boolean;
-};
-
-type MockSeller = {
-  id: string;
-  displayName: string;
-  city: City;
-  listingCount: number;
-  soldCount: number;
-};
-
-type MockListing = {
-  id: string;
-  title: string;
-  description: string;
-  brand: Brand;
-  brandOther?: string;
-  category: Category;
-  size: string | null;
-  condition: ConditionValue;
-  flawNote?: string;
-  fitNote?: string;
-  isReplica: boolean;
-  askingPrice: number;
-  isNegotiable: boolean;
-  city: City;
-  photos: MockPhoto[];
-  seller: MockSeller;
-  createdAt: string;
-};
+import BrowseCard from "@/components/buyer/BrowseCard";
+import BottomSheet from "@/components/ui/BottomSheet";
+import Textarea from "@/components/ui/Textarea";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import type { Brand, Category, ConditionValue, City, ReportReason } from "@/lib/constants";
+import { BRAND_LABELS, CONDITIONS, CITIES, REPORT_REASONS } from "@/lib/constants";
+import { MOCK_LISTINGS, getSellerListings, getSoldCount } from "@/lib/sample-data";
 
 const CATEGORY_LABELS: Record<string, string> = {
   kurta: "Kurta",
@@ -56,333 +28,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   shoes: "Shoes",
   bag: "Bag",
 };
-
-const MOCK_LISTINGS: MockListing[] = [
-  {
-    id: "1",
-    title: "Printed lawn kurta, mustard",
-    description:
-      "Beautiful printed lawn kurta in mustard tones. Lightweight fabric, perfect for everyday wear. Worn a handful of times, still in great condition. The print is a small floral motif on a warm mustard base. Pairs nicely with white or beige bottoms.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "M",
-    condition: "very_good",
-    fitNote: "Roomy: would fit a large too",
-    isReplica: false,
-    askingPrice: 2500,
-    isNegotiable: true,
-    city: "lahore",
-    photos: [
-      { url: "/photos/listings/IMG_6511.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6512.jpg", isCover: false },
-      { url: "/photos/listings/IMG_6513.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s1",
-      displayName: "Ayesha",
-      city: "lahore",
-      listingCount: 8,
-      soldCount: 4,
-    },
-    createdAt: "2026-10-04",
-  },
-  {
-    id: "2",
-    title: "Block print sleeveless kurta",
-    description:
-      "Khaadi sleeveless kurta with block print. Never worn, bought last summer and it has been sitting in my closet.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "S",
-    condition: "brand_new_without_tags",
-    isReplica: false,
-    askingPrice: 3200,
-    isNegotiable: false,
-    city: "karachi",
-    photos: [
-      { url: "/photos/listings/IMG_6513.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6511.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s2",
-      displayName: "Sara",
-      city: "karachi",
-      listingCount: 12,
-      soldCount: 7,
-    },
-    createdAt: "2026-10-02",
-  },
-  {
-    id: "3",
-    title: "Monochrome floral shirt dress",
-    description:
-      "Cute floral button-up dress. Bought from Quiz in London. Tags still attached, never worn.",
-    brand: "other",
-    brandOther: "Quiz",
-    category: "dress",
-    size: "M",
-    condition: "brand_new_with_tags",
-    isReplica: false,
-    askingPrice: 1800,
-    isNegotiable: true,
-    city: "islamabad",
-    photos: [
-      { url: "/photos/listings/IMG_6516.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6517.jpg", isCover: false },
-      { url: "/photos/listings/IMG_6519.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s3",
-      displayName: "Nadia",
-      city: "islamabad",
-      listingCount: 14,
-      soldCount: 2,
-    },
-    createdAt: "2026-10-05",
-  },
-  {
-    id: "4",
-    title: "Ribbed polo crop top, lilac",
-    description:
-      "Light lilac ribbed polo crop top. Goes with everything. Worn a few times but still looks fresh.",
-    brand: "unknown",
-    category: "top",
-    size: "S",
-    condition: "very_good",
-    isReplica: false,
-    askingPrice: 900,
-    isNegotiable: true,
-    city: "lahore",
-    photos: [
-      { url: "/photos/listings/IMG_6514.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6515.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s1",
-      displayName: "Ayesha",
-      city: "lahore",
-      listingCount: 8,
-      soldCount: 4,
-    },
-    createdAt: "2026-09-29",
-  },
-  {
-    id: "5",
-    title: "Printed lawn kurta, worn",
-    description:
-      "Khaadi printed lawn kurta. Shows some wear on the cuffs, reflected in the price. Still has a lot of life in it.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "L",
-    condition: "fair",
-    flawNote: "Minor pilling on the cuffs",
-    isReplica: false,
-    askingPrice: 2800,
-    isNegotiable: true,
-    city: "faisalabad",
-    photos: [
-      { url: "/photos/listings/IMG_6511.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6512.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s4",
-      displayName: "Hina",
-      city: "faisalabad",
-      listingCount: 1,
-      soldCount: 0,
-    },
-    createdAt: "2026-09-25",
-  },
-  {
-    id: "6",
-    title: "Printed lawn kurta, multicolour",
-    description:
-      "Khaadi printed lawn kurta in vibrant multicolour print. Tags removed but never worn.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "M",
-    condition: "brand_new_without_tags",
-    isReplica: false,
-    askingPrice: 3500,
-    isNegotiable: false,
-    city: "rawalpindi",
-    photos: [
-      { url: "/photos/listings/IMG_6512.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6511.jpg", isCover: false },
-      { url: "/photos/listings/IMG_6513.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s5",
-      displayName: "Maira",
-      city: "rawalpindi",
-      listingCount: 5,
-      soldCount: 2,
-    },
-    createdAt: "2026-10-01",
-  },
-  {
-    id: "7",
-    title: "Cropped collar top, lilac",
-    description:
-      "Cropped collar top in soft lilac. Worn twice, basically new. Great for pairing with wide-leg trousers.",
-    brand: "unknown",
-    category: "top",
-    size: "XS",
-    condition: "very_good",
-    isReplica: false,
-    askingPrice: 1200,
-    isNegotiable: true,
-    city: "karachi",
-    photos: [
-      { url: "/photos/listings/IMG_6515.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6514.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s2",
-      displayName: "Sara",
-      city: "karachi",
-      listingCount: 12,
-      soldCount: 7,
-    },
-    createdAt: "2026-10-03",
-  },
-  {
-    id: "8",
-    title: "Monochrome floral dress",
-    description:
-      "Quiz monochrome floral dress. Tags removed but never worn, still in perfect condition.",
-    brand: "other",
-    brandOther: "Quiz",
-    category: "dress",
-    size: "S",
-    condition: "brand_new_without_tags",
-    isReplica: false,
-    askingPrice: 2200,
-    isNegotiable: true,
-    city: "lahore",
-    photos: [
-      { url: "/photos/listings/IMG_6519.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6516.jpg", isCover: false },
-      { url: "/photos/listings/IMG_6518.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s1",
-      displayName: "Ayesha",
-      city: "lahore",
-      listingCount: 8,
-      soldCount: 4,
-    },
-    createdAt: "2026-09-28",
-  },
-  {
-    id: "9",
-    title: "Ribbed collar top, lavender",
-    description:
-      "Lavender ribbed collar top. Some light bobbling on the front, shown in photos.",
-    brand: "unknown",
-    category: "top",
-    size: "M",
-    condition: "fair",
-    flawNote: "Light bobbling on the front",
-    isReplica: false,
-    askingPrice: 750,
-    isNegotiable: true,
-    city: "islamabad",
-    photos: [
-      { url: "/photos/listings/IMG_6514.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6515.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s3",
-      displayName: "Nadia",
-      city: "islamabad",
-      listingCount: 14,
-      soldCount: 2,
-    },
-    createdAt: "2026-09-30",
-  },
-  {
-    id: "10",
-    title: "Embroidered lawn kurta",
-    description:
-      "Khaadi embroidered lawn kurta. Brand new with tags, bought in the sale but never got around to wearing it.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "L",
-    condition: "brand_new_with_tags",
-    isReplica: false,
-    askingPrice: 4000,
-    isNegotiable: false,
-    city: "multan",
-    photos: [
-      { url: "/photos/listings/IMG_6511.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6513.jpg", isCover: false },
-      { url: "/photos/listings/IMG_6512.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s6",
-      displayName: "Zara",
-      city: "multan",
-      listingCount: 6,
-      soldCount: 3,
-    },
-    createdAt: "2026-09-22",
-  },
-  {
-    id: "11",
-    title: "Button-up floral dress",
-    description:
-      "Quiz button-up floral dress. Fits beautifully, worn three times. Great for both casual and semi-formal occasions.",
-    brand: "other",
-    brandOther: "Quiz",
-    category: "dress",
-    size: "S",
-    condition: "very_good",
-    fitNote: "True to size",
-    isReplica: false,
-    askingPrice: 1500,
-    isNegotiable: true,
-    city: "peshawar",
-    photos: [
-      { url: "/photos/listings/IMG_6516.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6518.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s7",
-      displayName: "Fatima",
-      city: "peshawar",
-      listingCount: 2,
-      soldCount: 0,
-    },
-    createdAt: "2026-09-18",
-  },
-  {
-    id: "12",
-    title: "Printed lawn kurta, summer",
-    description:
-      "Khaadi printed lawn kurta. Tags removed, never worn. Perfect for the heat.",
-    brand: "khaadi",
-    category: "kurta",
-    size: "M",
-    condition: "brand_new_without_tags",
-    isReplica: false,
-    askingPrice: 1900,
-    isNegotiable: true,
-    city: "hyderabad",
-    photos: [
-      { url: "/photos/listings/IMG_6513.jpg", isCover: true },
-      { url: "/photos/listings/IMG_6512.jpg", isCover: false },
-    ],
-    seller: {
-      id: "s8",
-      displayName: "Amna",
-      city: "hyderabad",
-      listingCount: 9,
-      soldCount: 5,
-    },
-    createdAt: "2026-10-05",
-  },
-];
 
 const BRAND_SPECIAL: Record<string, string> = {
   hm: "H&M",
@@ -424,6 +69,11 @@ function formatPrice(price: number): string {
 function cityLabel(city: City): string {
   const found = CITIES.find((c) => c.value === city);
   return found?.label ?? city;
+}
+
+// Lowercase to match the Fraunces-styled initial on the seller profile page.
+function initials(name: string): string {
+  return name.trim().charAt(0).toLowerCase() || "?";
 }
 
 function conditionInfo(value: ConditionValue) {
@@ -474,19 +124,48 @@ function OverflowIcon() {
 
 function ShareIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M16 6l-4-4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="12" y1="2" x2="12" y2="15" strokeLinecap="round" />
+    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <path d="M237.66,106.35l-80-80A8,8,0,0,0,144,32V72.35c-25.94,2.22-54.59,14.92-78.16,34.91-28.38,24.08-46.05,55.11-49.76,87.37a12,12,0,0,0,20.68,9.58h0c11-11.71,50.14-48.74,107.24-52V192a8,8,0,0,0,13.66,5.65l80-80A8,8,0,0,0,237.66,106.35ZM160,172.69V144a8,8,0,0,0-8-8c-28.08,0-55.43,7.33-81.29,21.8a196.17,196.17,0,0,0-36.57,26.52c5.8-23.84,20.42-46.51,42.05-64.86C99.41,99.77,127.75,88,152,88a8,8,0,0,0,8-8V51.32L220.69,112Z" />
     </svg>
   );
 }
 
 function ReportIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path d="M4 5l8-3 8 3v7c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V5z" />
-      <line x1="9" y1="12" x2="15" y2="12" />
+    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <path d="M242.63,96.44l-184-64A8,8,0,0,0,48,40V216a8,8,0,0,0,16,0V173.69l178.63-62.13a8,8,0,0,0,0-15.12ZM64,156.75V51.25L215.65,104Z" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M12 4l-6 6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M8 4l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ForwardArrowIcon() {
+  return (
+    <svg width="14" height="10" viewBox="0 0 24 14" fill="none" aria-hidden="true">
+      <path d="M1 7h22M23 7l-5.5-6M23 7l-5.5 6" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -510,8 +189,17 @@ export default function ItemDetailPage() {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<ReportReason | null>(null);
+  const [reportDetail, setReportDetail] = useState("");
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const overflowRef = useRef<HTMLDivElement>(null);
-  const touchXRef = useRef<number | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const dragOffsetRef = useRef(0);
 
   const listing = MOCK_LISTINGS.find((l) => l.id === id);
 
@@ -526,19 +214,63 @@ export default function ItemDetailPage() {
     return () => document.removeEventListener("pointerdown", handleClick);
   }, [overflowOpen]);
 
-  const handleShare = useCallback(async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: listing?.title, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-      }
-    } catch {
-      // user cancelled — fine
+  useEffect(() => {
+    if (lightboxOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => { document.body.style.overflow = ""; };
+  }, [lightboxOpen]);
+
+  const showToast = useCallback((message: string, duration = 4000) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(message);
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), duration);
+  }, []);
+
+  const handleShare = useCallback(async () => {
     setOverflowOpen(false);
-  }, [listing?.title]);
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: listing?.title, url });
+      } catch {
+        // user cancelled the share sheet
+      }
+      return;
+    }
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      copied = document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    if (copied) showToast("Link copied");
+  }, [listing?.title, showToast]);
+
+  function handleOpenReport() {
+    setOverflowOpen(false);
+    setReportOpen(true);
+  }
+
+  function handleSubmitReport() {
+    if (!reportReason) return;
+    // TODO: POST to /api/reports once Firebase is wired up.
+    // For now, close the sheet and confirm.
+    setReportOpen(false);
+    setReportReason(null);
+    setReportDetail("");
+    showToast("Thanks! We'll look into it.");
+  }
 
   if (!listing) {
     return (
@@ -559,20 +291,68 @@ export default function ItemDetailPage() {
   );
   const whatsappUrl = `https://wa.me/923001234567?text=${whatsappMessage}`;
 
+  const sellerListings = MOCK_LISTINGS.filter(
+    (l) => l.seller.id === seller.id && l.id !== listing.id
+  );
+  // Computed, never stored, per the PRD.
+  const sellerListingCount = getSellerListings(seller.id).length;
+  const sellerSoldCount = getSoldCount(seller.id);
+  const similarListings = MOCK_LISTINGS.filter(
+    (l) => l.category === listing.category && l.id !== listing.id && l.seller.id !== seller.id
+  ).slice(0, 8);
+
   function handleSwipeStart(e: React.TouchEvent) {
-    touchXRef.current = e.touches[0].clientX;
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    isDraggingRef.current = false;
+    dragOffsetRef.current = 0;
   }
-  function handleSwipeEnd(e: React.TouchEvent) {
-    if (touchXRef.current === null) return;
-    const diff = e.changedTouches[0].clientX - touchXRef.current;
-    touchXRef.current = null;
-    if (Math.abs(diff) > 40) {
-      if (diff < 0 && photoIndex < photos.length - 1) {
+  function handleSwipeMove(e: React.TouchEvent) {
+    if (!touchStartRef.current) return;
+    const dx = e.touches[0].clientX - touchStartRef.current.x;
+    const dy = e.touches[0].clientY - touchStartRef.current.y;
+    if (!isDraggingRef.current && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 5) {
+      isDraggingRef.current = true;
+    }
+    if (isDraggingRef.current && trackRef.current) {
+      dragOffsetRef.current = dx;
+      const base = -photoIndex * 100;
+      const pct = (dx / trackRef.current.parentElement!.clientWidth) * 100;
+      trackRef.current.style.transition = "none";
+      trackRef.current.style.transform = `translateX(${base + pct}%)`;
+    }
+  }
+  function handleSwipeEnd() {
+    if (!touchStartRef.current) return;
+    const dx = dragOffsetRef.current;
+    touchStartRef.current = null;
+    if (trackRef.current) {
+      trackRef.current.style.transition = "";
+    }
+    if (isDraggingRef.current && Math.abs(dx) > 40) {
+      if (dx < 0 && photoIndex < photos.length - 1) {
         setPhotoIndex(photoIndex + 1);
-      } else if (diff > 0 && photoIndex > 0) {
+      } else if (dx > 0 && photoIndex > 0) {
         setPhotoIndex(photoIndex - 1);
       }
     }
+    if (trackRef.current) {
+      trackRef.current.style.transform = `translateX(${-photoIndex * 100}%)`;
+    }
+    isDraggingRef.current = false;
+    dragOffsetRef.current = 0;
+  }
+
+  function handleImageTap() {
+    if (!isDraggingRef.current) {
+      setLightboxOpen(true);
+    }
+  }
+
+  function lightboxPrev() {
+    setPhotoIndex((i) => Math.max(0, i - 1));
+  }
+  function lightboxNext() {
+    setPhotoIndex((i) => Math.min(photos.length - 1, i + 1));
   }
 
   return (
@@ -584,16 +364,31 @@ export default function ItemDetailPage() {
         <div
           className="listing-carousel"
           onTouchStart={handleSwipeStart}
+          onTouchMove={handleSwipeMove}
           onTouchEnd={handleSwipeEnd}
         >
-          <Image
-            src={photos[photoIndex].url}
-            alt={`${listing.title}, photo ${photoIndex + 1} of ${photos.length}`}
-            fill
-            sizes="100vw"
-            style={{ objectFit: "cover" }}
-            priority={photoIndex === 0}
-          />
+          <div
+            ref={trackRef}
+            className="listing-carousel-track"
+            style={{ transform: `translateX(${-photoIndex * 100}%)` }}
+          >
+            {photos.map((photo, i) => (
+              <div
+                key={i}
+                className="listing-carousel-slide"
+                onClick={handleImageTap}
+              >
+                <Image
+                  src={photo.url}
+                  alt={`${listing.title}, photo ${i + 1} of ${photos.length}`}
+                  fill
+                  sizes="100vw"
+                  style={{ objectFit: "cover" }}
+                  priority={i === 0}
+                />
+              </div>
+            ))}
+          </div>
 
           <div className="listing-header">
             <Link href="/browse" className="listing-back" aria-label="Back">
@@ -615,7 +410,7 @@ export default function ItemDetailPage() {
                     <ShareIcon />
                     Share listing
                   </button>
-                  <button type="button" className="overflow-menu-item" role="menuitem" onClick={() => setOverflowOpen(false)}>
+                  <button type="button" className="overflow-menu-item" role="menuitem" onClick={handleOpenReport}>
                     <ReportIcon />
                     Report listing
                   </button>
@@ -647,9 +442,6 @@ export default function ItemDetailPage() {
             <span className="listing-price">
               {formatPrice(listing.askingPrice)}
             </span>
-            {listing.isNegotiable && (
-              <span className="listing-negotiable">Negotiable</span>
-            )}
           </div>
 
           <span className="listing-listed-at">
@@ -704,12 +496,6 @@ export default function ItemDetailPage() {
                 <>
                   <div className="listing-notes">
                     <p className="listing-condition-desc">{cond.description}</p>
-                    {listing.fitNote && (
-                      <div className="listing-note-row">
-                        <InfoIcon />
-                        <span className="listing-note-text">{listing.fitNote}</span>
-                      </div>
-                    )}
                     {listing.flawNote && (
                       <div className="listing-note-row">
                         <InfoIcon />
@@ -736,16 +522,69 @@ export default function ItemDetailPage() {
           <div className="seller-section">
             <span className="seller-section-label">Seller</span>
             <Link href={`/seller/${seller.id}`} className="seller-box">
+              <span className="seller-box-avatar" aria-hidden="true">{initials(seller.displayName)}</span>
               <span className="seller-name">{seller.displayName}</span>
               <span className="seller-box-sep" aria-hidden="true" />
               <span className="seller-box-detail">{cityLabel(seller.city)}</span>
               <span className="seller-box-sep" aria-hidden="true" />
-              <span className="seller-box-detail">{seller.listingCount} listings</span>
+              <span className="seller-box-detail">{sellerListingCount} listings</span>
               <span className="seller-box-sep" aria-hidden="true" />
-              <span className="seller-box-detail">{seller.soldCount} sold</span>
+              <span className="seller-box-detail">{sellerSoldCount} sold</span>
             </Link>
           </div>
         </div>
+
+        {/* ── More from this seller ── */}
+        {sellerListings.length > 0 && (
+          <section className="reco-section">
+            <div className="reco-header">
+              <h2 className="reco-heading">More from {seller.displayName}</h2>
+              <Link href={`/seller/${seller.id}`} className="reco-see-all">
+                See all <ForwardArrowIcon />
+              </Link>
+            </div>
+            <div className="reco-scroll">
+              {sellerListings.map((l) => (
+                <BrowseCard
+                  key={l.id}
+                  id={l.id}
+                  title={l.title}
+                  brand={l.brand}
+                  brandOther={l.brandOther}
+                  category={l.category}
+                  askingPrice={l.askingPrice}
+                  coverPhoto={l.photos.find((p) => p.isCover)?.url ?? l.photos[0].url}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── You may also like ── */}
+        {similarListings.length > 0 && (
+          <section className="reco-section">
+            <div className="reco-header">
+              <h2 className="reco-heading">You may also like</h2>
+              <Link href={`/browse?category=${listing.category}`} className="reco-see-all">
+                See all <ForwardArrowIcon />
+              </Link>
+            </div>
+            <div className="reco-scroll">
+              {similarListings.map((l) => (
+                <BrowseCard
+                  key={l.id}
+                  id={l.id}
+                  title={l.title}
+                  brand={l.brand}
+                  brandOther={l.brandOther}
+                  category={l.category}
+                  askingPrice={l.askingPrice}
+                  coverPhoto={l.photos.find((p) => p.isCover)?.url ?? l.photos[0].url}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Sticky WhatsApp CTA */}
         <div className="listing-actions-bar">
@@ -761,6 +600,112 @@ export default function ItemDetailPage() {
         </div>
 
       </main>
+
+      {/* Toast */}
+      <div className={`toast${toastMessage ? " visible" : ""}`} role="status" aria-live="polite">
+        {toastMessage}
+      </div>
+
+      {/* Report sheet */}
+      <BottomSheet
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        heading="Report this listing"
+        body="Something not right? Tell us what's up and we'll take a look."
+      >
+        <div className="report-form">
+          <div className="reason-picker" role="radiogroup" aria-label="Report reason">
+            {REPORT_REASONS.map((reason) => {
+              const selected = reportReason === reason.value;
+              return (
+                <label
+                  key={reason.value}
+                  className={selected ? "reason-option selected" : "reason-option"}
+                >
+                  <input
+                    className="sr-only"
+                    type="radio"
+                    name="report-reason"
+                    value={reason.value}
+                    checked={selected}
+                    onChange={() => setReportReason(reason.value)}
+                  />
+                  <span className="reason-radio">
+                    <span className="reason-radio-dot" />
+                  </span>
+                  {reason.hint ? (
+                    <span className="reason-text">
+                      <span className="reason-label">{reason.label}</span>
+                      <span className="reason-hint">{reason.hint}</span>
+                    </span>
+                  ) : (
+                    <span className="reason-label">{reason.label}</span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+          <Textarea
+            label="Details (optional)"
+            placeholder="Anything else we should know?"
+            value={reportDetail}
+            onChange={(e) => setReportDetail(e.target.value)}
+          />
+          <PrimaryButton onClick={handleSubmitReport} disabled={!reportReason}>
+            Send report
+          </PrimaryButton>
+        </div>
+      </BottomSheet>
+
+      {/* ── Fullscreen lightbox ── */}
+      {lightboxOpen && (
+        <div className="lightbox-overlay">
+          <div className="lightbox-header">
+            <span className="lightbox-counter">
+              {photoIndex + 1}/{photos.length}
+            </span>
+            <button
+              type="button"
+              className="lightbox-close"
+              aria-label="Close"
+              onClick={() => setLightboxOpen(false)}
+            >
+              <CloseIcon />
+            </button>
+          </div>
+          <div className="lightbox-body">
+            <div className="lightbox-image-wrap">
+              <Image
+                src={photos[photoIndex].url}
+                alt={`${listing.title}, photo ${photoIndex + 1} of ${photos.length}`}
+                fill
+                sizes="100vw"
+                style={{ objectFit: "contain" }}
+              />
+            </div>
+            {photoIndex > 0 && (
+              <button
+                type="button"
+                className="lightbox-arrow lightbox-arrow-prev"
+                aria-label="Previous photo"
+                onClick={lightboxPrev}
+              >
+                <ChevronLeftIcon />
+              </button>
+            )}
+            {photoIndex < photos.length - 1 && (
+              <button
+                type="button"
+                className="lightbox-arrow lightbox-arrow-next"
+                aria-label="Next photo"
+                onClick={lightboxNext}
+              >
+                <ChevronRightIcon />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

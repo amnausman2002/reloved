@@ -396,6 +396,8 @@ Visual layout for zero-result browse screens and empty seller dashboards.
 
 Playful and familiar. Like a friend who has good taste and doesn't take herself too seriously. Short sentences, sentence case, exclamation marks welcome. Warm but not saccharine. When something goes wrong: say what happened, help them fix it, give a timeline.
 
+Say "preloved". Never "secondhand", "second-hand" or "thrift" in user-facing copy.
+
 ### Copy samples
 
 | Context | Copy |
