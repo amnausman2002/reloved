@@ -72,6 +72,19 @@ export function formatPhone(input: string): string {
   return `${DIAL_CODE} ${national.slice(0, 3)} ${national.slice(3)}`;
 }
 
+/** The same spacing without the country code, for the field itself: 3315111860
+ *  becomes "331 5111860".
+ *
+ *  What is stored is still digits only. This runs on the way to the screen, so
+ *  the space is part of what she sees as she types rather than something that
+ *  appears and vanishes. The break is after 3 because that is the network code
+ *  and how everyone reads a Pakistani mobile aloud. */
+export function formatNational(input: string): string {
+  const digits = normalisePhone(input);
+  if (digits.length <= 3) return digits;
+  return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+}
+
 export function validateIdentity(fields: AccountFields): Record<string, string> {
   const found: Record<string, string> = {};
   if (!fields.fullName.trim()) {
