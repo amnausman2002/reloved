@@ -86,9 +86,23 @@ function addRecentSearch(query: string) {
 type Props = {
   onSearch?: (query: string) => void;
   transparent?: boolean;
+  /** Hide the Sell link. Used on /sell, where she is already in the flow and
+   *  the link would only point at the page she is standing on. */
+  hideSell?: boolean;
+  /** Called before the wordmark or the menu takes her off this page. Return
+   *  false to cancel, and show your own confirmation instead.
+   *
+   *  SHARED COMPONENT. Both props are additive and default to the behaviour
+   *  every other page already gets, so nothing else changes. For Bismah. */
+  onBeforeLeave?: () => boolean;
 };
 
-export default function Nav({ onSearch, transparent = false }: Props) {
+export default function Nav({
+  onSearch,
+  transparent = false,
+  hideSell = false,
+  onBeforeLeave,
+}: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -169,15 +183,29 @@ export default function Nav({ onSearch, transparent = false }: Props) {
     <>
       <nav className={`nav${transparent && !scrolled ? " nav-transparent" : ""}`}>
         <div className="nav-left">
-          <Link href="/" className="nav-wordmark">reloved.</Link>
+          {/* Both of these are guarded rather than the individual menu items,
+              because the menu's only purpose is to go somewhere else. Asking
+              once, here, beats asking again at every destination inside it. */}
+          <Link
+            href="/"
+            className="nav-wordmark"
+            onClick={(event) => {
+              if (onBeforeLeave && !onBeforeLeave()) event.preventDefault();
+            }}
+          >
+            reloved.
+          </Link>
         </div>
         <div className="nav-right">
-          <Link href="/sell" className="nav-sell">Sell</Link>
+          {!hideSell && <Link href="/sell" className="nav-sell">Sell</Link>}
           <button
             type="button"
             className="nav-icon"
             aria-label="Menu and search"
-            onClick={() => setDrawerOpen(true)}
+            onClick={() => {
+              if (onBeforeLeave && !onBeforeLeave()) return;
+              setDrawerOpen(true);
+            }}
           >
             <MenuSearchIcon />
           </button>

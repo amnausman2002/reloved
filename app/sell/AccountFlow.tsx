@@ -34,8 +34,6 @@ import {
 
 type Step = "identity" | "phone";
 
-const STEPS: Step[] = ["identity", "phone"];
-
 // Tabler's eye and eye-closed, inlined rather than imported from a file so the
 // stroke follows currentColor and the icon changes with the button's own
 // state. Same approach as every other icon in the sell flow.
@@ -173,29 +171,9 @@ export default function AccountFlow({
     onDone(fields);
   }
 
-  const stepIndex = STEPS.indexOf(step);
-
   return (
     <div className="sell-step">
       <Toast message={toast} onDismiss={() => setToast(null)} variant="error" />
-
-      {/* Built from the condition picker's "marker, then label" idea, shrunk to
-          its smallest form. Three dots, the current one filled. */}
-      <ol className="account-steps" aria-label={`Step ${stepIndex + 1} of ${STEPS.length}`}>
-        {STEPS.map((name, index) => (
-          <li
-            key={name}
-            className={[
-              "account-dot",
-              index < stepIndex && "is-done",
-              index === stepIndex && "is-now",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            aria-hidden="true"
-          />
-        ))}
-      </ol>
 
       {step === "identity" && (
         <>

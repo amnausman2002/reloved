@@ -766,9 +766,13 @@ img { max-width: 100%; display: block; }
    *
    * dvh, not vh: on iOS Safari 100vh is the height with the address bar
    * hidden, so a vh-based footer sits below the fold until she scrolls. The vh
-   * line above it is the fallback for anything too old for dvh. */
-  min-height: calc(100vh - var(--space-6) - var(--space-8));
-  min-height: calc(100dvh - var(--space-6) - var(--space-8));
+   * line above it is the fallback for anything too old for dvh.
+   *
+   * CHANGED 13 Oct: the nav is on this page now. It is sticky and in flow, so
+   * it takes 56px of the viewport, and without subtracting it every sell
+   * screen overflowed by exactly the height of the nav. */
+  min-height: calc(100vh - var(--nav-height) - var(--space-6) - var(--space-8));
+  min-height: calc(100dvh - var(--nav-height) - var(--space-6) - var(--space-8));
 }
 /* A step taller than the screen just scrolls, and the buttons sit after the
  * content as usual. Nothing is pinned over the top of anything. */

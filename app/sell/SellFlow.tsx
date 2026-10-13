@@ -12,6 +12,7 @@ import { MIN_LISTING_PHOTOS, MAX_LISTING_PHOTOS } from "@/lib/constants";
 import ReadingPhotos from "./ReadingPhotos";
 import SellForm from "./SellForm";
 import AccountFlow from "./AccountFlow";
+import Nav from "@/components/ui/Nav";
 import { requestPhotoQuality, requestPrefill } from "./aiRequests";
 import type { QualityFlag } from "./aiRequests";
 import { EMPTY_PREFILL, prefillToForm, type Prefilled } from "./prefillToForm";
@@ -91,6 +92,9 @@ export default function SellFlow() {
   const [submitted, setSubmitted] = useState<AccountFields | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Set when she taps the wordmark or the menu with work in progress. Holds
+  // the sheet open until she decides.
+  const [leaveOpen, setLeaveOpen] = useState(false);
 
   // Every object URL we have handed out, so none leak when the tab closes.
   const urlsRef = useRef<string[]>([]);
@@ -274,6 +278,61 @@ export default function SellFlow() {
     setStep("details");
   }
 
+  /** Everything she would lose by leaving. Photos are the expensive part: she
+   *  has the item in her hands and may not have it there again. Typed fields
+   *  count too, because the form is long.
+   *
+   *  Once the listing is saved there is nothing to warn about, which is why
+   *  `submitted` ends it. */
+  const hasUnsavedWork =
+    submitted === null &&
+    (photos.length > 0 ||
+      Boolean(fields.title.trim() || fields.description.trim() || fields.price) ||
+      Boolean(account.fullName.trim() || account.email.trim()));
+
+  /** Nav calls this before the wordmark or the menu takes her away. Returning
+   *  false cancels the navigation and shows the sheet instead. */
+  function confirmLeave(): boolean {
+    if (!hasUnsavedWork) return true;
+    setLeaveOpen(true);
+    return false;
+  }
+
+  /** The nav on every step, including the photo guide. The Sell link is
+   *  hidden: she is already here, having tapped it. */
+  function withNav(body: React.ReactNode) {
+    return (
+      <>
+        <Nav hideSell onBeforeLeave={confirmLeave} />
+        {body}
+
+        {/* No design in components.html for this one. Same two-choice shape as
+            the photo quality sheet: the safe option is the button, leaving is
+            the quieter link. */}
+        <BottomSheet
+          open={leaveOpen}
+          onClose={() => setLeaveOpen(false)}
+          heading="Leave without posting?"
+          body={
+            photos.length > 0
+              ? "Your photos and anything you have filled in will be lost. Nothing is saved until you post your listing."
+              : "Anything you have filled in will be lost. Nothing is saved until you post your listing."
+          }
+        >
+          <PrimaryButton onClick={() => setLeaveOpen(false)}>Keep going</PrimaryButton>
+          <TextLink
+            onClick={() => {
+              setLeaveOpen(false);
+              window.location.href = "/";
+            }}
+          >
+            Leave and lose it
+          </TextLink>
+        </BottomSheet>
+      </>
+    );
+  }
+
   if (step === null) {
     // One tick, while localStorage is read. Deliberately blank rather than a
     // skeleton: anything drawn here would be replaced before it was seen.
@@ -284,7 +343,7 @@ export default function SellFlow() {
   const flagged = photos.filter((photo) => photo.note).length;
 
   if (step === "intro") {
-    return (
+    return withNav(
       <div className="sell-step">
         <h1 className="text-h1 sell-heading">Photo tips.</h1>
 
@@ -305,7 +364,7 @@ export default function SellFlow() {
   }
 
   if (step === "photos") {
-    return (
+    return withNav(
       <>
         <div className="sell-step">
           <div className="sell-step-head">
@@ -369,9 +428,7 @@ export default function SellFlow() {
   }
 
   if (step === "reading") {
-    return (
-      <ReadingPhotos photos={photos} slow={slow} onSkip={skipReading} />
-    );
+    return withNav(<ReadingPhotos photos={photos} slow={slow} onSkip={skipReading} />);
   }
 
   const cover = photos.find((photo) => photo.id === coverId);
@@ -382,7 +439,7 @@ export default function SellFlow() {
   /* The account step. Reached from Submit listing on the form and nowhere
      else, so her listing is complete by the time she gets here. */
   if (step === "account") {
-    return (
+    return withNav(
       <>
         <AccountFlow
           listing={{
@@ -428,7 +485,7 @@ export default function SellFlow() {
     );
   }
 
-  return (
+  return withNav(
     <>
       <div className="sell-step">
         <h1 className="text-h1 sell-heading">Have a last look.</h1>
