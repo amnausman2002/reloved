@@ -303,8 +303,12 @@ export default function SellFlow() {
   function withNav(body: React.ReactNode) {
     return (
       <>
+        {/* Outside <main>, so the bar sits at the very top of the viewport and
+            spans the full width, exactly as it does on every other page. Inside
+            it, the page's padding pushed it down and in, and tapping Sell made
+            the nav jump. */}
         <Nav hideSell onBeforeLeave={confirmLeave} />
-        {body}
+        <main className="container sell-page">{body}</main>
 
         {/* No design in components.html for this one. Same two-choice shape as
             the photo quality sheet: the safe option is the button, leaving is
