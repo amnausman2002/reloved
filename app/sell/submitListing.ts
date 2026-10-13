@@ -102,11 +102,13 @@ export async function submitListing(
   photos: SellPhoto[],
   coverId: string | null,
 ): Promise<SubmitResult> {
-  const created = await createOrSignIn(
-    account.email.trim(),
-    account.password,
-    account.fullName.trim(),
-  );
+  // Already signed in, which is every listing after her first in this browser.
+  // Skip sign-up entirely: asking a returning seller to invent a password for
+  // an account she is currently using is the bug this replaced.
+  const existing = firebaseAuth().currentUser;
+  const created = existing
+    ? ({ ok: true, user: existing } as const)
+    : await createOrSignIn(account.email.trim(), account.password, account.fullName.trim());
   if (!created.ok) return created;
 
   const { user } = created;

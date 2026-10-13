@@ -99,6 +99,10 @@ type Props = {
   /** Whatever went wrong in SellFlow's submit, shown on whichever screen she
    *  is standing on. */
   submitError?: string | null;
+  /** Her email, when Firebase still has her signed in from a previous listing.
+   *  She skips the identity screen entirely: asking a seller to make a second
+   *  account for the account she is already using is nonsense. */
+  signedInAs?: string | null;
 };
 
 export default function AccountFlow({
@@ -109,8 +113,9 @@ export default function AccountFlow({
   onChange,
   busy = false,
   submitError = null,
+  signedInAs = null,
 }: Props) {
-  const [step, setStep] = useState<Step>("identity");
+  const [step, setStep] = useState<Step>(signedInAs ? "phone" : "identity");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
@@ -285,6 +290,12 @@ export default function AccountFlow({
             be visible once your listing is live.
           </p>
 
+          {signedInAs && (
+            <p className="account-signed-in">
+              Posting as <strong>{signedInAs}</strong>. You already have an account with us.
+            </p>
+          )}
+
           <form className="account-form" onSubmit={submitPhone} noValidate>
             {/* Same .input-with-prefix pattern as the asking price field, where
                 the currency also sits inside the box. */}
@@ -322,7 +333,7 @@ export default function AccountFlow({
               <PrimaryButton type="submit" disabled={busy}>
                 {busy ? "Saving your listing..." : "Submit my listing"}
               </PrimaryButton>
-              <TextLink onClick={() => goTo("identity")} disabled={busy}>
+              <TextLink onClick={() => (signedInAs ? onBack() : goTo("identity"))} disabled={busy}>
                 Back
               </TextLink>
             </div>

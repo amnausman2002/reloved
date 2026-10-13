@@ -69,9 +69,13 @@ export async function upsertSellerProfile(input: SellerProfileInput): Promise<vo
   const profile: Record<string, unknown> = {
     email: input.email,
     display_name: input.display_name,
-    phone: input.phone,
     city: input.city,
   };
+
+  // Only written when there is one. A returning seller who lists a second item
+  // without retyping her number would otherwise have the saved one merged away
+  // to null, and with it the WhatsApp button on every listing she has live.
+  if (input.phone) profile.phone = input.phone;
 
   if (!existing.exists) {
     profile.created_at = FieldValue.serverTimestamp();

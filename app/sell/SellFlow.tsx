@@ -20,6 +20,8 @@ import { flagFor, flaggedCount, qualityHeading, slotNote } from "./qualityWordin
 import { EMPTY_FIELDS, mergePrefill, type FormFields, type SellPhoto } from "./types";
 import { EMPTY_ACCOUNT, type AccountFields } from "./account";
 import { submitListing } from "./submitListing";
+import { onAuthStateChanged } from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebase/client";
 import { DEV_FIELDS, DEV_PREFILLED, devPhotoFiles } from "./devFixture";
 
 // Path 1, the whole seller flow on one page.
@@ -87,14 +89,26 @@ export default function SellFlow() {
   // The account answers live up here for the same reason the form's do: she can
   // step back to her listing and return without retyping any of it.
   const [account, setAccount] = useState<AccountFields>(EMPTY_ACCOUNT);
-  // Set once the listing is actually in Firestore. Owned here rather than in
-  // SellForm because that form unmounts when she moves on to the account step.
+  // Set once the listing is actually in Firestore, and never cleared. Owned
+  // here rather than in SellForm because that form unmounts when she moves on
+  // to the account step.
+  //
+  // Deliberately separate from successOpen below. These were one piece of
+  // state until 13 Oct, which meant closing the success sheet also said the
+  // listing had not been posted, and the leave warning came back for work that
+  // was already saved. A fact about the listing and the visibility of a sheet
+  // are not the same thing.
   const [submitted, setSubmitted] = useState<AccountFields | null>(null);
+  const [successOpen, setSuccessOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   // Set when she taps the wordmark or the menu with work in progress. Holds
   // the sheet open until she decides.
   const [leaveOpen, setLeaveOpen] = useState(false);
+
+  // Who she is, if Firebase still has her signed in from a previous listing.
+  // undefined means we have not heard back yet; null means nobody.
+  const [signedInAs, setSignedInAs] = useState<string | null | undefined>(undefined);
 
   // Every object URL we have handed out, so none leak when the tab closes.
   const urlsRef = useRef<string[]>([]);
@@ -109,6 +123,15 @@ export default function SellFlow() {
       // time is a far smaller problem than the page not rendering.
     }
     setStep(seen ? "photos" : "intro");
+  }, []);
+
+  // A seller who listed something earlier in this browser is still signed in,
+  // and must never be asked to make a second account. Firebase restores the
+  // session asynchronously, so this cannot be read during render.
+  useEffect(() => {
+    return onAuthStateChanged(firebaseAuth(), (user) => {
+      setSignedInAs(user?.email ?? null);
+    });
   }, []);
 
   useEffect(() => {
@@ -258,6 +281,7 @@ export default function SellFlow() {
       return;
     }
     setSubmitted(finished);
+    setSuccessOpen(true);
   }
 
   /** DEVELOPMENT ONLY. Straight to the form with a listing already filled in,
@@ -317,11 +341,10 @@ export default function SellFlow() {
           open={leaveOpen}
           onClose={() => setLeaveOpen(false)}
           heading="Leave without posting?"
-          body={
-            photos.length > 0
-              ? "Your photos and anything you have filled in will be lost. Nothing is saved until you post your listing."
-              : "Anything you have filled in will be lost. Nothing is saved until you post your listing."
-          }
+          // One wording whether or not she has photos yet. The previous pair
+          // split on photos.length, which was a distinction she would never
+          // notice and two strings to keep in step.
+          body="Your progress hasn't been saved yet. If you leave now, you'll lose the photos and details you've added so far."
         >
           <PrimaryButton onClick={() => setLeaveOpen(false)}>Keep going</PrimaryButton>
           <TextLink
@@ -457,12 +480,13 @@ export default function SellFlow() {
           onBack={() => setStep("details")}
           busy={submitting}
           submitError={submitError}
+          signedInAs={signedInAs ?? null}
           onDone={(finished) => void finishSubmit(finished)}
         />
 
         <BottomSheet
-          open={submitted !== null}
-          onClose={() => setSubmitted(null)}
+          open={successOpen}
+          onClose={() => setSuccessOpen(false)}
           heading="All good so far!"
           // The number is always collected now, so there is no second version
           // of this. We check it is on WhatsApp as part of the review, which
@@ -482,8 +506,8 @@ export default function SellFlow() {
             </div>
           }
         >
-          <PrimaryButton onClick={() => setSubmitted(null)}>View my listings</PrimaryButton>
-          <TextLink onClick={() => setSubmitted(null)}>List another item</TextLink>
+          <PrimaryButton onClick={() => setSuccessOpen(false)}>View my listings</PrimaryButton>
+          <TextLink onClick={() => setSuccessOpen(false)}>List another item</TextLink>
         </BottomSheet>
       </>
     );

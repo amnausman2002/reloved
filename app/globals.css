@@ -3122,3 +3122,16 @@ img { max-width: 100%; display: block; }
 .report-form { display: flex; flex-direction: column; gap: var(--space-4); }
 
 /* ── Utility ───────────────────────────────────────────── */
+
+/* Shown on the phone step when she is already signed in from an earlier
+ * listing, so she knows which account this one is going on. Quiet, because it
+ * is a reassurance rather than something she has to act on. */
+.account-signed-in {
+  font-size: var(--size-meta);
+  line-height: var(--lh-body-sm);
+  color: var(--text-secondary);
+  padding: var(--space-3);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+}
+.account-signed-in strong { font-family: var(--font-ui); font-weight: 500; color: var(--text-primary); }
