@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import Nav from "@/components/ui/Nav";
@@ -11,16 +11,21 @@ import StatusChip from "@/components/ui/StatusChip";
 import TextLink from "@/components/ui/TextLink";
 import { CITIES, REJECTION_REASON_LABELS } from "@/lib/constants";
 import type { City } from "@/lib/constants";
+import { useAuthUser, sellerFromAuth, type ProfileSeller } from "@/lib/useAuthUser";
 import {
-  getSeller,
-  getSellerListings,
-  getLiveListings,
-  getSoldCount,
-} from "@/lib/sample-data";
-import type { MockListing } from "@/lib/sample-data";
-import { useCurrentUser } from "@/lib/useCurrentUser";
+  fetchMySellerData,
+  markSold,
+  markUnsold,
+  type MySellerData,
+  type MyListing,
+} from "@/lib/myListings";
+import { fetchPublicSeller, type PublicSeller } from "@/lib/fetchSeller";
+import { isRemotePhoto } from "@/lib/photoUrl";
+import PrimaryButton from "@/components/ui/PrimaryButton";
 
 type Tab = "live" | "inReview" | "sold" | "closed";
+
+type ProfileListing = MyListing;
 
 function formatPrice(price: number): string {
   return `Rs ${price.toLocaleString("en")}`;
@@ -66,6 +71,27 @@ function RepeatIcon() {
   );
 }
 
+/** The shape of a listing row, while her listings are being read.
+ *
+ *  Drawn rather than saying "Loading", so the page does not jump when the real
+ *  rows arrive and she can see what is coming. */
+function ListingRowSkeleton({ rows = 2 }: { rows?: number }) {
+  return (
+    <div aria-busy="true" aria-label="Loading your listings">
+      {Array.from({ length: rows }, (_, i) => (
+        <div className="skeleton-row" key={i}>
+          <div className="skeleton skeleton-thumb" />
+          <div className="skeleton-lines">
+            <div className="skeleton skeleton-line skeleton-line-title" />
+            <div className="skeleton skeleton-line skeleton-line-price" />
+            <div className="skeleton skeleton-line skeleton-line-meta" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // A compact management row: thumbnail, title, price (+ status chip, unless
 // the tab it's in already says the status), an optional note (the rejection
 // reason, the review line, the hidden explanation, or the view/contact
@@ -76,16 +102,27 @@ function ListingRow({
   note,
   action,
 }: {
-  listing: MockListing;
+  listing: ProfileListing;
   showChip?: boolean;
   note?: string;
   action?: ReactNode;
 }) {
-  const cover = listing.photos.find((p) => p.isCover)?.url ?? listing.photos[0].url;
+  // A real listing always has photos, since the server refuses fewer than two.
+  // Tolerated anyway: an empty row is better than a page that throws.
+  const cover = listing.photos.find((p) => p.isCover)?.url ?? listing.photos[0]?.url;
   return (
     <div className="listing-row">
       <Link href={`/item/${listing.id}`} className="listing-row-photo">
-        <Image src={cover} alt={listing.title} width={112} height={144} sizes="56px" />
+        {cover ? (
+          <Image
+            src={cover}
+            alt={listing.title}
+            width={112}
+            height={144}
+            sizes="56px"
+            unoptimized={isRemotePhoto(cover)}
+          />
+        ) : null}
       </Link>
       <div className="listing-row-body">
         <Link href={`/item/${listing.id}`} className="listing-row-title">
@@ -105,56 +142,140 @@ function ListingRow({
 export default function SellerProfilePage() {
   const params = useParams();
   const id = params.id as string;
-  const seller = getSeller(id);
-  const currentUser = useCurrentUser();
-  const isOwner = Boolean(currentUser && seller && currentUser.id === seller.id);
+  const router = useRouter();
+  const { user: authUser, loading: authLoading } = useAuthUser();
+
+  /** Whether this is her own profile. Nobody until Firebase has answered:
+   *  guessing would flash the wrong view at her. */
+  const isOwner = !authLoading && authUser?.uid === id;
+
+  // Two different reads, because they are two different things.
+  //
+  // Her own profile needs every listing at every status and her saved number,
+  // and the route answers only for the account that asked. Everyone else's is
+  // the public view: name, city, bio, sold count, and whatever is live.
+  const [mine, setMine] = useState<MySellerData | null>(null);
+  const [loadingMine, setLoadingMine] = useState(false);
+  const [publicView, setPublicView] = useState<PublicSeller | null>(null);
+  const [publicState, setPublicState] = useState<"loading" | "missing" | "error" | "found">(
+    "loading",
+  );
+  /** The listing currently being marked sold, so only its own row spins. */
+  const [sellingId, setSellingId] = useState<string | null>(null);
+  const [sellError, setSellError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    let live = true;
+
+    if (isOwner) {
+      setLoadingMine(true);
+      void fetchMySellerData().then((data) => {
+        if (!live) return;
+        setMine(data);
+        setLoadingMine(false);
+      });
+    } else {
+      void fetchPublicSeller(id).then((result) => {
+        if (!live) return;
+        if (result.status === "found") {
+          setPublicView(result.seller);
+          setPublicState("found");
+        } else {
+          setPublicState(result.status);
+        }
+      });
+    }
+
+    return () => {
+      live = false;
+    };
+  }, [authLoading, isOwner, id]);
+
+  // What Firestore says wins, because it has her real name, city and bio. The
+  // account from Auth is the stand-in until it lands, so her own page has a
+  // heading to draw straight away rather than a blank.
+  const seller: ProfileSeller | undefined = mine
+    ? {
+        id: mine.profile.id,
+        displayName: mine.profile.displayName,
+        city: mine.profile.city,
+        bio: mine.profile.bio ?? undefined,
+        createdAt: mine.profile.createdAt,
+      }
+    : publicView
+      ? {
+          id: publicView.id,
+          displayName: publicView.displayName,
+          city: publicView.city,
+          bio: publicView.bio ?? undefined,
+          createdAt: publicView.createdAt,
+        }
+      : isOwner && authUser
+        ? sellerFromAuth(authUser)
+        : undefined;
 
   const [tab, setTab] = useState<Tab>("live");
-  const [listings, setListings] = useState<MockListing[]>(() =>
-    seller ? getSellerListings(seller.id) : []
-  );
+
+  const listings: ProfileListing[] = mine?.listings ?? [];
 
   if (!seller) {
     return (
       <>
         <Nav />
         <main className="container" style={{ paddingTop: "var(--space-6)" }}>
-          <p className="text-body">Seller not found.</p>
+          {/* Nothing while the session is still being restored, or while her
+              profile is on its way: telling someone she does not exist and
+              then correcting it is worse than a blank. */}
+          {!authLoading && publicState === "missing" && (
+            <p className="text-body">Seller not found.</p>
+          )}
+          {!authLoading && publicState === "error" && (
+            <p className="text-body">We could not load this profile. Check your connection.</p>
+          )}
         </main>
       </>
     );
   }
 
-  function markSold(listingId: string) {
-    setListings((prev) =>
-      prev.map((l) => (l.id === listingId ? { ...l, status: "sold" as const } : l))
+  /** Firestore first, and the row only moves if it actually changed. Browse is
+   *  corrected at the same time, because it shows live only and the cached copy
+   *  is dropped by markSold/markUnsold. */
+  async function move(listingId: string, to: "sold" | "live") {
+    setSellingId(listingId);
+    setSellError(null);
+    const ok = to === "sold" ? await markSold(listingId) : await markUnsold(listingId);
+    setSellingId(null);
+
+    if (!ok) {
+      setSellError(
+        to === "sold"
+          ? "We could not mark that as sold. Try again in a moment."
+          : "We could not put that back. Try again in a moment.",
+      );
+      return;
+    }
+    setMine((current) =>
+      current
+        ? {
+            ...current,
+            listings: current.listings.map((l) => (l.id === listingId ? { ...l, status: to } : l)),
+          }
+        : current,
     );
   }
 
-  // Expired only — a hidden listing only ever came from two unresolved
-  // reports or one of us acting, so there's nothing for her to do but wait.
-  function relist(listingId: string) {
-    const today = new Date().toISOString().slice(0, 10);
-    setListings((prev) =>
-      prev.map((l) =>
-        l.id === listingId
-          ? { ...l, status: "live" as const, createdAt: today, viewCount: 0, contactCount: 0 }
-          : l
-      )
-    );
-  }
-
-  const liveListings = isOwner
-    ? listings.filter((l) => l.status === "live")
-    : getLiveListings(seller.id);
-  const soldListings = isOwner ? listings.filter((l) => l.status === "sold") : [];
-  const soldCount = isOwner ? soldListings.length : getSoldCount(seller.id);
-  const needsAttention = isOwner ? listings.filter((l) => l.status === "rejected") : [];
-  const underReview = isOwner ? listings.filter((l) => l.status === "pending") : [];
-  const expiredListings = isOwner ? listings.filter((l) => l.status === "expired") : [];
-  const hiddenListings = isOwner ? listings.filter((l) => l.status === "hidden") : [];
+  const liveListings = listings.filter((l) => l.status === "live");
+  const soldListings = listings.filter((l) => l.status === "sold");
+  const soldCount = isOwner ? soldListings.length : (publicView?.soldCount ?? 0);
+  const needsAttention = listings.filter((l) => l.status === "rejected");
+  const underReview = listings.filter((l) => l.status === "pending");
+  const expiredListings = listings.filter((l) => l.status === "expired");
+  const hiddenListings = listings.filter((l) => l.status === "hidden");
   const inReviewListings = [...needsAttention, ...underReview];
   const closedListings = [...expiredListings, ...hiddenListings];
+  // What a buyer sees: her live listings, as cards.
+  const publicListings = publicView?.listings ?? [];
 
   return (
     <>
@@ -177,8 +298,11 @@ export default function SellerProfilePage() {
                 </Link>
               )}
             </div>
+            {/* A brand new account has not told us her city yet, so the dot
+                and the city both drop rather than reading "undefined ·". */}
             <span className="seller-meta">
-              {cityLabel(seller.city)} · {joinedLabel(seller.createdAt)}
+              {seller.city ? `${cityLabel(seller.city)} · ` : ""}
+              {joinedLabel(seller.createdAt)}
             </span>
           </div>
         </div>
@@ -187,7 +311,7 @@ export default function SellerProfilePage() {
 
         {!isOwner && (
           <p className="seller-profile-stats">
-            {liveListings.length} {liveListings.length === 1 ? "item" : "items"} for sale
+            {publicListings.length} {publicListings.length === 1 ? "item" : "items"} for sale
             {soldCount > 1 && ` · ${soldCount} sold`}
           </p>
         )}
@@ -233,6 +357,10 @@ export default function SellerProfilePage() {
               </button>
             </div>
 
+            {/* Shown above the rows rather than inside one, because the row it
+                belongs to may have moved to Sold by the time she reads it. */}
+            {sellError && <p className="input-error-msg">{sellError}</p>}
+
             {tab === "live" &&
               (liveListings.length > 0 ? (
                 liveListings.map((l) => (
@@ -242,12 +370,43 @@ export default function SellerProfilePage() {
                     showChip={false}
                     note={`${l.viewCount} views · ${l.contactCount} contacts`}
                     action={
-                      <TextLink className="listing-row-action-link" onClick={() => markSold(l.id)}>
-                        Mark as sold <CheckIcon />
+                      <TextLink
+                        className="listing-row-action-link"
+                        disabled={sellingId === l.id}
+                        onClick={() => move(l.id, "sold")}
+                      >
+                        {sellingId === l.id ? (
+                          <>
+                            <span className="btn-spinner btn-spinner-inline" aria-hidden="true" />
+                            Marking sold...
+                          </>
+                        ) : (
+                          <>
+                            Mark as sold <CheckIcon />
+                          </>
+                        )}
                       </TextLink>
                     }
                   />
                 ))
+              ) : loadingMine ? (
+                <ListingRowSkeleton rows={2} />
+              ) : listings.length === 0 ? (
+                // She has never listed anything, which is every seller who has
+                // just made an account. The empty state from components.html
+                // section 21, with its CTA, because "Nothing live right now"
+                // on an empty profile is a dead end rather than an answer.
+                <div className="empty-state">
+                  <p className="empty-state-heading">Your first listing goes here</p>
+                  <p className="empty-state-body">
+                    Take a few photos of something you no longer wear. We fill in the details.
+                  </p>
+                  <div className="empty-state-cta">
+                    <PrimaryButton onClick={() => router.push("/sell")}>
+                      List your first item
+                    </PrimaryButton>
+                  </div>
+                </div>
               ) : (
                 <div className="empty-state">
                   <p className="empty-state-heading">Nothing live right now</p>
@@ -285,7 +444,34 @@ export default function SellerProfilePage() {
 
             {tab === "sold" &&
               (soldListings.length > 0 ? (
-                soldListings.map((l) => <ListingRow key={l.id} listing={l} showChip={false} />)
+                soldListings.map((l) => (
+                  <ListingRow
+                    key={l.id}
+                    listing={l}
+                    showChip={false}
+                    // The way back, for a sale that fell through or a tap she
+                    // did not mean. It goes straight back to live rather than
+                    // to the queue: we approved this listing once already.
+                    action={
+                      <TextLink
+                        className="listing-row-action-link"
+                        disabled={sellingId === l.id}
+                        onClick={() => move(l.id, "live")}
+                      >
+                        {sellingId === l.id ? (
+                          <>
+                            <span className="btn-spinner btn-spinner-inline" aria-hidden="true" />
+                            Putting it back...
+                          </>
+                        ) : (
+                          <>
+                            Mark as unsold <RepeatIcon />
+                          </>
+                        )}
+                      </TextLink>
+                    }
+                  />
+                ))
               ) : (
                 <div className="empty-state">
                   <p className="empty-state-heading">Nothing sold yet</p>
@@ -298,14 +484,15 @@ export default function SellerProfilePage() {
                   <ListingRow
                     key={l.id}
                     listing={l}
-                    note={l.status === "hidden" ? "Taken down, under review" : undefined}
-                    action={
-                      l.status === "expired" ? (
-                        <TextLink className="listing-row-action-link" onClick={() => relist(l.id)}>
-                          Relist <RepeatIcon />
-                        </TextLink>
-                      ) : undefined
+                    note={
+                      l.status === "hidden"
+                        ? "Taken down, under review"
+                        : "Expired. Relisting is not built yet."
                     }
+                    // No Relist action. A relist needs a new expiry date and
+                    // arguably a fresh review, which is a decision rather than
+                    // a third copy of the sold route. Nothing expires on its
+                    // own yet either, so this tab is empty in practice.
                   />
                 ))
               ) : (
@@ -314,9 +501,9 @@ export default function SellerProfilePage() {
                 </div>
               ))}
           </>
-        ) : liveListings.length > 0 ? (
+        ) : publicListings.length > 0 ? (
           <div className="browse-grid seller-profile-grid" style={{ marginTop: "var(--space-5)" }}>
-            {liveListings.map((l) => (
+            {publicListings.map((l) => (
               <BrowseCard
                 key={l.id}
                 id={l.id}
@@ -325,7 +512,7 @@ export default function SellerProfilePage() {
                 brandOther={l.brandOther}
                 category={l.category}
                 askingPrice={l.askingPrice}
-                coverPhoto={l.photos.find((p) => p.isCover)?.url ?? l.photos[0].url}
+                coverPhoto={l.coverPhoto}
               />
             ))}
           </div>

@@ -89,7 +89,9 @@ export default function BuySellToggle() {
   const benefits = tab === 'buy' ? BUY_BENEFITS : SELL_BENEFITS;
 
   return (
-    <section className={styles.wrapper}>
+    /* id: the menu's "How it works" points here. There is no separate page for
+       it, and this section is the explanation. */
+    <section className={styles.wrapper} id="how-it-works">
       {/* Toggle + indicator, pinned above the card scroller */}
       <div className={styles.stickyHeader}>
         <div className={styles.stickyInner}>

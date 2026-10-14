@@ -2,6 +2,9 @@
   position: relative;
   z-index: 2;
   background: var(--canvas);
+  /* Jumped to from the menu's "How it works". Without this the sticky nav sits
+   * over the top of the toggle she was sent here to see. */
+  scroll-margin-top: var(--nav-height);
 }
 
 /* ─── Sticky toggle + indicator ──────────────────────── */

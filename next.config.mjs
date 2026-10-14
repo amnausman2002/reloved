@@ -19,6 +19,24 @@ const nextConfig = {
     "*.ngrok-free.app",
     "*.ngrok.io",
   ],
+
+  // Listing photos live in Cloud Storage, and getDownloadURL hands back a
+  // firebasestorage.googleapis.com link. next/image refuses to optimise a
+  // remote image whose host is not listed here, so without this every real
+  // listing photo is a broken image. Local files under /public are unaffected,
+  // which is why the sample listings never needed it.
+  //
+  // The path is narrowed to this project's bucket, so this cannot be used to
+  // proxy images out of anyone else's.
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+        pathname: "/v0/b/reloved-app-2026.firebasestorage.app/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

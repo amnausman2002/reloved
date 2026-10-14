@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuthUser, signOutUser } from "@/lib/useAuthUser";
 
 const RECENT_SEARCHES_KEY = "reloved_recent_searches";
 const MAX_RECENT = 10;
@@ -11,18 +12,17 @@ const TRENDING_SEARCHES = ["khaadi dress", "crop top", "wide leg pants"];
 
 const MENU_ITEMS: { label: string; href: string }[] = [
   { label: "New in", href: "/browse?sort=newest" },
-  { label: "Pret", href: "/browse?category=pret" },
-  { label: "Kurtas", href: "/browse?category=kurta" },
   { label: "Tops", href: "/browse?category=top" },
   { label: "Bottoms", href: "/browse?category=bottoms" },
+  { label: "Kurtas", href: "/browse?category=kurta" },
+  { label: "Pret", href: "/browse?category=pret" },
   { label: "Dresses", href: "/browse?category=dress" },
 ];
 
-const UTILITY_ITEMS: { label: string; href: string }[] = [
-  { label: "Sell an item", href: "/sell" },
-  { label: "How it works", href: "/how-it-works" },
-  { label: "About us", href: "/about" },
-];
+/** The homepage's Buy / Sell toggle, which is the only explanation of how
+ *  Reloved works that exists. There is no /how-it-works page, and a menu item
+ *  pointing at one was a 404. */
+const HOW_IT_WORKS_HREF = "/#how-it-works";
 
 function MenuSearchIcon() {
   return (
@@ -111,6 +111,11 @@ export default function Nav({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  // Signed out until Firebase says otherwise. While `loading` is true we show
+  // the signed-out rows, so the menu never flashes "My profile" at a visitor
+  // who has no account.
+  const { user } = useAuthUser();
+
   useEffect(() => {
     if (!transparent) return;
     function handleScroll() {
@@ -177,6 +182,18 @@ export default function Nav({
   function handleMenuItemClick(href: string) {
     setDrawerOpen(false);
     router.push(href);
+  }
+
+  function closeAfterNav() {
+    setDrawerOpen(false);
+  }
+
+  async function handleSignOut() {
+    await signOutUser();
+    setDrawerOpen(false);
+    // Home rather than staying put: half the pages she could be standing on
+    // only make sense as the person who was signed in.
+    router.push("/");
   }
 
   return (
@@ -274,16 +291,64 @@ export default function Nav({
                   </button>
                 ))}
                 <div className="menu-list-divider" />
-                {UTILITY_ITEMS.map((item) => (
+
+                {/* Utility rows. Sell first, because it is the only thing in
+                    this menu she might have come here to do; then who she is;
+                    then how any of it works. Signed out, the middle row is the
+                    two ways into an account. */}
+                <Link href="/sell" className="menu-list-item" onClick={closeAfterNav}>
+                  Sell an item
+                </Link>
+
+                {user ? (
                   <Link
-                    key={item.href}
-                    href={item.href}
+                    href={`/seller/${user.uid}`}
                     className="menu-list-item"
-                    onClick={() => setDrawerOpen(false)}
+                    onClick={closeAfterNav}
                   >
-                    {item.label}
+                    My profile
                   </Link>
-                ))}
+                ) : (
+                  // One row, two destinations. A single "Sign up | Log in" link
+                  // would make her guess which half she tapped.
+                  <div className="menu-list-pair">
+                    <Link
+                      href="/account"
+                      className="menu-list-item menu-list-item-inline"
+                      onClick={closeAfterNav}
+                    >
+                      Sign up
+                    </Link>
+                    <span className="menu-list-sep" aria-hidden="true">
+                      |
+                    </span>
+                    <Link
+                      href="/account?mode=login"
+                      className="menu-list-item menu-list-item-inline"
+                      onClick={closeAfterNav}
+                    >
+                      Log in
+                    </Link>
+                  </div>
+                )}
+
+                <Link
+                  href={HOW_IT_WORKS_HREF}
+                  className="menu-list-item"
+                  onClick={closeAfterNav}
+                >
+                  How it works
+                </Link>
+
+                {user && (
+                  <button
+                    type="button"
+                    className="menu-list-item menu-list-item-quiet"
+                    onClick={() => void handleSignOut()}
+                  >
+                    Log out
+                  </button>
+                )}
               </nav>
             ) : (
               <div className="menu-search-body">

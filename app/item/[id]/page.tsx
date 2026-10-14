@@ -10,8 +10,11 @@ import BottomSheet from "@/components/ui/BottomSheet";
 import Textarea from "@/components/ui/Textarea";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import type { Brand, Category, ConditionValue, City, ReportReason } from "@/lib/constants";
-import { BRAND_LABELS, CONDITIONS, CITIES, REPORT_REASONS } from "@/lib/constants";
-import { MOCK_LISTINGS, getSellerListings, getSoldCount } from "@/lib/sample-data";
+import { BRAND_LABELS, CONDITIONS, CITIES, MATERIALS, REPORT_REASONS } from "@/lib/constants";
+import { fetchListing, contactSeller, type ListingDetail } from "@/lib/fetchListing";
+import { isRemotePhoto } from "@/lib/photoUrl";
+import { useAuthUser } from "@/lib/useAuthUser";
+import ContactGate from "@/components/buyer/ContactGate";
 
 const CATEGORY_LABELS: Record<string, string> = {
   kurta: "Kurta",
@@ -49,6 +52,12 @@ const BRAND_SPECIAL: Record<string, string> = {
   tommy_hilfiger: "Tommy Hilfiger",
   calvin_klein: "Calvin Klein",
 };
+
+/** "lawn" to "Lawn". MATERIALS carries its own labels, so nothing is derived
+ *  from the value here. */
+function materialLabel(value: string): string {
+  return MATERIALS.find((item) => item.value === value)?.label ?? value;
+}
 
 function brandLabel(brand: Brand, brandOther?: string): string | null {
   if (brand === "unknown") return null;
@@ -194,6 +203,8 @@ export default function ItemDetailPage() {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState<ReportReason | null>(null);
   const [reportDetail, setReportDetail] = useState("");
+  const [gateOpen, setGateOpen] = useState(false);
+  const [contacting, setContacting] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const overflowRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -201,7 +212,25 @@ export default function ItemDetailPage() {
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef(0);
 
-  const listing = MOCK_LISTINGS.find((l) => l.id === id);
+  const [listing, setListing] = useState<ListingDetail | null>(null);
+  const [realState, setRealState] = useState<"idle" | "loading" | "missing" | "error">("loading");
+
+  useEffect(() => {
+    let live = true;
+    setRealState("loading");
+    void fetchListing(id).then((result) => {
+      if (!live) return;
+      if (result.status === "found") {
+        setListing(result.listing);
+        setRealState("idle");
+      } else {
+        setRealState(result.status);
+      }
+    });
+    return () => {
+      live = false;
+    };
+  }, [id]);
 
   useEffect(() => {
     if (!overflowOpen) return;
@@ -277,7 +306,22 @@ export default function ItemDetailPage() {
       <>
         <Nav />
         <main className="container" style={{ paddingTop: "var(--space-6)" }}>
-          <p className="text-body">Listing not found.</p>
+          {/* Three different answers, because they mean three different things
+              to the person reading them. */}
+          {realState === "loading" && (
+            <div aria-busy="true" aria-label="Loading this listing">
+              <div className="skeleton skeleton-photo" />
+              <div className="skeleton-detail">
+                <div className="skeleton skeleton-line skeleton-line-brand" />
+                <div className="skeleton skeleton-line skeleton-line-heading" />
+                <div className="skeleton skeleton-line skeleton-line-price" />
+              </div>
+            </div>
+          )}
+          {realState === "error" && (
+            <p className="text-body">We could not load this listing. Check your connection.</p>
+          )}
+          {realState === "missing" && <p className="text-body">Listing not found.</p>}
         </main>
       </>
     );
@@ -289,17 +333,50 @@ export default function ItemDetailPage() {
   const whatsappMessage = encodeURIComponent(
     `Hi, I'm interested in your ${listing.title} on Reloved.`
   );
-  const whatsappUrl = `https://wa.me/923001234567?text=${whatsappMessage}`;
+  /** wa.me wants digits only, no plus and no spaces. */
+  function whatsappUrlFor(phone: string): string {
+    return `https://wa.me/${phone.replace(/\D/g, "")}?text=${whatsappMessage}`;
+  }
+  // A live listing whose seller never gave us a number. Better to hide the
+  // button than to promise a chat that cannot happen.
+  const canMessage = listing.seller.hasPhone;
 
-  const sellerListings = MOCK_LISTINGS.filter(
-    (l) => l.seller.id === seller.id && l.id !== listing.id
-  );
+  /** Path 3, steps 4 to 6.
+   *
+   *  The number is not on this page. Tapping asks the server for it, which is
+   *  what writes the ContactEvent and enforces the daily cap, and the answer
+   *  is what we open WhatsApp on. Signed out, the gate opens instead.
+   *
+   *  Same tab, not a popup: window.open after an await is blocked by every
+   *  browser, and on a phone assigning the location opens WhatsApp itself. */
+  async function handleMessageSeller(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    if (contacting) return;
+
+    setContacting(true);
+    const result = await contactSeller(id);
+    setContacting(false);
+
+    if (result.ok) {
+      window.location.assign(whatsappUrlFor(result.phone));
+      return;
+    }
+    if (result.needsAccount) {
+      setGateOpen(true);
+      return;
+    }
+    showToast(result.error, 6000);
+  }
+
+  // Her other items, live only, from the same route that fetched this one.
+  const sellerListings = listing.sellerOtherLive;
   // Computed, never stored, per the PRD.
-  const sellerListingCount = getSellerListings(seller.id).length;
-  const sellerSoldCount = getSoldCount(seller.id);
-  const similarListings = MOCK_LISTINGS.filter(
-    (l) => l.category === listing.category && l.id !== listing.id && l.seller.id !== seller.id
-  ).slice(0, 8);
+  const sellerListingCount = sellerListings.length + 1;
+  const sellerSoldCount = listing.seller.soldCount;
+  // "You may also like" is a browse query by category, and this page already
+  // costs one. Left empty until it is worth its own route rather than filled
+  // with something that is not actually similar.
+  const similarListings: typeof sellerListings = [];
 
   function handleSwipeStart(e: React.TouchEvent) {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -385,6 +462,7 @@ export default function ItemDetailPage() {
                   sizes="100vw"
                   style={{ objectFit: "cover" }}
                   priority={i === 0}
+                  unoptimized={isRemotePhoto(photo.url)}
                 />
               </div>
             ))}
@@ -496,10 +574,14 @@ export default function ItemDetailPage() {
                 <>
                   <div className="listing-notes">
                     <p className="listing-condition-desc">{cond.description}</p>
-                    {listing.flawNote && (
+                    {/* flaw_note was merged into the description on 8 Oct, so
+                        there is no separate flaw line any more. The material is
+                        the useful thing in its place: buyers here shop by
+                        fabric as much as by brand. */}
+                    {listing.material && (
                       <div className="listing-note-row">
                         <InfoIcon />
-                        <span className="listing-note-text">{listing.flawNote}</span>
+                        <span className="listing-note-text">{materialLabel(listing.material)}</span>
                       </div>
                     )}
                     {listing.isReplica && (
@@ -525,7 +607,10 @@ export default function ItemDetailPage() {
               <span className="seller-box-avatar" aria-hidden="true">{initials(seller.displayName)}</span>
               <span className="seller-name">{seller.displayName}</span>
               <span className="seller-box-sep" aria-hidden="true" />
-              <span className="seller-box-detail">{cityLabel(seller.city)}</span>
+              {/* Her city is not set until she edits her profile. The listing's
+                  own city stands in: it is where the item is, which is what a
+                  buyer is actually asking. */}
+              <span className="seller-box-detail">{cityLabel(seller.city ?? listing.city)}</span>
               <span className="seller-box-sep" aria-hidden="true" />
               <span className="seller-box-detail">{sellerListingCount} listings</span>
               <span className="seller-box-sep" aria-hidden="true" />
@@ -553,7 +638,7 @@ export default function ItemDetailPage() {
                   brandOther={l.brandOther}
                   category={l.category}
                   askingPrice={l.askingPrice}
-                  coverPhoto={l.photos.find((p) => p.isCover)?.url ?? l.photos[0].url}
+                  coverPhoto={l.coverPhoto}
                 />
               ))}
             </div>
@@ -579,25 +664,39 @@ export default function ItemDetailPage() {
                   brandOther={l.brandOther}
                   category={l.category}
                   askingPrice={l.askingPrice}
-                  coverPhoto={l.photos.find((p) => p.isCover)?.url ?? l.photos[0].url}
+                  coverPhoto={l.coverPhoto}
                 />
               ))}
             </div>
           </section>
         )}
 
-        {/* Sticky WhatsApp CTA */}
-        <div className="listing-actions-bar">
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-whatsapp"
-          >
-            <WhatsAppIcon />
-            Message seller on WhatsApp
-          </a>
-        </div>
+        {/* Sticky WhatsApp CTA.
+            A button, not a link, because there is no href until the server
+            hands one over: the number is fetched on the tap. */}
+        {canMessage && (
+          <div className="listing-actions-bar">
+            <button
+              type="button"
+              className="btn-whatsapp"
+              disabled={contacting}
+              aria-busy={contacting || undefined}
+              onClick={(event) => void handleMessageSeller(event)}
+            >
+              {contacting ? (
+                <>
+                  <span className="btn-spinner" aria-hidden="true" />
+                  Opening WhatsApp...
+                </>
+              ) : (
+                <>
+                  <WhatsAppIcon />
+                  Message seller on WhatsApp
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
       </main>
 
@@ -605,6 +704,26 @@ export default function ItemDetailPage() {
       <div className={`toast${toastMessage ? " visible" : ""}`} role="status" aria-live="polite">
         {toastMessage}
       </div>
+
+      {/* The buyer gate. Only ever opens for someone signed out. */}
+      <ContactGate
+        open={gateOpen}
+        onClose={() => setGateOpen(false)}
+        signUpHref={`/account?next=${encodeURIComponent(`/item/${id}`)}`}
+        onSignedIn={() => {
+          setGateOpen(false);
+          // Straight on to what she tapped for. The same call as before, which
+          // now succeeds because she has an account: it writes the
+          // ContactEvent and comes back with the number.
+          void (async () => {
+            setContacting(true);
+            const result = await contactSeller(id);
+            setContacting(false);
+            if (result.ok) window.location.assign(whatsappUrlFor(result.phone));
+            else if (!result.needsAccount) showToast(result.error, 6000);
+          })();
+        }}
+      />
 
       {/* Report sheet */}
       <BottomSheet
@@ -681,6 +800,7 @@ export default function ItemDetailPage() {
                 fill
                 sizes="100vw"
                 style={{ objectFit: "contain" }}
+                unoptimized={isRemotePhoto(photos[photoIndex].url)}
               />
             </div>
             {photoIndex > 0 && (

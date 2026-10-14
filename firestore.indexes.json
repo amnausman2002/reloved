@@ -35,6 +35,15 @@
         { "fieldPath": "listing_id", "order": "ASCENDING" },
         { "fieldPath": "position", "order": "ASCENDING" }
       ]
+    },
+    {
+      "//": "The daily contact cap: how many sellers this buyer has messaged since midnight. An equality filter and a range on a different field always needs a composite index. Without it, every tap on Message seller fails.",
+      "collectionGroup": "contact_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "buyer_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

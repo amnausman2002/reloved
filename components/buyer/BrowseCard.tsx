@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Brand, Category } from "@/lib/constants";
 import { BRAND_LABELS } from "@/lib/constants";
+import { isRemotePhoto } from "@/lib/photoUrl";
 
 type Props = {
   id: string;
@@ -42,6 +43,9 @@ export default function BrowseCard({
           width={400}
           height={533}
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+          // A seller's photo comes straight from Cloud Storage. See
+          // lib/photoUrl.ts: putting it through the optimiser breaks it.
+          unoptimized={isRemotePhoto(coverPhoto)}
         />
       </div>
       <div className="browse-card-info">

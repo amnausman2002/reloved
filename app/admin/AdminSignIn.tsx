@@ -84,8 +84,8 @@ export default function AdminSignIn({ wrongAccount }: Props) {
             onChange={(event) => setPassword(event.target.value)}
             error={error ?? undefined}
           />
-          <PrimaryButton type="submit" disabled={busy}>
-            {busy ? "Signing in..." : "Sign in"}
+          <PrimaryButton type="submit" loading={busy} loadingLabel="Signing in...">
+            Sign in
           </PrimaryButton>
         </form>
       </div>

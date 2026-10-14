@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { isAdmin, userFromIdToken } from "@/lib/firebase/admin";
-import { pendingQueue } from "@/lib/data/admin";
-import AdminQueue from "./AdminQueue";
+import { pendingQueue, recentAccounts } from "@/lib/data/admin";
+import AdminTabs from "./AdminTabs";
 import AdminSignIn from "./AdminSignIn";
 
 export const metadata = { title: "Queue | Reloved admin" };
@@ -39,20 +39,23 @@ export default async function AdminPage() {
     return <AdminSignIn wrongAccount={user.email ?? "That account"} />;
   }
 
-  const queue = await pendingQueue();
+  // Both lists in one render. They are two halves of the same job: a listing
+  // is not trustworthy until its seller's number has answered on WhatsApp.
+  const [queue, accounts] = await Promise.all([pendingQueue(), recentAccounts()]);
+
+  const waitingAccounts = accounts.filter((a) => a.phone !== null && !a.phone_verified).length;
+  const waiting = queue.length + waitingAccounts;
 
   return (
     <main className="admin-page">
       <header className="admin-head">
         <h1 className="text-h1">Queue.</h1>
         <p className="admin-count">
-          {queue.length === 0
-            ? "Nothing waiting"
-            : `${queue.length} waiting, oldest first`}
+          {waiting === 0 ? "Nothing waiting" : `${waiting} waiting`}
         </p>
       </header>
 
-      <AdminQueue items={queue} />
+      <AdminTabs queue={queue} accounts={accounts} />
     </main>
   );
 }
