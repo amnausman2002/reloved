@@ -16,8 +16,11 @@ import {
   CITIES,
   SIZE_OPTIONS,
 } from "@/lib/constants";
+import { fetchLiveListings, cachedLiveListings } from "@/lib/fetchBrowse";
 
-type MockListing = {
+/** One card in the grid. Matches BrowseListing from the route, which is where
+ *  every one of these now comes from. */
+type GridListing = {
   id: string;
   title: string;
   brand: Brand;
@@ -30,142 +33,6 @@ type MockListing = {
   coverPhoto: string;
 };
 
-const MOCK_LISTINGS: MockListing[] = [
-  {
-    id: "1",
-    title: "Printed lawn kurta, mustard",
-    brand: "khaadi",
-    category: "kurta",
-    size: "M",
-    condition: "very_good",
-    askingPrice: 2500,
-    city: "lahore",
-    coverPhoto: "/photos/listings/IMG_6511.jpg",
-  },
-  {
-    id: "2",
-    title: "Block print sleeveless kurta",
-    brand: "sapphire",
-    category: "kurta",
-    size: "S",
-    condition: "brand_new_without_tags",
-    askingPrice: 3200,
-    city: "karachi",
-    coverPhoto: "/photos/listings/IMG_6513.jpg",
-  },
-  {
-    id: "3",
-    title: "Floral button-up dress",
-    brand: "other",
-    brandOther: "Quiz",
-    category: "dress",
-    size: "M",
-    condition: "brand_new_with_tags",
-    askingPrice: 1800,
-    city: "islamabad",
-    coverPhoto: "/photos/listings/IMG_6516.jpg",
-  },
-  {
-    id: "4",
-    title: "Ribbed polo crop top, lilac",
-    brand: "unknown",
-    category: "top",
-    size: "S",
-    condition: "very_good",
-    askingPrice: 900,
-    city: "lahore",
-    coverPhoto: "/photos/listings/IMG_6514.jpg",
-  },
-  {
-    id: "5",
-    title: "Cotton printed kurta",
-    brand: "generation",
-    category: "kurta",
-    size: "L",
-    condition: "fair",
-    askingPrice: 2800,
-    city: "faisalabad",
-    coverPhoto: "/photos/listings/IMG_6512.jpg",
-  },
-  {
-    id: "6",
-    title: "Printed lawn kurta, multicolour",
-    brand: "khaadi",
-    category: "kurta",
-    size: "M",
-    condition: "brand_new_without_tags",
-    askingPrice: 3500,
-    city: "rawalpindi",
-    coverPhoto: "/photos/listings/IMG_6511.jpg",
-  },
-  {
-    id: "7",
-    title: "Cropped collared top, pink",
-    brand: "zara",
-    category: "top",
-    size: "XS",
-    condition: "very_good",
-    askingPrice: 1200,
-    city: "karachi",
-    coverPhoto: "/photos/listings/IMG_6515.jpg",
-  },
-  {
-    id: "8",
-    title: "Printed sleeveless dress",
-    brand: "limelight",
-    category: "dress",
-    size: "S",
-    condition: "brand_new_without_tags",
-    askingPrice: 2200,
-    city: "lahore",
-    coverPhoto: "/photos/listings/IMG_6513.jpg",
-  },
-  {
-    id: "9",
-    title: "Ribbed collar top, lavender",
-    brand: "hm",
-    category: "top",
-    size: "M",
-    condition: "fair",
-    askingPrice: 750,
-    city: "islamabad",
-    coverPhoto: "/photos/listings/IMG_6514.jpg",
-  },
-  {
-    id: "10",
-    title: "Embroidered lawn kurta",
-    brand: "cross_stitch",
-    category: "kurta",
-    size: "L",
-    condition: "brand_new_with_tags",
-    askingPrice: 4000,
-    city: "multan",
-    coverPhoto: "/photos/listings/IMG_6512.jpg",
-  },
-  {
-    id: "11",
-    title: "Monochrome floral dress",
-    brand: "other",
-    brandOther: "Quiz",
-    category: "dress",
-    size: "S",
-    condition: "very_good",
-    askingPrice: 1500,
-    city: "peshawar",
-    coverPhoto: "/photos/listings/IMG_6519.jpg",
-  },
-  {
-    id: "12",
-    title: "Summer lawn kurta, printed",
-    brand: "beechtree",
-    category: "kurta",
-    size: "M",
-    condition: "brand_new_without_tags",
-    askingPrice: 1900,
-    city: "hyderabad",
-    coverPhoto: "/photos/listings/IMG_6511.jpg",
-  },
-];
 
 const CATEGORY_LABELS: Record<string, string> = {
   kurta: "Kurta",
@@ -319,7 +186,32 @@ function BrowseContent() {
   const [maxPriceLabel, setMaxPriceLabel] = useState<string | null>(null);
 
   const initializedFromUrl = useRef(false);
-  const isFirstUrlWrite = useRef(true);
+  /** True once the filters in the link have been applied to state. Nothing may
+   *  write the URL before that, or it writes over the link it was given. */
+  const [urlApplied, setUrlApplied] = useState(false);
+
+  // Every live listing, newest first, from Firestore. The sample array that
+  // used to sit underneath these was deleted on 14 Oct: the grid shows what is
+  // actually for sale, and an empty grid is an honest answer.
+  //
+  // Starts from whatever this tab already fetched, so a filter tap (which
+  // rewrites the URL and remounts this page) never blanks them out.
+  const [allListings, setAllListings] = useState<GridListing[]>(
+    () => cachedLiveListings() ?? [],
+  );
+  const [loadingLive, setLoadingLive] = useState(() => cachedLiveListings() === null);
+
+  useEffect(() => {
+    let alive = true;
+    void fetchLiveListings().then((listings) => {
+      if (!alive) return;
+      setAllListings(listings);
+      setLoadingLive(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Read the landing page's links once on mount: ?q=, ?category=, ?brand=,
   // ?maxPrice= and ?city=. Values that are not real enum members are ignored
@@ -357,16 +249,25 @@ function BrowseContent() {
         }
       }
     }
+
+    // Only now may the URL be written back. See the effect below.
+    setUrlApplied(true);
   }, [searchParams]);
 
   // Keep the URL in sync with whatever the user has selected, so the page can
-  // be shared with filters intact. Skips the very first effect pass, which
-  // would otherwise fire before the read above has had a chance to apply.
+  // be shared with filters intact.
+  //
+  // FIXED: this used to skip its first pass using a ref, to avoid writing an
+  // empty URL before the read above had applied. React runs every effect twice
+  // in development, which used up that skip on the duplicate pass, so the real
+  // first pass ran with no filters selected yet and replaced the URL with a
+  // bare /browse. A link from the homepage to /browse?category=kurta lost its
+  // category before anything could read it, and the page showed everything.
+  //
+  // Waiting on state set by the read effect instead of on a ref is immune to
+  // that: the write cannot run until the read has actually committed.
   useEffect(() => {
-    if (isFirstUrlWrite.current) {
-      isFirstUrlWrite.current = false;
-      return;
-    }
+    if (!urlApplied) return;
     const params = new URLSearchParams();
     if (search.trim()) params.set("q", search.trim());
     if (selectedCategories.length) params.set("category", selectedCategories.join(","));
@@ -388,6 +289,7 @@ function BrowseContent() {
     selectedPriceRanges,
     sortBy,
     router,
+    urlApplied,
   ]);
 
   const hasActiveFilters =
@@ -404,7 +306,7 @@ function BrowseContent() {
   );
 
   const filtered = useMemo(() => {
-    let results = MOCK_LISTINGS;
+    let results = allListings;
     if (selectedCategories.length > 0)
       results = results.filter((l) => selectedCategories.includes(l.category));
     if (selectedBrands.length > 0)
@@ -435,6 +337,7 @@ function BrowseContent() {
     }
     return results;
   }, [
+    allListings,
     search,
     selectedCategories,
     selectedBrands,
@@ -637,7 +540,22 @@ function BrowseContent() {
           </div>
         </div>
 
-        {filtered.length > 0 ? (
+        {loadingLive && filtered.length === 0 ? (
+          // Only while there is nothing to show yet. Once the sample items are
+          // on screen, swapping them for skeletons would be a step backwards.
+          <div className="browse-grid" aria-busy="true" aria-label="Loading listings">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i}>
+                <div className="skeleton skeleton-card-photo" />
+                <div className="skeleton-lines">
+                  <div className="skeleton skeleton-line skeleton-line-brand" />
+                  <div className="skeleton skeleton-line skeleton-line-title" />
+                  <div className="skeleton skeleton-line skeleton-line-price" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length > 0 ? (
           <div className="browse-grid">
             {filtered.map((listing) => (
               <BrowseCard

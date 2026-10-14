@@ -18,11 +18,11 @@ import type { QualityFlag } from "./aiRequests";
 import { EMPTY_PREFILL, prefillToForm, type Prefilled } from "./prefillToForm";
 import { flagFor, flaggedCount, qualityHeading, slotNote } from "./qualityWording";
 import { EMPTY_FIELDS, mergePrefill, type FormFields, type SellPhoto } from "./types";
-import { EMPTY_ACCOUNT, type AccountFields } from "./account";
+import { EMPTY_ACCOUNT, formatPhone, normalisePhone, type AccountFields } from "./account";
 import { submitListing } from "./submitListing";
 import { onAuthStateChanged } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { DEV_FIELDS, DEV_PREFILLED, devPhotoFiles } from "./devFixture";
+import { fetchMyProfile } from "@/lib/myListings";
 
 // Path 1, the whole seller flow on one page.
 //
@@ -37,11 +37,6 @@ import { DEV_FIELDS, DEV_PREFILLED, devPhotoFiles } from "./devFixture";
 // away and she would have to shoot the item again.
 
 type Step = "intro" | "photos" | "reading" | "details" | "account";
-
-/** DEVELOPMENT ONLY. Reaching the form normally costs two Gemini calls, so
- *  testing anything after it was burning credits on a photo read nobody needed.
- *  Next strips this branch from the production bundle. */
-const DEV_SKIP = process.env.NODE_ENV !== "production";
 
 /** Remembering she has seen the guide is a convenience, not a setting, so
  *  localStorage is enough. A new phone showing it again is the right outcome. */
@@ -110,6 +105,12 @@ export default function SellFlow() {
   // undefined means we have not heard back yet; null means nobody.
   const [signedInAs, setSignedInAs] = useState<string | null | undefined>(undefined);
 
+  // Her saved WhatsApp number, if she has given us one before. Its presence is
+  // what decides whether Submit asks her to confirm a number in a sheet or
+  // takes her to a screen to type one.
+  const [savedPhone, setSavedPhone] = useState<string | null>(null);
+  const [confirmPhoneOpen, setConfirmPhoneOpen] = useState(false);
+
   // Every object URL we have handed out, so none leak when the tab closes.
   const urlsRef = useRef<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
@@ -131,6 +132,31 @@ export default function SellFlow() {
   useEffect(() => {
     return onAuthStateChanged(firebaseAuth(), (user) => {
       setSignedInAs(user?.email ?? null);
+      if (!user) return;
+
+      // Her name, from the account she already has, because the screen that
+      // asks for it is the one she is about to skip. Only into an empty field:
+      // if she has typed something, that is hers.
+      if (user.displayName) {
+        setAccount((current) =>
+          current.fullName.trim() ? current : { ...current, fullName: user.displayName ?? "" },
+        );
+      }
+
+      // And her number, from her profile, so a returning seller is not asked
+      // for it on every listing. She still sees the screen, with the number
+      // already in the box: it is the one thing on a listing that decides
+      // whether a buyer can reach her, and it should never change silently.
+      //
+      // Stored as E.164, shown as the national part, which is what the field
+      // holds and what normalisePhone would make of it anyway.
+      void fetchMyProfile().then((profile) => {
+        if (!profile?.phone) return;
+        setSavedPhone(profile.phone);
+        setAccount((current) =>
+          current.phone.trim() ? current : { ...current, phone: normalisePhone(profile.phone!) },
+        );
+      });
     });
   }, []);
 
@@ -281,25 +307,28 @@ export default function SellFlow() {
       return;
     }
     setSubmitted(finished);
+    // Close the confirm sheet before opening the success one. Two sheets over
+    // each other is not a state the design has, or should have.
+    setConfirmPhoneOpen(false);
     setSuccessOpen(true);
   }
 
-  /** DEVELOPMENT ONLY. Straight to the form with a listing already filled in,
-   *  so the account step can be walked through without paying for a photo
-   *  read. Photos are optional here: with none added the form simply shows an
-   *  empty thumbnail strip. */
-  async function devSkipToForm() {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    setPrefillError(null);
-    setPrefilled(DEV_PREFILLED);
-    setFields(DEV_FIELDS);
-    // A listing needs MIN_LISTING_PHOTOS and the server enforces it, so
-    // without these the dev route could fill the form but never submit. Goes
-    // through handleAdd like any other photo, so the real prepare-and-upload
-    // path is what gets tested.
-    if (photos.length === 0) await handleAdd(await devPhotoFiles());
-    setStep("details");
+  /** Her profile, which is where her listings are. A full page load rather than
+   *  router.push: this flow is holding six object URLs, an abort controller and
+   *  a form, and the profile is going to fetch everything fresh anyway. The
+   *  reload is also what frees the photos, instead of leaving them alive in a
+   *  tab she has finished with. */
+  function goToMyListings() {
+    setSuccessOpen(false);
+    const uid = firebaseAuth().currentUser?.uid;
+    window.location.assign(uid ? `/seller/${uid}` : "/");
+  }
+
+  /** Start again, without the posted listing's photos or answers following her
+   *  into the next one. Same reload, for the same reason. */
+  function listAnother() {
+    setSuccessOpen(false);
+    window.location.assign("/sell");
   }
 
   /** Everything she would lose by leaving. Photos are the expensive part: she
@@ -396,7 +425,7 @@ export default function SellFlow() {
         <div className="sell-step">
           <div className="sell-step-head">
             <h1 className="text-h1 sell-heading">Your photos.</h1>
-            <TextLink onClick={() => setGuideOpen(true)}>View photo guide</TextLink>
+            <TextLink onClick={() => setGuideOpen(true)}>View photo tips</TextLink>
           </div>
 
           <PhotoGrid
@@ -429,23 +458,13 @@ export default function SellFlow() {
               {`Build my listing (${photos.length}/${MAX_LISTING_PHOTOS})`}
             </PrimaryButton>
 
-            {/* DEVELOPMENT ONLY, and deliberately ugly so it is never mistaken
-                for part of the design. Skips both Gemini calls and lands on a
-                filled-in form, which is the only cheap way to reach the
-                account step. Not in the production bundle. */}
-            {DEV_SKIP && (
-              <button type="button" className="dev-skip" onClick={() => void devSkipToForm()}>
-                Dev: skip the AI, fill the form
-              </button>
-            )}
           </div>
         </div>
 
         <BottomSheet
           open={guideOpen}
           onClose={() => setGuideOpen(false)}
-          heading="How to photograph it"
-          body="Five things that make the difference between a listing that sells and one that gets skipped."
+          heading="Photo tips"
         >
           <PhotoGuide />
           <PrimaryButton onClick={() => setGuideOpen(false)}>Got it</PrimaryButton>
@@ -463,8 +482,44 @@ export default function SellFlow() {
     ? `Rs ${Number(fields.price).toLocaleString("en-PK")}`
     : "No price yet";
 
-  /* The account step. Reached from Submit listing on the form and nowhere
-     else, so her listing is complete by the time she gets here. */
+  /* Rendered on both of the last two steps, because the listing can now be
+     posted from either: from the account screen by a new seller, or from the
+     confirm-number sheet over the form by a returning one. It used to live
+     inside the account step alone, which meant a listing posted from the form
+     was saved and never said so. */
+  const successSheet = (
+    <BottomSheet
+      open={successOpen}
+      onClose={() => setSuccessOpen(false)}
+      heading="All good so far!"
+      // The number is always collected now, so there is no second version
+      // of this. We check it is on WhatsApp as part of the review, which
+      // is why the copy promises a day rather than minutes.
+      body="We'll review your listing and check your number is on WhatsApp. You'll hear from us within a day."
+      media={
+        <div className="bottom-sheet-item">
+          {cover ? (
+            <img className="bottom-sheet-thumb" src={cover.url} alt="" />
+          ) : (
+            <div className="bottom-sheet-thumb" />
+          )}
+          <div>
+            <p className="bottom-sheet-item-name">{fields.title}</p>
+            <p className="bottom-sheet-item-price">{priceLabel}</p>
+          </div>
+        </div>
+      }
+    >
+      {/* Both of these used to only close the sheet, which left her on the
+          number screen of a listing she had already posted, looking at a
+          button that appeared to do nothing. */}
+      <PrimaryButton onClick={goToMyListings}>View my listings</PrimaryButton>
+      <TextLink onClick={listAnother}>List another item</TextLink>
+    </BottomSheet>
+  );
+
+  /* The account step. Reached from Submit listing on the form when we do not
+     already know her number, and nowhere else. */
   if (step === "account") {
     return withNav(
       <>
@@ -484,31 +539,7 @@ export default function SellFlow() {
           onDone={(finished) => void finishSubmit(finished)}
         />
 
-        <BottomSheet
-          open={successOpen}
-          onClose={() => setSuccessOpen(false)}
-          heading="All good so far!"
-          // The number is always collected now, so there is no second version
-          // of this. We check it is on WhatsApp as part of the review, which
-          // is why the copy promises a day rather than minutes.
-          body="We'll review your listing and check your number is on WhatsApp. You'll hear from us within a day."
-          media={
-            <div className="bottom-sheet-item">
-              {cover ? (
-                <img className="bottom-sheet-thumb" src={cover.url} alt="" />
-              ) : (
-                <div className="bottom-sheet-thumb" />
-              )}
-              <div>
-                <p className="bottom-sheet-item-name">{fields.title}</p>
-                <p className="bottom-sheet-item-price">{priceLabel}</p>
-              </div>
-            </div>
-          }
-        >
-          <PrimaryButton onClick={() => setSuccessOpen(false)}>View my listings</PrimaryButton>
-          <TextLink onClick={() => setSuccessOpen(false)}>List another item</TextLink>
-        </BottomSheet>
+        {successSheet}
       </>
     );
   }
@@ -529,9 +560,11 @@ export default function SellFlow() {
           prefilled={prefilled}
           prefillError={prefillError}
           onBackToPhotos={() => setStep("photos")}
-          // Submit no longer finishes the flow: it hands her to the account
-          // step, which is the last thing between her and a pending listing.
-          onSubmit={() => setStep("account")}
+          // Submit hands her to whatever is still missing. For a seller we
+          // already have a number for, that is nothing but a quick check that
+          // it is still the right one, which is a sheet over the form rather
+          // than a screen of its own.
+          onSubmit={() => (savedPhone ? setConfirmPhoneOpen(true) : setStep("account"))}
         />
       </div>
 
@@ -567,6 +600,40 @@ export default function SellFlow() {
           {flagged === 1 ? "Keep it and carry on" : "Keep them and carry on"}
         </TextLink>
       </BottomSheet>
+
+      {/* The whole account step, for a seller who has one.
+          NEW: she has already told us her name, her email and her number, so
+          the only thing left to ask is whether the number is still right. A
+          screen for one yes/no answer she has given before is a screen too
+          many, so it is a sheet over her finished listing. */}
+      <BottomSheet
+        open={confirmPhoneOpen}
+        onClose={() => (submitting ? undefined : setConfirmPhoneOpen(false))}
+        heading="Is this still your WhatsApp?"
+        body="This is the number buyers will message you on. It only becomes visible once your listing is live."
+        dismissOnOverlayClick={false}
+        media={<p className="confirm-phone-number">{formatPhone(savedPhone ?? "")}</p>}
+      >
+        {submitError && <p className="input-error-msg">{submitError}</p>}
+        <PrimaryButton
+          loading={submitting}
+          loadingLabel="Saving your listing..."
+          onClick={() => void finishSubmit({ ...account, phone: normalisePhone(savedPhone ?? "") })}
+        >
+          Yes, submit my listing
+        </PrimaryButton>
+        <TextLink
+          disabled={submitting}
+          onClick={() => {
+            setConfirmPhoneOpen(false);
+            setStep("account");
+          }}
+        >
+          Use a different number
+        </TextLink>
+      </BottomSheet>
+
+      {successSheet}
     </>
   );
 }

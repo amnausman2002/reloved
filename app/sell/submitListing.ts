@@ -133,7 +133,9 @@ export async function submitListing(
     body: JSON.stringify({
       idToken,
       account: {
-        fullName: account.fullName.trim(),
+        // null rather than "", because the server treats a missing name as
+        // "she already has one on file" and an empty string as a mistake.
+        fullName: account.fullName.trim() || null,
         phone: normalisePhone(account.phone) ? normalisePhone(account.phone) : null,
       },
       listing: {
@@ -142,7 +144,11 @@ export async function submitListing(
         brand: fields.brand,
         brandOther: fields.brandOther.trim(),
         category: fields.category,
-        colour: fields.colour,
+        // Trimmed to the length the server accepts. Nothing on the form shows
+        // the colour, so a long answer from the AI ("navy blue with white
+        // floral print and red trim") would otherwise fail the submit with a
+        // message about missing details, for a field she cannot even see.
+        colour: fields.colour.trim().slice(0, 40),
         size: fields.size,
         condition: fields.condition,
         isReplica: fields.isReplica,

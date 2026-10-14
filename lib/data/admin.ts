@@ -150,6 +150,80 @@ export async function pendingQueue(max = 50): Promise<QueueItem[]> {
   );
 }
 
+/** One row in the accounts list: who signed up, and the number we have to
+ *  check by hand before her listings can be trusted. */
+export type AccountItem = {
+  id: string;
+  display_name: string;
+  email: string | null;
+  /** E.164, or null for a buyer. Buyers are never asked for a number. */
+  phone: string | null;
+  phone_verified: boolean;
+  city: string | null;
+  created_at_ms: number;
+  joined_label: string;
+  /** What she has posted. A seller with listings and an unchecked number is
+   *  the one to look at first. */
+  listing_count: number;
+};
+
+/** Everyone who has made an account, newest first.
+ *
+ *  Ordered by created_at alone, with no status filter, so it needs no
+ *  composite index. Filtering happens below, in memory, which at soft-launch
+ *  size is cheaper than another index to deploy.
+ *
+ *  Admins are left out: we are not verifying ourselves.
+ *
+ *  MANUAL FOR NOW. Checking a number means opening its WhatsApp link and
+ *  seeing a real account at the other end. Once the WhatsApp Business account
+ *  with Meta is approved we can send the check automatically and record the
+ *  reply, and this list becomes a list of answers rather than a list of jobs.
+ *  Until then every row here is a person one of us has to message. */
+export async function recentAccounts(max = 100): Promise<AccountItem[]> {
+  const db = adminDb();
+  const snap = await db
+    .collection(COLLECTIONS.users)
+    .orderBy("created_at", "desc")
+    .limit(max)
+    .get();
+
+  const rows = await Promise.all(
+    snap.docs
+      .filter((doc) => doc.get("is_admin") !== true)
+      .map(async (doc) => {
+        const countSnap = await db
+          .collection(COLLECTIONS.listings)
+          .where("seller_id", "==", doc.id)
+          .count()
+          .get();
+
+        const createdAtMs = toMillis(doc.get("created_at"));
+        return {
+          id: doc.id,
+          display_name: doc.get("display_name") ?? "Unknown",
+          email: doc.get("email") ?? null,
+          phone: doc.get("phone") ?? null,
+          phone_verified: Boolean(doc.get("phone_verified_at")),
+          city: doc.get("city") ?? null,
+          created_at_ms: createdAtMs,
+          joined_label: waitingLabel(createdAtMs),
+          listing_count: countSnap.data().count,
+        } satisfies AccountItem;
+      }),
+  );
+
+  // The ones that need doing, first: a number we have not checked yet. Then
+  // everyone else, newest first. A buyer with no number needs nothing from us
+  // and sits at the bottom.
+  return rows.sort((a, b) => {
+    const aWaiting = a.phone !== null && !a.phone_verified;
+    const bWaiting = b.phone !== null && !b.phone_verified;
+    if (aWaiting !== bWaiting) return aWaiting ? -1 : 1;
+    return b.created_at_ms - a.created_at_ms;
+  });
+}
+
 export type ModerateInput = {
   listingId: string;
   adminId: string;

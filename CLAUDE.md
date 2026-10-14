@@ -226,6 +226,70 @@ If a Gemini call fails or is slow, the flow carries on without it. AI failure ne
 
 Everything else in this file is the plan, not the code. Do not assume a file exists because it is described here.
 
+### Added 13 to 14 October: accounts, real data, and the buyer gate
+
+The sections below this one were written before any of it existed. Where they
+disagree with this list, this list is the code.
+
+**Accounts.** `/account` is the way in for anyone: sign up by default,
+`?mode=login` for the other half, `?next=` to return her where she came from.
+Email and password, not the email link this file describes elsewhere.
+`email_verified_at` is still never set by anything.
+
+**Everything a browser reads from Firestore goes through a route**, because
+`firestore.rules` closes the `photos` collection to the browser entirely and a
+listing without its cover is no use:
+
+- `GET /api/listings` — browse. Live only, newest first, no account needed
+- `GET /api/listings/[id]` — item detail. Live is public; anything else is for
+  the seller who owns it and for us. A listing you may not see answers 404, not
+  403, so ids cannot be probed
+- `GET /api/listings/mine` — her own profile. Answers for the uid in the token
+  and has no `?sellerId=`, deliberately: it carries her phone number
+- `GET /api/sellers/[id]` — a seller's public profile. Name, city, bio, sold
+  count and her live listings. Never her email or her phone
+- `POST /api/listings/[id]/sold` and `/unsold` — the only status change a
+  seller makes herself, one move per route in one direction
+- `POST /api/listings/[id]/contact` — the buyer tapped Message seller
+
+**The buyer gate, and the number.** Signed out, Message seller opens a sheet
+asking for email and password (`components/buyer/ContactGate.tsx`), with a link
+to the full sign-up page. Signed in, the tap calls the contact route, which
+writes the ContactEvent, increments `contact_count` and answers with the
+number; the page opens WhatsApp on what comes back.
+
+**The seller's phone is never in the page.** It is handed out by that one route
+and no other, one tap at a time, capped at 10 a day per buyer. Sending it with
+the listing, which is what we did for a day, made every live listing's number
+readable by anyone who opened it.
+
+**The cap needs a composite index** (`contact_events`: `buyer_id` +
+`created_at`, in `firestore.indexes.json`). If it is missing the count query
+throws, and `recordContact` **fails open and logs loudly** rather than blocking
+every buyer in the country. Anything in that log means: run
+`firebase deploy --only firestore:indexes`.
+
+**There is no sample data any more.** `lib/sample-data.ts` and
+`lib/useCurrentUser.ts` were deleted on 14 Oct, along with sellers s1 to s8.
+Browse, item detail and seller profiles read Firestore and nothing else, so an
+empty grid means nothing is live, not that something is broken.
+
+**Admin has two tabs now**: Listings (the queue) and Accounts. Accounts lists
+everyone who has signed up, the unchecked numbers first, each with a WhatsApp
+link and one button that sets `phone_verified_at`.
+
+**Verifying a number is manual, and that is the current plan, not an
+oversight.** One of us opens the WhatsApp link and sees whether a real account
+answers. Once the WhatsApp Business account with Meta is approved, that message
+and its reply can be sent and recorded automatically, and the Accounts tab
+becomes a list of answers rather than a list of jobs. Nothing in the data model
+changes when that happens: `phone_verified_at` stays the only field that
+matters, and a seller still cannot write it herself.
+
+**`next/image` does not optimise a Cloud Storage photo** (`lib/photoUrl.ts`).
+The optimiser fetches remote images on our server and gives up after 7 seconds,
+which it did, and the photos are already capped at 1,600px in the browser.
+
 **Working and tested end to end:**
 - `lib/ai/client.ts`, `GET /api/health/gemini` — Gemini on Vertex AI, location `global`, via Application Default Credentials
 - `lib/constants.ts` — brands (41 + `other` + `unknown`), 13 categories, 4 conditions, 5 photo tips, clothes and shoe sizes with `SIZE_OPTIONS` per category, 33 cities + `other`
@@ -252,7 +316,11 @@ Everything else in this file is the plan, not the code. Do not assume a file exi
 - `app/dev/prefill/` — manual test page. Returns 404 in production, verified
 - `scripts/try-prefill.ts` — runs a folder of photos and prints a table
 
-**Not built at all yet:** Firebase (auth, Firestore, Storage), `components/seller/`, `components/buyer/`, `components/admin/`, every real screen, the buyer side, admin, natural-language search, the approval copilot, catalogue-photo detection, the colour list, `eval/items.csv`.
+**Not built at all yet.** OUT OF DATE: Firebase, the real screens, the buyer
+side and admin all exist now. See "Added 13 to 14 October" above for what is
+real. Still genuinely missing: natural-language search, the approval copilot,
+catalogue-photo detection, reports, the colour list, listing expiry, relisting
+an expired listing, email verification, `eval/items.csv`.
 
 **Deliberate changes from `components.html`, flagged for Bismah.** The PRD has the full list under "Changes since this document was written", including the product-level ones. The visual ones:
 - `FilterChip` is a `<button>`, not a `<div>`. A div cannot be tabbed to, activated with the keyboard, or announced as a control. Visually identical.
@@ -295,8 +363,8 @@ Everything else in this file is the plan, not the code. Do not assume a file exi
 
 ## Users and permissions
 
-- **Buyer:** browses and searches with no account. Creates an email-only account the first time she taps Message seller. Never ask a buyer for a phone number. Never show view or contact counts to buyers.
-- **Seller:** the account is created at submit, not before (Path 1, step 7). Email verified by link, phone verified by code. If the phone code fails, she continues with email alone. A broken code service must never block a listing. Changing her phone clears `phone_verified_at` and re-triggers verification.
+- **Buyer:** browses and searches with no account. Creates an account the first time she taps Message seller. Never ask a buyer for a phone number. Never show view or contact counts to buyers. **BUILT 14 Oct:** signed out, the tap opens `ContactGate`, a sheet over the listing asking for email and password, with a link to the full sign-up page that returns her to the listing. One account serves both sides: the same person can list something tomorrow.
+- **Seller:** the account is created at submit, not before (Path 1, step 7), or at `/account` beforehand. Phone verified **by hand, by one of us**, from the admin Accounts tab: we open her WhatsApp link, see a real account answer, and tap "I have checked this", which is the only thing that sets `phone_verified_at`. **This becomes automatic once the WhatsApp Business account with Meta is approved** and we can send the check and read the reply ourselves; nothing about the field or the rules changes then. There is no SMS code and no email link: both are described elsewhere in this file and neither is built. A seller can never write `phone_verified_at` herself, which `firestore.rules` enforces.
 - **Admin:** a user with `is_admin` set to true. There is no role field.
 - Enforce permissions on the server and in Firestore security rules, never only by hiding buttons.
 
@@ -312,7 +380,7 @@ Full field lists are in the PRD under "Domain model". Do not add, rename or remo
 - **Listing brand:** one value from the brand list, including `other` (with `brand_other`) and `unknown`. See Fixed lists.
 - Sold count is computed from the seller's listings at `sold`. Never store it.
 - **ModerationAction** is append-only and written for exactly four events: approved, rejected, hidden, restored. Marking sold or expiring writes no row.
-- **ContactEvent** is one record per WhatsApp tap by an email-verified buyer. Maximum 10 per buyer per day, enforced on the server. This is the week 3 success metric.
+- **ContactEvent** is one record per WhatsApp tap by a signed-in buyer. Maximum 10 per buyer per day, enforced on the server. This is the week 3 success metric. **BUILT 14 Oct** (`lib/data/contact.ts`). Gated on having an account, not on a verified email: `email_verified_at` is still never set by anything, so gating on it would gate on nothing. Flagged in the PRD as an open question.
 - **Reports:** two unresolved reports auto-hide the listing and write a `hidden` ModerationAction with `admin_id` null.
 - **Photos:** two to six per listing, enforced at submit. Exactly one cover, chosen by the seller. `quality_flags` are advisory only and never block submission.
 - Prices are whole numbers in Pakistani rupees (PKR). Phone numbers are stored in E.164 format (the international format, for example +923001234567).

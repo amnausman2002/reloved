@@ -247,6 +247,97 @@ img { max-width: 100%; display: block; }
 /* Suppress the hover invert while disabled, per design-system.md. */
 .btn-primary:disabled:hover { background: var(--text-primary); color: var(--white); border-color: transparent; }
 
+/* NEW, no drawing in components.html. The waiting state for any button that
+ * talks to the network. Flagged for Bismah.
+ *
+ * It is disabled while it waits, so it inherits the 0.3 opacity above. That is
+ * deliberately overridden here: a button that is working is not a button that
+ * is unavailable, and fading it out says the wrong thing. It stays at full
+ * strength and the spinner carries the message. */
+.btn-primary.is-loading,
+.btn-primary.is-loading:disabled { opacity: 1; cursor: wait; gap: var(--space-2); }
+
+/* currentColor, so it is white on the button and inverts with it on hover.
+ * One quarter of the ring is transparent, which is what reads as rotation. */
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+}
+
+/* Inside a text link rather than a button: smaller, and spaced off the words
+ * the way the check icon beside it is. */
+.btn-spinner-inline { width: 11px; height: 11px; border-width: 1.5px; margin-right: var(--space-1); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn-spinner { animation: btn-spin 0.7s linear infinite; }
+}
+/* At rest it is a static broken ring rather than nothing at all, so the state
+ * is still visible to someone who has asked for no motion. */
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Skeletons ─────────────────────────────────────────────
+ * NEW, no drawing in components.html. Flagged for Bismah.
+ *
+ * Shown while something is being read from the database, in the shape of what
+ * is about to arrive. The word "Loading" tells her to wait; a shape tells her
+ * what she is waiting for and stops the page jumping when it lands.
+ *
+ * --surface on --canvas, the two greys the design system already owns. No new
+ * colour, and nothing that could be mistaken for real content. */
+.skeleton {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton { animation: skeleton-pulse 1.4s ease-in-out infinite; }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* A listing row on her profile: thumbnail, then two lines of text. Matches
+ * .listing-row's dimensions so nothing moves when the real one replaces it. */
+.skeleton-row {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border);
+}
+.skeleton-thumb { width: 56px; height: 72px; flex-shrink: 0; }
+.skeleton-lines { flex: 1; display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-1); }
+.skeleton-line { height: 12px; }
+.skeleton-line-title { width: 70%; }
+.skeleton-line-price { width: 30%; }
+.skeleton-line-meta { width: 45%; height: 10px; }
+
+/* The item page, which is a photo filling the width and then its details. */
+.skeleton-photo {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 0;
+}
+.skeleton-detail { padding: var(--space-5) var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+.skeleton-line-brand { width: 25%; height: 10px; }
+.skeleton-line-heading { width: 80%; height: 20px; }
+
+/* A browse card: the 3:4 photo and the three lines under it. */
+.skeleton-card-photo {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 0;
+  margin-bottom: var(--space-3);
+}
+
 .btn-secondary {
   display: flex;
   align-items: center;
@@ -1304,23 +1395,6 @@ img { max-width: 100%; display: block; }
   cursor: pointer;
 }
 
-/* ── Dev only ────────────────────────────────────────────── */
-/* The AI skip on the photos step. Deliberately outside the design system and
- * deliberately ugly, so it can never be mistaken for a real control. The
- * button itself is behind a NODE_ENV check and is not in the production
- * bundle; this rule is dead weight there and nothing else. */
-.dev-skip {
-  margin-top: var(--space-2);
-  padding: var(--space-2);
-  background: repeating-linear-gradient(
-    45deg, #FFF3C4, #FFF3C4 6px, #FFE69A 6px, #FFE69A 12px
-  );
-  border: 1px dashed #B45309;
-  color: #7C2D12;
-  font-family: var(--font-ui);
-  font-size: var(--size-caption);
-  cursor: pointer;
-}
 /* ── Nav (components.html section 1) ───────────────────── */
 .nav {
   display: flex;
@@ -1684,6 +1758,25 @@ img { max-width: 100%; display: block; }
   text-align: left;
 }
 .menu-list-item:hover { color: var(--text-secondary); }
+/* Sign up | Log in: two real links on one row, so each half is its own tap
+ * target. The row keeps the 48px height and the side padding every other menu
+ * item has, and the links give theirs up. */
+.menu-list-pair {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-4);
+}
+.menu-list-item-inline {
+  width: auto;
+  min-height: 0;
+  padding: 0;
+}
+.menu-list-sep { color: var(--border); }
+/* Log out is the one row that is not somewhere to go, so it sits a step back
+ * from the rest rather than reading as another destination. */
+.menu-list-item-quiet { color: var(--text-secondary); }
 .menu-list-divider {
   height: 1px;
   background: var(--border);
@@ -2618,6 +2711,67 @@ img { max-width: 100%; display: block; }
   color: var(--text-secondary);
 }
 .admin-error { margin-bottom: var(--space-4); }
+/* ── Accounts (NEW 14 Oct, no drawing in components.html) ──
+ * The second half of the review job: the people behind the listings. Built
+ * from the queue row's shape next door, so it introduces no new pattern.
+ * Flagged for Bismah. */
+.admin-tabs { margin-bottom: var(--space-5); }
+
+.admin-accounts { list-style: none; padding: 0; margin: 0; }
+.account-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border);
+}
+.account-row-main { min-width: 0; }
+.account-row-name {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-body);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* A label, not a status chip: "Buyer" is what she is, not a thing to act on. */
+.account-row-tag {
+  font-weight: 400;
+  font-size: var(--size-micro);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+}
+.account-row-tag-done { color: var(--text-primary); border-color: var(--text-primary); }
+.account-row-meta {
+  font-size: var(--size-meta);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+/* The number is the reason this screen exists, so it is set in the UI face at
+ * body size rather than buried in the meta line. */
+.account-row-phone {
+  font-family: var(--font-ui);
+  font-size: var(--size-body-sm);
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.account-row-phone-none { color: var(--text-tertiary); font-family: var(--font-body); }
+.account-row-wa { color: var(--text-secondary); text-decoration: underline; }
+.account-row-wa:hover { color: var(--text-primary); }
+.account-row-actions { flex-shrink: 0; }
+.account-row-actions .admin-btn { width: auto; min-height: 36px; padding: 0 var(--space-4); }
+
+@media (max-width: 599px) {
+  .account-row { flex-direction: column; align-items: stretch; }
+  .account-row-actions .admin-btn { width: 100%; }
+}
+
 .admin-signin { max-width: 360px; margin: var(--space-8) auto 0; }
 .admin-signin .sell-sub { margin-bottom: var(--space-6); }
 
@@ -3135,3 +3289,17 @@ img { max-width: 100%; display: block; }
   border-radius: var(--radius-sm);
 }
 .account-signed-in strong { font-family: var(--font-ui); font-weight: 500; color: var(--text-primary); }
+
+/* The saved number, in the sheet that asks her to confirm it before posting.
+ * Large enough to check at a glance, which is the only thing she is being
+ * asked to do. NEW, flagged for Bismah. */
+.confirm-phone-number {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-h3);
+  color: var(--text-primary);
+  text-align: center;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}

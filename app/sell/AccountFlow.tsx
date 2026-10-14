@@ -273,8 +273,8 @@ export default function AccountFlow({
             />
 
             <div className="sell-footer">
-              <PrimaryButton type="submit" disabled={checkingEmail}>
-                {checkingEmail ? "Checking..." : "Create account"}
+              <PrimaryButton type="submit" loading={checkingEmail} loadingLabel="Checking...">
+                Create account
               </PrimaryButton>
               <TextLink onClick={onBack}>Back to my listing</TextLink>
             </div>
@@ -330,8 +330,8 @@ export default function AccountFlow({
             {submitError && <p className="input-error-msg">{submitError}</p>}
 
             <div className="sell-footer">
-              <PrimaryButton type="submit" disabled={busy}>
-                {busy ? "Saving your listing..." : "Submit my listing"}
+              <PrimaryButton type="submit" loading={busy} loadingLabel="Saving your listing...">
+                Submit my listing
               </PrimaryButton>
               <TextLink onClick={() => (signedInAs ? onBack() : goTo("identity"))} disabled={busy}>
                 Back

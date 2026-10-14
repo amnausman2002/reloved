@@ -44,8 +44,11 @@ export type SellerProfileInput = {
   uid: string;
   email: string | null;
   /** First name only. Everything after the first word is dropped before it
-   *  gets here: a buyer sees "Sara", never "Sara Khan". */
-  display_name: string;
+   *  gets here: a buyer sees "Sara", never "Sara Khan".
+   *
+   *  null when a signed-in seller was not asked for her name again, because
+   *  she gave it when she made her account. */
+  display_name: string | null;
   /** E.164. Saved unverified: Amna or Bismah confirms it from the queue by
    *  tapping the WhatsApp link, and only then is phone_verified_at set. */
   phone: string | null;
@@ -68,13 +71,14 @@ export async function upsertSellerProfile(input: SellerProfileInput): Promise<vo
 
   const profile: Record<string, unknown> = {
     email: input.email,
-    display_name: input.display_name,
     city: input.city,
   };
 
-  // Only written when there is one. A returning seller who lists a second item
-  // without retyping her number would otherwise have the saved one merged away
-  // to null, and with it the WhatsApp button on every listing she has live.
+  // Neither of these is written as a blank. A returning seller is not asked
+  // for her name or her number again, so merging the empties in would wipe the
+  // name off her profile and take the WhatsApp button off every listing she
+  // has live.
+  if (input.display_name) profile.display_name = input.display_name;
   if (input.phone) profile.phone = input.phone;
 
   if (!existing.exists) {
@@ -84,6 +88,13 @@ export async function upsertSellerProfile(input: SellerProfileInput): Promise<vo
     profile.phone_verified_at = null;
     profile.bio = null;
     profile.avatar_url = null;
+    // A brand new user document with no name on it would show a seller with no
+    // name to buyers. The part before the @ is a poor name but it is hers, and
+    // she can change it on her profile. This should be unreachable: she either
+    // just typed her name, or she has a document already.
+    if (!profile.display_name) {
+      profile.display_name = input.email?.split("@")[0] ?? "Seller";
+    }
   }
 
   await ref.set(profile, { merge: true });

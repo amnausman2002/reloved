@@ -49,7 +49,12 @@ const photoSchema = z.object({
 const bodySchema = z.object({
   idToken: z.string().min(1),
   account: z.object({
-    fullName: z.string().trim().min(1).max(80),
+    /** Optional, because a seller who is already signed in never sees the
+     *  screen that asks for it: her name went onto her user document when she
+     *  made the account. Requiring it here rejected every listing from a
+     *  signed-in seller with "Some details were missing or did not look
+     *  right", which is both wrong and unhelpful. */
+    fullName: z.string().trim().min(1).max(80).nullish(),
     /** National part, no country code. Saved as E.164 below. */
     phone: z.string().trim().regex(/^3\d{9}$/).nullable(),
   }),
@@ -80,6 +85,14 @@ export async function POST(request: Request) {
   }
 
   if (!parsed.success) {
+    // The seller gets one calm sentence; we get the field that actually
+    // failed. Without this, a schema the form does not quite agree with looks
+    // identical to a seller leaving something out, and the only way to tell
+    // them apart is to read both files side by side. That cost an evening.
+    console.warn(
+      "submit listing rejected:",
+      parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; "),
+    );
     return NextResponse.json(
       { ok: false, error: "Some details were missing or did not look right." },
       { status: 400 },
@@ -112,7 +125,11 @@ export async function POST(request: Request) {
 
   try {
     // First name only. A buyer sees "Sara", never "Sara Khan".
-    const displayName = account.fullName.split(/\s+/)[0];
+    //
+    // null when she is already signed in and was never asked again. The upsert
+    // leaves the stored name alone in that case, the same way it leaves her
+    // phone alone when she does not retype it.
+    const displayName = account.fullName ? account.fullName.split(/\s+/)[0] : null;
 
     await upsertSellerProfile({
       uid: user.uid,

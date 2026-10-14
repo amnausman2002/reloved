@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Nav from "@/components/ui/Nav";
@@ -9,8 +9,8 @@ import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import { CITIES } from "@/lib/constants";
 import type { City } from "@/lib/constants";
-import { getSeller } from "@/lib/sample-data";
-import { useCurrentUser } from "@/lib/useCurrentUser";
+import { useAuthUser, sellerFromAuth, type ProfileSeller } from "@/lib/useAuthUser";
+import { fetchMyProfile } from "@/lib/myListings";
 import { preparePhoto } from "@/lib/photos";
 
 function BackIcon() {
@@ -37,30 +37,56 @@ export default function EditSellerProfilePage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
-  const seller = getSeller(id);
-  const currentUser = useCurrentUser();
-  const isOwner = Boolean(currentUser && seller && currentUser.id === seller.id);
+  const { user: authUser, loading: authLoading } = useAuthUser();
+
+  // Only ever her own profile. There is no editing anyone else's, which is why
+  // this needs nothing but the signed-in account.
+  const isOwner = !authLoading && authUser?.uid === id;
+  const seller: ProfileSeller | undefined =
+    isOwner && authUser ? sellerFromAuth(authUser) : undefined;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [form, setForm] = useState(() => ({
-    displayName: seller?.displayName ?? "",
-    bio: seller?.bio ?? "",
-    city: (seller?.city ?? CITIES[0].value) as City,
-    phone: "+923001234567",
+    displayName: "",
+    bio: "",
+    city: CITIES[0].value as City,
+    phone: "",
   }));
   const [phoneVerified, setPhoneVerified] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Her saved profile arrives after Firebase restores the session, which is one
+  // render too late for the state initialiser above. Fill the form the first
+  // time we actually have it, and only then: anything she has typed is hers.
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (hydrated.current || !isOwner) return;
+    hydrated.current = true;
+    void fetchMyProfile().then((profile) => {
+      if (!profile) return;
+      setForm((current) => ({
+        ...current,
+        displayName: profile.displayName ?? current.displayName,
+        city: (profile.city ?? current.city) as City,
+        phone: profile.phone ?? "",
+      }));
+    });
+  }, [isOwner]);
 
   if (!seller || !isOwner) {
     return (
       <>
         <Nav />
         <main className="container" style={{ paddingTop: "var(--space-6)" }}>
-          <p className="text-body">
-            {seller ? "You can only edit your own profile." : "Seller not found."}
-          </p>
+          {/* Nothing while the session is still being restored. See the
+              profile page for why. */}
+          {!authLoading && (
+            <p className="text-body">
+              {seller ? "You can only edit your own profile." : "Seller not found."}
+            </p>
+          )}
         </main>
       </>
     );
