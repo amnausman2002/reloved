@@ -46,10 +46,10 @@ async function heicToJpeg(file: File): Promise<File> {
   return new File([blob], withJpgName(file.name), { type: "image/jpeg" });
 }
 
-async function shrink(file: File): Promise<File> {
+async function shrink(file: File, longEdge = MAX_LONG_EDGE): Promise<File> {
   const { default: imageCompression } = await import("browser-image-compression");
   return imageCompression(file, {
-    maxWidthOrHeight: MAX_LONG_EDGE,
+    maxWidthOrHeight: longEdge,
     maxSizeMB: MAX_OUTPUT_MB,
     initialQuality: JPEG_QUALITY,
     fileType: "image/jpeg",
@@ -62,7 +62,7 @@ async function shrink(file: File): Promise<File> {
 
 /** Converts and shrinks one photo. Never throws: if anything fails the seller
  *  keeps her original photo and we say what went wrong. */
-export async function preparePhoto(file: File): Promise<PreparedPhoto> {
+export async function preparePhoto(file: File, longEdge = MAX_LONG_EDGE): Promise<PreparedPhoto> {
   const originalBytes = file.size;
   const cameFromHeic = isHeic(file);
   let working = file;
@@ -82,7 +82,7 @@ export async function preparePhoto(file: File): Promise<PreparedPhoto> {
   }
 
   try {
-    working = await shrink(working);
+    working = await shrink(working, longEdge);
   } catch {
     return {
       file: working,
@@ -103,4 +103,27 @@ export async function preparePhoto(file: File): Promise<PreparedPhoto> {
 
 export async function preparePhotos(files: File[]): Promise<PreparedPhoto[]> {
   return Promise.all(files.map(preparePhoto));
+}
+
+/** Bulk listing: small copies for the grouping call (GROUP_THUMB_EDGE in
+ *  lib/ai/groupRules.ts). Three at a time, not all at once: thirty HEIC
+ *  conversions in parallel can run a mid-range Android phone out of memory.
+ *  Results keep the order of `files`. */
+export async function prepareThumbnails(
+  files: File[],
+  longEdge: number,
+  onProgress?: (done: number) => void,
+): Promise<PreparedPhoto[]> {
+  const results: PreparedPhoto[] = new Array(files.length);
+  let next = 0;
+  let done = 0;
+  async function worker() {
+    while (next < files.length) {
+      const index = next++;
+      results[index] = await preparePhoto(files[index], longEdge);
+      onProgress?.(++done);
+    }
+  }
+  await Promise.all([worker(), worker(), worker()]);
+  return results;
 }
