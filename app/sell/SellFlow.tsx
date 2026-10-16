@@ -8,7 +8,7 @@ import PhotoGrid from "@/components/seller/PhotoGrid";
 import PhotoGuide from "@/components/seller/PhotoGuide";
 import PhotoSource from "@/components/seller/PhotoSource";
 import { preparePhotos } from "@/lib/photos";
-import { MIN_LISTING_PHOTOS, MAX_LISTING_PHOTOS } from "@/lib/constants";
+import { MIN_LISTING_PHOTOS, MAX_LISTING_PHOTOS, MAX_BATCH_PHOTOS } from "@/lib/constants";
 import ReadingPhotos from "./ReadingPhotos";
 import SellForm from "./SellForm";
 import AccountFlow from "./AccountFlow";
@@ -20,6 +20,10 @@ import { flagFor, flaggedCount, qualityHeading, slotNote } from "./qualityWordin
 import { EMPTY_FIELDS, mergePrefill, type FormFields, type SellPhoto } from "./types";
 import { EMPTY_ACCOUNT, formatPhone, normalisePhone, type AccountFields } from "./account";
 import { submitListing } from "./submitListing";
+import { localId } from "./ids";
+import BulkFlow from "./bulk/BulkFlow";
+import SecondaryButton from "@/components/ui/SecondaryButton";
+import type { City } from "@/lib/constants";
 import { onAuthStateChanged } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { fetchMyProfile } from "@/lib/myListings";
@@ -47,24 +51,18 @@ const GUIDE_SEEN_KEY = "reloved.sell.guide-seen";
  *  that module is server code and has no business in the browser bundle. */
 const SLOW_AFTER_MS = 15_000;
 
-/** A local id for a photo in this form, nothing to do with the Listing id.
- *
- *  crypto.randomUUID() exists only in a secure context, so it is there on
- *  localhost and on https but undefined when the phone opens the dev server
- *  over http on the local network. That is exactly how we test on a real
- *  phone, so fall back rather than throw. */
-function photoId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `photo-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
 export default function SellFlow() {
   // null until the effect below has read localStorage. Deciding during render
   // would make the server and the browser draw different first screens, which
   // React treats as a hydration error.
   const [step, setStep] = useState<Step | null>(null);
+
+  // One item or many. Asked in a sheet every time she arrives, over the
+  // single-item screen, so closing the sheet leaves her exactly where Sell
+  // has always taken her. "bulk" hands the page to BulkFlow.
+  const [mode, setMode] = useState<"ask" | "single" | "bulk">("ask");
+  const [bulkHasWork, setBulkHasWork] = useState(false);
+  const [profileCity, setProfileCity] = useState<City | null>(null);
 
   const [photos, setPhotos] = useState<SellPhoto[]>([]);
   const [coverId, setCoverId] = useState<string | null>(null);
@@ -111,6 +109,8 @@ export default function SellFlow() {
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
   const [confirmPhoneOpen, setConfirmPhoneOpen] = useState(false);
 
+  const closeModeSheet = useCallback(() => setMode("single"), []);
+
   // Every object URL we have handed out, so none leak when the tab closes.
   const urlsRef = useRef<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
@@ -151,6 +151,9 @@ export default function SellFlow() {
       // Stored as E.164, shown as the national part, which is what the field
       // holds and what normalisePhone would make of it anyway.
       void fetchMyProfile().then((profile) => {
+        // Bulk listing starts every card with her city. The single-item form
+        // is left as it was.
+        if (profile?.city) setProfileCity(profile.city);
         if (!profile?.phone) return;
         setSavedPhone(profile.phone);
         setAccount((current) =>
@@ -186,7 +189,7 @@ export default function SellFlow() {
     const added: SellPhoto[] = prepared.map((item) => {
       const url = URL.createObjectURL(item.file);
       urlsRef.current.push(url);
-      return { id: photoId(), url, problem: item.problem, file: item.file };
+      return { id: localId(), url, problem: item.problem, file: item.file };
     });
     setPhotos((current) => {
       const next = [...current, ...added].slice(0, MAX_LISTING_PHOTOS);
@@ -338,10 +341,11 @@ export default function SellFlow() {
    *  Once the listing is saved there is nothing to warn about, which is why
    *  `submitted` ends it. */
   const hasUnsavedWork =
-    submitted === null &&
+    (mode === "bulk" && bulkHasWork) ||
+    (submitted === null &&
     (photos.length > 0 ||
       Boolean(fields.title.trim() || fields.description.trim() || fields.price) ||
-      Boolean(account.fullName.trim() || account.email.trim()));
+      Boolean(account.fullName.trim() || account.email.trim())));
 
   /** Nav calls this before the wordmark or the menu takes her away. Returning
    *  false cancels the navigation and shows the sheet instead. */
@@ -395,6 +399,36 @@ export default function SellFlow() {
     return <div className="sell-step" aria-busy="true" />;
   }
 
+  if (mode === "bulk") {
+    return withNav(
+      <BulkFlow
+        account={account}
+        onAccountChange={(patch) => setAccount((current) => ({ ...current, ...patch }))}
+        signedInAs={signedInAs ?? null}
+        savedPhone={savedPhone}
+        profileCity={profileCity}
+        onWorkChange={setBulkHasWork}
+        onSingle={() => setMode("single")}
+      />,
+    );
+  }
+
+  /* NEW: the way into bulk listing. No design in components.html; it is the
+     standard sheet with the two stacked actions design-system.md asks for.
+     The single-item flow is the primary, because it is what Sell has always
+     done. Flagged for Bismah. */
+  const modeSheet = (
+    <BottomSheet
+      open={mode === "ask" && (step === "intro" || step === "photos") && photos.length === 0}
+      onClose={closeModeSheet}
+      heading="What are you selling?"
+      body={`One item, or up to ${MAX_BATCH_PHOTOS} photos of several. We'll sort them into listings for you.`}
+    >
+      <PrimaryButton onClick={closeModeSheet}>One item</PrimaryButton>
+      <SecondaryButton onClick={() => setMode("bulk")}>Many items</SecondaryButton>
+    </BottomSheet>
+  );
+
   const room = MAX_LISTING_PHOTOS - photos.length;
   const flagged = photos.filter((photo) => photo.note).length;
 
@@ -415,6 +449,7 @@ export default function SellFlow() {
             }}
           />
         </div>
+        {modeSheet}
       </div>
     );
   }
@@ -469,6 +504,8 @@ export default function SellFlow() {
           <PhotoGuide />
           <PrimaryButton onClick={() => setGuideOpen(false)}>Got it</PrimaryButton>
         </BottomSheet>
+
+        {modeSheet}
       </>
     );
   }

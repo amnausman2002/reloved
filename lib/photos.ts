@@ -105,25 +105,65 @@ export async function preparePhotos(files: File[]): Promise<PreparedPhoto[]> {
   return Promise.all(files.map(preparePhoto));
 }
 
-/** Bulk listing: small copies for the grouping call (GROUP_THUMB_EDGE in
- *  lib/ai/groupRules.ts). Three at a time, not all at once: thirty HEIC
- *  conversions in parallel can run a mid-range Android phone out of memory.
- *  Results keep the order of `files`. */
+/** Runs `task` over `items`, at most `limit` at a time, keeping their order.
+ *  Thirty HEIC conversions in parallel can run a mid-range Android phone out
+ *  of memory; three at a time keeps the page responsive and barely slower. */
+async function mapLimited<T, R>(
+  items: T[],
+  limit: number,
+  task: (item: T) => Promise<R>,
+  onProgress?: (done: number) => void,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  let done = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await task(items[index]);
+      onProgress?.(++done);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+/** Small copies only, for the grouping tester (app/dev/group). */
 export async function prepareThumbnails(
   files: File[],
   longEdge: number,
   onProgress?: (done: number) => void,
 ): Promise<PreparedPhoto[]> {
-  const results: PreparedPhoto[] = new Array(files.length);
-  let next = 0;
-  let done = 0;
-  async function worker() {
-    while (next < files.length) {
-      const index = next++;
-      results[index] = await preparePhoto(files[index], longEdge);
-      onProgress?.(++done);
-    }
-  }
-  await Promise.all([worker(), worker(), worker()]);
-  return results;
+  return mapLimited(files, 3, (file) => preparePhoto(file, longEdge), onProgress);
+}
+
+export type BatchPhoto = PreparedPhoto & {
+  /** A small copy for the grouping call. Made from the 1,600px JPEG rather
+   *  than the original, so a HEIC is only ever converted once. */
+  thumb: File;
+};
+
+/** Bulk listing: each photo at the normal 1,600px (for prefill, Storage and
+ *  the listing) plus a small copy for grouping. Never throws, like
+ *  preparePhoto: if the small copy fails, the full one stands in for it. */
+export async function prepareBatch(
+  files: File[],
+  thumbEdge: number,
+  onProgress?: (done: number) => void,
+): Promise<BatchPhoto[]> {
+  return mapLimited(
+    files,
+    3,
+    async (file) => {
+      const full = await preparePhoto(file);
+      let thumb = full.file;
+      try {
+        thumb = await shrink(full.file, thumbEdge);
+      } catch {
+        // The full photo is bigger than it needs to be, and that is all.
+      }
+      return { ...full, thumb };
+    },
+    onProgress,
+  );
 }

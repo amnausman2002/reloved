@@ -3303,3 +3303,169 @@ img { max-width: 100%; display: block; }
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
+
+/* ── Bulk listing ("Many items") ─────────────────────────── */
+/* NEW, 16 Oct. components.html has no design for any of this. Every rule says
+ * which existing pattern it is built from, and all of it is flagged for
+ * Bismah: the review card, the photo actions sheet, the "move to" list and
+ * the split selection. No new colours, sizes or radii. */
+
+/* The three tips on the pick screen. Body text in a plain list. */
+.bulk-pick-tips {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--lh-body-sm);
+  color: var(--text-secondary);
+}
+
+.bulk-cards { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* One listing. The edge of .condition-option: --border at --radius-sm. */
+.bulk-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  scroll-margin-top: calc(var(--nav-height) + var(--space-4));
+}
+.bulk-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+/* Same type as .condition-text-label. */
+.bulk-card-name {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bulk-card-count { font-size: var(--size-meta); color: var(--text-secondary); flex-shrink: 0; }
+.bulk-card-hint { font-size: var(--size-meta); color: var(--text-secondary); }
+
+/* A photo on the card is a button around .sell-form-thumb, so it can carry
+ * the cover pill and the quality note the photo grid uses. */
+.bulk-thumb {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: block;
+}
+.bulk-thumb .sell-form-thumb { display: block; }
+.bulk-thumb .photo-slot-cover-label {
+  left: var(--space-2);
+  right: auto;
+  bottom: var(--space-2);
+  background: var(--white);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+}
+/* Split selection. The chosen photos get the selected border the condition
+ * rows use, and a round marker built from .condition-radio. */
+.bulk-thumb.is-selectable { outline: 1px solid var(--border); outline-offset: -1px; }
+.bulk-thumb.is-selected { outline: 2px solid var(--text-primary); outline-offset: -2px; }
+.bulk-thumb-check {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--white);
+  background: rgba(45, 45, 45, 0.4);
+  color: var(--white);
+  font-size: var(--size-micro);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bulk-thumb.is-selected .bulk-thumb-check { background: var(--text-primary); border-color: var(--text-primary); }
+
+/* Photo count out of range. The error colour, as an error message, because
+ * this one does stop Submit. */
+.bulk-card-problem { font-size: var(--size-meta); color: var(--status-rejected); }
+
+.bulk-card-reading { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-1) 0; }
+
+.bulk-card-details { display: flex; flex-direction: column; gap: var(--space-1); }
+.bulk-card-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--size-body-sm);
+}
+.bulk-card-fact { display: inline-flex; align-items: center; }
+.bulk-card-price { font-family: var(--font-ui); font-weight: 500; font-size: var(--size-ui); }
+/* The read failed, or a retake tip. Advisory, so the hint colour. */
+.bulk-card-note { font-size: var(--size-meta); color: var(--text-secondary); }
+.bulk-card-missing { font-size: var(--size-meta); color: var(--text-secondary); }
+
+.bulk-card-actions { display: flex; flex-direction: column; gap: var(--space-1); }
+/* Merge, Split and Delete sit in a row: three quiet actions of equal weight,
+ * under the one real one. Text links at their natural width. */
+.bulk-card-links { display: flex; justify-content: center; gap: var(--space-5); }
+.bulk-card-links .btn-text-link { width: auto; }
+
+/* "Move to" and "Merge with" choices: the .condition-option row, with the
+ * card's first photo where the radio would be. */
+.bulk-targets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-bottom: var(--space-3);
+}
+.bulk-target {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  text-align: left;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+.bulk-target:hover { border-color: var(--text-primary); }
+.bulk-target img, .bulk-target-blank {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+/* What is still missing, above Submit. Each line is a link to the first card
+ * it applies to. Caption size, like .input-hint. */
+.bulk-missing {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.bulk-missing-item {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--size-caption);
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  text-align: left;
+}
