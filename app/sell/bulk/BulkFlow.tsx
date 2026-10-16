@@ -136,9 +136,13 @@ export default function BulkFlow({
   const queueRef = useRef<string[]>([]);
   const activeReadsRef = useRef(0);
 
+  // A fresh controller on every mount. React mounts, unmounts and remounts in
+  // development, and aborting the one created with the ref left the flow
+  // permanently "unmounted": photos prepared, then nothing.
   useEffect(() => {
     const urls = urlsRef.current;
-    const flow = flowAbortRef.current;
+    const flow = new AbortController();
+    flowAbortRef.current = flow;
     return () => {
       flow.abort();
       sortAbortRef.current?.abort();
