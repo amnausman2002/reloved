@@ -133,6 +133,9 @@ export const CONDITIONS: { value: ConditionValue; label: string; description: st
 export const MIN_LISTING_PHOTOS = 2;
 export const MAX_LISTING_PHOTOS = 6;
 
+// Photos in one bulk batch ("Many items"). Any more and we keep the first 30.
+export const MAX_BATCH_PHOTOS = 30;
+
 // Listing status. Only admins set `live` and `rejected`. Browse shows `live`
 // only, newest first.
 export const LISTING_STATUSES = [
