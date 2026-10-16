@@ -42,8 +42,10 @@ import { MAX_BATCH_PHOTOS } from "@/lib/constants";
 export const GROUPING_MEDIA_RESOLUTION = MediaResolution.MEDIA_RESOLUTION_LOW;
 
 /** Per attempt. Thirty photos take longer than six, so this is not the
- *  15 seconds the single-item calls use. */
-const GROUPING_TIMEOUT_MS = 30_000;
+ *  15 seconds the single-item calls use. 30 seconds proved too tight on a real
+ *  wardrobe (16 Oct): a timeout is not retried, so this is the whole wait, and
+ *  the browser offers "Sort them myself" from 25 seconds anyway. */
+const GROUPING_TIMEOUT_MS = 50_000;
 
 /** One retry, a second or so later, and only for "too many requests" and
  *  "briefly unavailable". Anything else will not get better by asking again. */
@@ -214,6 +216,11 @@ export async function runGroup({ photos, meta, options = {} }: GroupInput): Prom
 
     return result;
   } catch (error) {
+    // Failures are logged too, or the slow cases are the ones we never see.
+    console.warn(
+      `ai.group FAILED photos=${photos.length} times=${timesUsed} ms=${Date.now() - startedAt} ` +
+        `error=${plainErrorMessage(error)}`,
+    );
     return { ok: false, reason: "ai", error: plainErrorMessage(error) };
   }
 }
