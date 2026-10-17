@@ -10,7 +10,9 @@ import { AI_TIMEOUT_MS, isRetryable, toImageParts, validatePhotos, type ImagePar
 const SYSTEM_INSTRUCTION = `You check whether photos of a preloved clothing item are good enough to list on Reloved.
 You advise; you never block. A photo only has to show the item honestly, so be generous.
 
-Judge each photo on its own, independently of the others.
+Judge each photo on its own, independently of the others. Each photo is
+preceded by its label, "Photo 1", "Photo 2" and so on: photo_index is that
+number.
 
 For each photo report:
 - blurry: the item's edges and fabric texture are genuinely soft or smeared.
@@ -29,6 +31,12 @@ For each photo report:
 - crooked: the item or the photo is noticeably tilted or skewed, so it would sit
   at an angle in the listing. Clothing laid out by hand is never perfectly
   straight, so only say true when the tilt is obvious at a glance.
+- looks_like_catalogue: the photo looks like a brand's own studio, website or
+  lookbook image rather than one she took: a seamless studio backdrop with
+  professional lighting and a posed model, a brand watermark or text overlay,
+  an e-commerce layout, or a screenshot of a website or app. A garment
+  photographed at home on a hanger, bed, floor or person is NOT a catalogue
+  photo, even when it is well lit. Leave this out of retake_tip.
 
 Then overall:
 - overall_usable: false only if the seller could not reasonably list the item
@@ -66,7 +74,15 @@ export type PhotoQualityInput = {
 async function generateQuality(imageParts: ImagePart[]) {
   return getAi().models.generateContent({
     model: GEMINI_MODEL,
-    contents: [{ role: "user", parts: [...imageParts, { text: USER_TEXT }] }],
+    // Each photo labelled with its number. Without labels the model picked its
+    // own numbering, sometimes from 1, and a flag landed on the photo next to
+    // the one it meant (found 17 Oct).
+    contents: [
+      {
+        role: "user",
+        parts: [...imageParts.flatMap((image, index) => [{ text: `Photo ${index + 1}` }, image]), { text: USER_TEXT }],
+      },
+    ],
     config: {
       systemInstruction: SYSTEM_INSTRUCTION,
       responseMimeType: "application/json",
@@ -101,13 +117,17 @@ export async function runPhotoQuality({ photos }: PhotoQualityInput): Promise<Ph
     if (!text) return SKIPPED;
 
     const parsed = photoQualityZodSchema.safeParse(JSON.parse(text));
-    if (!parsed.success) return SKIPPED;
+    if (!parsed.success) {
+      console.warn("ai.quality answer did not match the schema");
+      return SKIPPED;
+    }
 
-    // Drop any flag pointing at a photo that was not sent, so the form never
-    // tries to highlight a photo that does not exist.
-    const flags = parsed.data.photo_quality.filter(
-      (flag) => flag.photo_index >= 0 && flag.photo_index < photos.length,
-    );
+    // The model numbers photos from 1, as labelled; the rest of the app counts
+    // from 0. Then drop any flag pointing at a photo that was not sent, so the
+    // form never tries to highlight a photo that does not exist.
+    const flags = parsed.data.photo_quality
+      .map((flag) => ({ ...flag, photo_index: flag.photo_index - 1 }))
+      .filter((flag) => flag.photo_index >= 0 && flag.photo_index < photos.length);
 
     return {
       ok: true,
@@ -116,7 +136,9 @@ export async function runPhotoQuality({ photos }: PhotoQualityInput): Promise<Ph
       retakeTip: parsed.data.retake_tip,
       latencyMs: Date.now() - startedAt,
     };
-  } catch {
+  } catch (error) {
+    // Logged, or the slow and failing cases are the ones we never see.
+    console.warn(`ai.quality FAILED photos=${photos.length} ms=${Date.now() - startedAt} error=${String(error).slice(0, 200)}`);
     return SKIPPED;
   }
 }

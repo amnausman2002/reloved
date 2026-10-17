@@ -43,6 +43,8 @@ export type QualityFlag = {
   blends_into_background: boolean;
   item_cropped: boolean;
   crooked: boolean;
+  /** Looks like a brand's studio or website photo. Advisory, like the rest. */
+  looks_like_catalogue?: boolean;
 };
 
 export type QualityResponse = {
@@ -94,6 +96,29 @@ export async function requestPhotoQuality(
     return (await response.json()) as QualityResponse;
   } catch {
     return { ok: true, flags: [], skipped: true };
+  }
+}
+
+export type EarlierListing = { id: string; title: string; status: string; coverUrl: string };
+
+export type DuplicateResponse =
+  | { ok: true; match: EarlierListing | null; skipped?: boolean }
+  | { ok: false; error: string };
+
+/** Has she listed this item before? Signed-in sellers only. Never throws:
+ *  anything short of a match is the same as no match. */
+export async function requestDuplicate(
+  photos: File[],
+  idToken: string,
+  signal?: AbortSignal,
+): Promise<DuplicateResponse> {
+  const form = formDataFor(photos);
+  form.append("idToken", idToken);
+  try {
+    const response = await fetch("/api/ai/duplicate", { method: "POST", body: form, signal });
+    return (await response.json()) as DuplicateResponse;
+  } catch {
+    return { ok: true, match: null, skipped: true };
   }
 }
 

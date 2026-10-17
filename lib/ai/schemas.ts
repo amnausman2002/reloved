@@ -73,6 +73,7 @@ export const photoQualitySchema: Schema = {
           blends_into_background: { type: Type.BOOLEAN },
           item_cropped: { type: Type.BOOLEAN },
           crooked: { type: Type.BOOLEAN },
+          looks_like_catalogue: { type: Type.BOOLEAN },
         },
         required: [
           "photo_index",
@@ -82,6 +83,7 @@ export const photoQualitySchema: Schema = {
           "blends_into_background",
           "item_cropped",
           "crooked",
+          "looks_like_catalogue",
         ],
       },
     },
@@ -101,6 +103,8 @@ export const photoQualityZodSchema = z.object({
       blends_into_background: z.boolean(),
       item_cropped: z.boolean(),
       crooked: z.boolean(),
+      // Optional so an answer without it still validates: missing means no.
+      looks_like_catalogue: z.boolean().optional(),
     }),
   ),
   overall_usable: z.boolean(),
@@ -221,3 +225,36 @@ export const listingReviewZodSchema = z.object({
 });
 
 export type ListingReview = z.infer<typeof listingReviewZodSchema>;
+
+// Call 5: duplicate check (lib/ai/duplicate.ts). Is the item she is listing
+// the same physical item as one she has already listed? Advisory: it opens a
+// sheet with a choice, never a block.
+
+const DUPLICATE_CONFIDENCE_VALUES = ["high", "medium", "low"] as const;
+
+export const duplicateCheckSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    matches: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          listing: { type: Type.INTEGER, description: "The number of the earlier listing" },
+          confidence: { type: Type.STRING, enum: [...DUPLICATE_CONFIDENCE_VALUES] },
+        },
+        required: ["listing", "confidence"],
+      },
+    },
+  },
+  required: ["matches"],
+};
+
+export const duplicateCheckZodSchema = z.object({
+  matches: z.array(
+    z.object({
+      listing: z.number().int(),
+      confidence: z.enum(DUPLICATE_CONFIDENCE_VALUES),
+    }),
+  ),
+});
