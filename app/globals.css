@@ -3469,3 +3469,42 @@ img { max-width: 100%; display: block; }
   cursor: pointer;
   text-align: left;
 }
+
+/* ── Admin queue: AI notes (approval copilot + catalogue check) ── */
+/* NEW, 17 Oct. No design in components.html. The block sits under her
+ * description and borrows its type; a note worth a look is the primary text
+ * colour rather than a new colour, because design-system.md keeps colour for
+ * status. The catalogue flag reuses .queue-flag. Flagged for Bismah. */
+.queue-ai {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+.queue-ai .skeleton { background: var(--canvas); width: 100%; }
+.queue-ai-label {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-caption);
+  color: var(--text-tertiary);
+}
+.queue-ai-line {
+  font-size: var(--size-body-sm);
+  line-height: var(--lh-body-sm);
+  color: var(--text-secondary);
+}
+.queue-ai-line.is-note { color: var(--text-primary); font-weight: 500; }
+.queue-ai-retry {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
