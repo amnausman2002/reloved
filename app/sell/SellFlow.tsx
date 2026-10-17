@@ -13,10 +13,10 @@ import ReadingPhotos from "./ReadingPhotos";
 import SellForm from "./SellForm";
 import AccountFlow from "./AccountFlow";
 import Nav from "@/components/ui/Nav";
-import { requestPhotoQuality, requestPrefill } from "./aiRequests";
-import type { QualityFlag } from "./aiRequests";
+import { requestDuplicate, requestPhotoQuality, requestPrefill } from "./aiRequests";
+import type { EarlierListing, QualityFlag } from "./aiRequests";
 import { EMPTY_PREFILL, prefillToForm, type Prefilled } from "./prefillToForm";
-import { flagFor, flaggedCount, qualityHeading, slotNote } from "./qualityWording";
+import { catalogueIndexes, flagFor, flaggedCount, qualityHeading, slotNote } from "./qualityWording";
 import { EMPTY_FIELDS, mergePrefill, type FormFields, type SellPhoto } from "./types";
 import { EMPTY_ACCOUNT, formatPhone, normalisePhone, type AccountFields } from "./account";
 import { submitListing } from "./submitListing";
@@ -79,6 +79,15 @@ export default function SellFlow() {
   const [retakeTip, setRetakeTip] = useState<string | null>(null);
   const [qualitySheetOpen, setQualitySheetOpen] = useState(false);
 
+  // The two checks that each get a sheet of their own, before the photo
+  // quality one. Both advisory: every sheet has a way to carry on.
+  //   duplicate  she seems to have listed this exact item already
+  //   catalogue  a photo looks like a brand's website or studio image
+  const [duplicate, setDuplicate] = useState<EarlierListing | null>(null);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [catalogueIds, setCatalogueIds] = useState<string[]>([]);
+  const [catalogueOpen, setCatalogueOpen] = useState(false);
+
   // The account answers live up here for the same reason the form's do: she can
   // step back to her listing and return without retyping any of it.
   const [account, setAccount] = useState<AccountFields>(EMPTY_ACCOUNT);
@@ -110,6 +119,8 @@ export default function SellFlow() {
   const [confirmPhoneOpen, setConfirmPhoneOpen] = useState(false);
 
   const closeModeSheet = useCallback(() => setMode("single"), []);
+  const closeDuplicate = useCallback(() => setDuplicateOpen(false), []);
+  const closeCatalogue = useCallback(() => setCatalogueOpen(false), []);
 
   // Every object URL we have handed out, so none leak when the tab closes.
   const urlsRef = useRef<string[]>([]);
@@ -244,6 +255,29 @@ export default function SellFlow() {
     const controller = new AbortController();
     abortRef.current = controller;
     const files = photos.map((photo) => photo.file);
+    // The photos as they were when the read started, so a flag's index still
+    // points at the right photo if she edits them before the answer lands.
+    const readPhotos = photos;
+
+    setDuplicate(null);
+    setDuplicateOpen(false);
+    setCatalogueIds([]);
+    setCatalogueOpen(false);
+
+    // Only a signed-in seller has earlier listings to compare against. This
+    // one is not waited for: it opens its sheet whenever it answers.
+    const user = firebaseAuth().currentUser;
+    if (user) {
+      void user
+        .getIdToken()
+        .then((idToken) => requestDuplicate(files, idToken, controller.signal))
+        .then((result) => {
+          if (controller.signal.aborted || !result.ok || !result.match) return;
+          setDuplicate(result.match);
+          setDuplicateOpen(true);
+        })
+        .catch(() => undefined);
+    }
 
     setSlow(false);
     setPrefillError(null);
@@ -271,6 +305,11 @@ export default function SellFlow() {
     const quality = requestPhotoQuality(files, controller.signal).then((result) => {
       if (controller.signal.aborted) return;
       applyQuality(result.flags);
+      setCatalogueIds(
+        catalogueIndexes(result.flags)
+          .map((index) => readPhotos[index]?.id)
+          .filter((id): id is string => Boolean(id)),
+      );
       if (!result.skipped && result.retakeTip && flaggedCount(result.flags) > 0) {
         setRetakeTip(result.retakeTip);
       }
@@ -281,6 +320,7 @@ export default function SellFlow() {
       if (controller.signal.aborted) return;
       setStep("details");
       setQualitySheetOpen(true);
+      setCatalogueOpen(true);
     });
   }
 
@@ -515,6 +555,9 @@ export default function SellFlow() {
   }
 
   const cover = photos.find((photo) => photo.id === coverId);
+  const duplicateSheetOpen = step === "details" && duplicateOpen && duplicate !== null;
+  const catalogueSheetOpen =
+    step === "details" && !duplicateSheetOpen && catalogueOpen && photos.some((photo) => catalogueIds.includes(photo.id));
   const priceLabel = fields.price
     ? `Rs ${Number(fields.price).toLocaleString("en-PK")}`
     : "No price yet";
@@ -605,9 +648,87 @@ export default function SellFlow() {
         />
       </div>
 
+      {/* One sheet at a time: duplicate, then catalogue, then photo quality.
+          NEW, no design in components.html: the same two-choice sheet as the
+          photo quality one. Flagged for Bismah. */}
+      <BottomSheet
+        open={duplicateSheetOpen}
+        onClose={closeDuplicate}
+        heading="Have you listed this already?"
+        body={
+          duplicate
+            ? `It looks like the same item as "${duplicate.title}", which is already ${
+                duplicate.status === "live" ? "live" : "waiting for review"
+              }.`
+            : ""
+        }
+        dismissOnOverlayClick={false}
+        media={
+          duplicate ? (
+            <div className="quality-thumbs">
+              {cover && (
+                <span className="quality-thumb">
+                  <img src={cover.url} alt="" />
+                  <span className="photo-slot-problem">This one</span>
+                </span>
+              )}
+              <span className="quality-thumb">
+                <img src={duplicate.coverUrl} alt="" />
+                <span className="photo-slot-problem">Already listed</span>
+              </span>
+            </div>
+          ) : undefined
+        }
+      >
+        <PrimaryButton
+          onClick={() => {
+            setDuplicateOpen(false);
+            if (duplicate) window.location.assign(`/item/${duplicate.id}`);
+          }}
+        >
+          View that listing
+        </PrimaryButton>
+        <TextLink onClick={closeDuplicate}>It&apos;s a different item</TextLink>
+      </BottomSheet>
+
+      <BottomSheet
+        open={catalogueSheetOpen}
+        onClose={closeCatalogue}
+        heading={
+          catalogueIds.length === 1
+            ? "This looks like a photo from a brand's website."
+            : "These look like photos from a brand's website."
+        }
+        body="Buyers trust photos you took yourself, and we check every listing before it goes live. Take your own photo of the item instead?"
+        dismissOnOverlayClick={false}
+        media={
+          <div className="quality-thumbs">
+            {photos
+              .filter((photo) => catalogueIds.includes(photo.id))
+              .map((photo) => (
+                <span key={photo.id} className="quality-thumb">
+                  <img src={photo.url} alt="" />
+                </span>
+              ))}
+          </div>
+        }
+      >
+        <PrimaryButton
+          onClick={() => {
+            setCatalogueOpen(false);
+            setStep("photos");
+          }}
+        >
+          {catalogueIds.length === 1 ? "Retake it" : "Retake them"}
+        </PrimaryButton>
+        <TextLink onClick={closeCatalogue}>
+          {catalogueIds.length === 1 ? "Keep it and carry on" : "Keep them and carry on"}
+        </TextLink>
+      </BottomSheet>
+
       {/* Advisory only. Both ways out are real, and "Keep them" changes nothing. */}
       <BottomSheet
-        open={qualitySheetOpen && Boolean(retakeTip) && flagged > 0}
+        open={!duplicateSheetOpen && !catalogueSheetOpen && qualitySheetOpen && Boolean(retakeTip) && flagged > 0}
         onClose={() => setQualitySheetOpen(false)}
         heading={qualityHeading(flagged)}
         body={retakeTip ?? ""}

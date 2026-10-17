@@ -45,6 +45,13 @@ export function flaggedCount(flags: QualityFlag[]): number {
   return flags.filter((flag) => faultsOf(flag).length > 0).length;
 }
 
+/** Photo positions the check thinks came from a brand's website or studio.
+ *  Kept out of faultsOf: it has its own sheet, because the fix is different
+ *  (take your own photo) from every other fault (take this one better). */
+export function catalogueIndexes(flags: QualityFlag[]): number[] {
+  return flags.filter((flag) => flag.looks_like_catalogue === true).map((flag) => flag.photo_index);
+}
+
 /** The sheet's heading. Names the situation; the model's own retake_tip names
  *  the fix underneath it. */
 export function qualityHeading(count: number): string {

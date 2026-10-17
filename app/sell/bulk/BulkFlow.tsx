@@ -211,7 +211,11 @@ export default function BulkFlow({
     updatePhotos((current) => {
       const next = { ...current };
       ids.forEach((id, index) => {
-        if (next[id]) next[id] = { ...next[id], note: slotNote(flagFor(quality.flags, index)) };
+        if (!next[id]) return;
+        const flag = flagFor(quality.flags, index);
+        // Bulk has no room for a sheet per card, so a website-looking photo
+        // says so on the photo itself, ahead of any other note.
+        next[id] = { ...next[id], note: flag?.looks_like_catalogue ? "Website photo?" : slotNote(flag) };
       });
       return next;
     });
