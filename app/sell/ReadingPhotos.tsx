@@ -34,7 +34,26 @@ const LINES = [
  *  out before its replacement arrives. */
 const LINE_MS = 1800;
 
+/** The words on this screen. Bulk listing reuses the loader while it sorts
+ *  photos, which is a different job and needs different lines. */
+export type ReadingCopy = {
+  lines: readonly string[];
+  slowLine: string;
+  status: string;
+  skip: string;
+  slowSkip: string;
+};
+
+const READING_COPY: ReadingCopy = {
+  lines: LINES,
+  slowLine: "Still reading. Taking longer than usual today.",
+  status: "Reading your photos",
+  skip: "Skip and fill it in myself",
+  slowSkip: "Fill it in myself instead",
+};
+
 type Props = {
+  copy?: ReadingCopy;
   /** In order, cover first. The cover sits on top of the deck. */
   photos: { id: string; url: string }[];
   /** Set once the calls have outrun their own timeout. */
@@ -52,16 +71,16 @@ function fanAngle(index: number, count: number): number {
   return side * rank * step;
 }
 
-export default function ReadingPhotos({ photos, slow, onSkip }: Props) {
+export default function ReadingPhotos({ photos, slow, onSkip, copy = READING_COPY }: Props) {
   const [line, setLine] = useState(0);
 
   useEffect(() => {
     // Once we are over time the rotation stops and the screen says so. A loop
     // cheerfully cycling while nothing happens is what makes an app look hung.
     if (slow) return;
-    const id = window.setInterval(() => setLine((n) => (n + 1) % LINES.length), LINE_MS);
+    const id = window.setInterval(() => setLine((n) => (n + 1) % copy.lines.length), LINE_MS);
     return () => window.clearInterval(id);
-  }, [slow]);
+  }, [slow, copy.lines.length]);
 
   return (
     <div className="sell-step reading-step">
@@ -83,25 +102,25 @@ export default function ReadingPhotos({ photos, slow, onSkip }: Props) {
         </div>
 
         {slow ? (
-          <p className="reading-line is-still">Still reading. Taking longer than usual today.</p>
+          <p className="reading-line is-still">{copy.slowLine}</p>
         ) : (
           // The key is what restarts the fade, so each line arrives the same way.
           <p className="reading-line" key={line} aria-hidden="true">
-            {LINES[line]}
+            {copy.lines[line % copy.lines.length]}
           </p>
         )}
 
         {/* One steady announcement instead of a new one every 1.8 seconds. */}
         <p className="sr-only" role="status">
-          Reading your photos
+          {copy.status}
         </p>
       </div>
 
       <div className="sell-footer">
         {slow ? (
-          <SecondaryButton onClick={onSkip}>Fill it in myself instead</SecondaryButton>
+          <SecondaryButton onClick={onSkip}>{copy.slowSkip}</SecondaryButton>
         ) : (
-          <TextLink onClick={onSkip}>Skip and fill it in myself</TextLink>
+          <TextLink onClick={onSkip}>{copy.skip}</TextLink>
         )}
       </div>
     </div>

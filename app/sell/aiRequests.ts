@@ -12,6 +12,7 @@
 // change here too.
 
 import type { Brand, Category, ConditionValue } from "@/lib/constants";
+import type { PhotoGroup, PhotoMeta } from "@/lib/ai/groupRules";
 
 type Confidence = "high" | "medium" | "low";
 type BrandEvidence = "label_visible" | "tag_visible" | "print_or_style_only" | "none";
@@ -93,5 +94,32 @@ export async function requestPhotoQuality(
     return (await response.json()) as QualityResponse;
   } catch {
     return { ok: true, flags: [], skipped: true };
+  }
+}
+
+export type GroupResponse =
+  | {
+      ok: true;
+      groups: PhotoGroup[];
+      timesUsed: boolean;
+      repairs: { dropped: number; orphans: number };
+      latencyMs: number;
+    }
+  | { ok: false; error: string };
+
+/** Bulk listing: which photos show the same item. Never throws. A failure
+ *  here means the browser offers Try again and Sort them myself. */
+export async function requestGroup(
+  thumbs: File[],
+  meta: PhotoMeta[],
+  signal?: AbortSignal,
+): Promise<GroupResponse> {
+  const form = formDataFor(thumbs);
+  form.append("meta", JSON.stringify(meta));
+  try {
+    const response = await fetch("/api/ai/group", { method: "POST", body: form, signal });
+    return (await response.json()) as GroupResponse;
+  } catch {
+    return { ok: false, error: "We could not reach the server." };
   }
 }

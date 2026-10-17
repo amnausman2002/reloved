@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { runPrefill } from "@/lib/ai/prefill";
+import { allowAiCall, LIMITED_MESSAGE } from "@/lib/ai/rateLimit";
 
-// No sign-in check, App Check or rate limit yet. Laptop only until milestone M6.
+// No sign-in check or App Check yet (milestone M6). allowAiCall is the
+// temporary spending brake in the meantime.
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  // Over the limit looks like the model being unavailable: she fills it in.
+  if (!allowAiCall(request)) {
+    return NextResponse.json({ ok: false, reason: "ai", error: LIMITED_MESSAGE });
+  }
+
   let form: FormData;
   try {
     form = await request.formData();

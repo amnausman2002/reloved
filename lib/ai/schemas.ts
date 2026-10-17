@@ -108,3 +108,57 @@ export const photoQualityZodSchema = z.object({
 });
 
 export type PhotoQuality = z.infer<typeof photoQualityZodSchema>;
+
+// Call 3: bulk grouping (lib/ai/group.ts). Which photos show the same item.
+// Nothing else: brand, category and the rest come from Call 1, per group.
+// Photo numbers are checked and repaired on the server (repairGroups in
+// lib/ai/groupRules.ts), never trusted as they arrive.
+
+export const photoGroupingSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    groups: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          photos: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+          item_hint: {
+            type: Type.STRING,
+            description: "2 to 4 plain words naming the item, for example 'black lawn kurta'",
+          },
+        },
+        required: ["photos", "item_hint"],
+      },
+    },
+  },
+  required: ["groups"],
+};
+
+/** The same template without item_hint, so try-group can measure whether
+ *  naming each item actually makes the grouping better. */
+export const photoGroupingSchemaNoHint: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    groups: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: { photos: { type: Type.ARRAY, items: { type: Type.INTEGER } } },
+        required: ["photos"],
+      },
+    },
+  },
+  required: ["groups"],
+};
+
+export const photoGroupingZodSchema = z.object({
+  groups: z.array(
+    z.object({
+      photos: z.array(z.number().int()),
+      item_hint: z.string().optional(),
+    }),
+  ),
+});
+
+export type PhotoGrouping = z.infer<typeof photoGroupingZodSchema>;

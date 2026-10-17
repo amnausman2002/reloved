@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "try-prefill": "tsx --env-file=.env.local scripts/try-prefill.ts",
+    "try-group": "tsx --env-file=.env.local scripts/try-group.ts",
     "make-admin": "tsx --env-file=.env.local scripts/make-admin.ts"
   },
   "dependencies": {

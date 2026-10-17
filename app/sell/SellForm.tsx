@@ -12,6 +12,7 @@ import ReplicaPicker from "@/components/seller/ReplicaPicker";
 import { CouldItBe, labelWithMark } from "./AiHints";
 import type { Prefilled } from "./prefillToForm";
 import type { FormFields, SellPhoto } from "./types";
+import { validateFields } from "./validate";
 import {
   BRANDS,
   CATEGORIES,
@@ -49,6 +50,11 @@ type Props = {
   /** Called once every field validates. SellFlow takes her to the account
    *  step from here: this form no longer ends the flow. */
   onSubmit: () => void;
+  /** Bulk listing reuses this form for one card at a time. There the button
+   *  says "Done" and goes back to the review screen even when something is
+   *  missing, because the review screen is what counts what is left. */
+  submitLabel?: string;
+  requireComplete?: boolean;
 };
 
 export default function SellForm({
@@ -60,6 +66,8 @@ export default function SellForm({
   prefillError,
   onBackToPhotos,
   onSubmit,
+  submitLabel = "Submit listing",
+  requireComplete = true,
 }: Props) {
   const {
     title, category, brand, brandOther, size,
@@ -84,23 +92,13 @@ export default function SellForm({
     if (!nextOptions || (size && !nextOptions.includes(size))) onChange({ size: null });
   }
 
-  function validate(): Record<string, string> {
-    const found: Record<string, string> = {};
-    if (!title.trim()) found.title = "Give it a short title.";
-    if (!category) found.category = "Pick a category.";
-    if (!brand) found.brand = "Pick one, or choose Not sure / no label.";
-    if (brand === "other" && !brandOther.trim()) found.brandOther = "Which brand is it?";
-    if (sizeOptions && !size) found.size = "Pick a size.";
-    if (!condition) found.condition = "Pick a condition.";
-    if (isReplica === null) found.isReplica = "Let buyers know either way.";
-    if (!price) found.price = "Add your asking price.";
-    if (!city) found.city = "Pick a city.";
-    return found;
-  }
-
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const found = validate();
+    if (!requireComplete) {
+      onSubmit();
+      return;
+    }
+    const found: Record<string, string> = validateFields(fields);
     setErrors(found);
     if (Object.keys(found).length > 0) {
       // Take her to the first thing that needs attention.
@@ -333,7 +331,7 @@ export default function SellForm({
           onChange={(event) => onChange({ material: event.target.value as Material | "" })}
         />
 
-        <PrimaryButton type="submit">Submit listing</PrimaryButton>
+        <PrimaryButton type="submit">{submitLabel}</PrimaryButton>
       </form>
     </>
   );
