@@ -162,3 +162,62 @@ export const photoGroupingZodSchema = z.object({
 });
 
 export type PhotoGrouping = z.infer<typeof photoGroupingZodSchema>;
+
+// Call 4: admin review (lib/ai/review.ts). The approval copilot and
+// catalogue-photo detection in one call, because both look at the same photos
+// of the same pending listing.
+//
+// The model reports what it sees. It does not decide what counts as a flag:
+// whether a brand is "backed up" is worked out in code from label_seen and
+// label_brand, so the rule ("unknown is never flagged") cannot drift with the
+// prompt. There is no price field: there is no original price to compare
+// against, and the app never implies it knows what an item is worth.
+
+const LABEL_SEEN_VALUES = ["label_visible", "tag_visible", "none"] as const;
+
+export const listingReviewSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    photos_show: {
+      type: Type.STRING,
+      description: "One plain sentence: what the photos show",
+    },
+    label_seen: { type: Type.STRING, enum: [...LABEL_SEEN_VALUES] },
+    label_brand: {
+      type: Type.STRING,
+      enum: [...BRANDS],
+      description: "The brand a readable label, tag or logo shows. 'unknown' if none is readable",
+    },
+    label_text: {
+      type: Type.STRING,
+      description: "Only if label_brand is 'other': the brand name as printed",
+    },
+    flaws_not_mentioned: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Visible flaws her description does not mention, a few words each",
+    },
+    catalogue_photos: {
+      type: Type.ARRAY,
+      items: { type: Type.INTEGER },
+      description: "Numbers of photos that look like a brand's studio, website or lookbook image",
+    },
+    catalogue_reason: {
+      type: Type.STRING,
+      description: "If any photo is listed above: why, in a few words. Otherwise empty",
+    },
+  },
+  required: ["photos_show", "label_seen", "label_brand", "flaws_not_mentioned", "catalogue_photos"],
+};
+
+export const listingReviewZodSchema = z.object({
+  photos_show: z.string(),
+  label_seen: z.enum(LABEL_SEEN_VALUES),
+  label_brand: z.enum(BRANDS),
+  label_text: z.string().optional(),
+  flaws_not_mentioned: z.array(z.string()),
+  catalogue_photos: z.array(z.number().int()),
+  catalogue_reason: z.string().optional(),
+});
+
+export type ListingReview = z.infer<typeof listingReviewZodSchema>;

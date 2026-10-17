@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import FilterChip from "@/components/ui/FilterChip";
 import Textarea from "@/components/ui/Textarea";
@@ -15,6 +15,11 @@ import {
   type RejectionReason,
 } from "@/lib/constants";
 import type { QueueItem } from "@/lib/data/admin";
+import type { ReviewResult } from "@/lib/ai/review";
+import AiNotes, { type AiNotesState } from "./AiNotes";
+
+/** Rows read at once. Each read is one Gemini call of about 5 to 13 seconds. */
+const REVIEW_CONCURRENCY = 3;
 
 // The queue rows, from components.html section 14, and the rejection modal
 // from section 15.
@@ -67,10 +72,60 @@ export default function AdminQueue({ items }: Props) {
   // below it.
   const [done, setDone] = useState<Record<string, true>>({});
 
+  // AI notes per listing. Kept in this component, which stays mounted across
+  // router.refresh(), so approving a row does not re-read every other row.
+  // Nothing is stored: a full reload reads them again.
+  const [aiNotes, setAiNotes] = useState<Record<string, AiNotesState>>({});
+  const requestedRef = useRef<Set<string>>(new Set());
+  const queueRef = useRef<string[]>([]);
+  const activeRef = useRef(0);
+
   function token(): string | null {
     const match = document.cookie.match(/(?:^|; )reloved_admin_token=([^;]*)/);
     return match ? decodeURIComponent(match[1]) : null;
   }
+
+  const readNotes = useCallback(async (listingId: string) => {
+    setAiNotes((current) => ({ ...current, [listingId]: { status: "loading" } }));
+    const match = document.cookie.match(/(?:^|; )reloved_admin_token=([^;]*)/);
+    const idToken = match ? decodeURIComponent(match[1]) : null;
+    let result: ReviewResult | null = null;
+    try {
+      const response = await fetch("/api/admin/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, listingId }),
+      });
+      result = (await response.json()) as ReviewResult;
+    } catch {
+      result = null;
+    }
+    setAiNotes((current) => ({
+      ...current,
+      [listingId]: result?.ok ? { status: "ready", notes: result.notes } : { status: "failed" },
+    }));
+  }, []);
+
+  const pump = useCallback(() => {
+    while (activeRef.current < REVIEW_CONCURRENCY && queueRef.current.length > 0) {
+      const listingId = queueRef.current.shift()!;
+      activeRef.current += 1;
+      void readNotes(listingId).finally(() => {
+        activeRef.current -= 1;
+        pump();
+      });
+    }
+  }, [readNotes]);
+
+  // Oldest first, like the queue itself, so the notes arrive in reading order.
+  useEffect(() => {
+    for (const item of items) {
+      if (requestedRef.current.has(item.id)) continue;
+      requestedRef.current.add(item.id);
+      queueRef.current.push(item.id);
+    }
+    pump();
+  }, [items, pump]);
 
   async function post(body: Record<string, unknown>): Promise<boolean> {
     const idToken = token();
@@ -183,6 +238,14 @@ export default function AdminQueue({ items }: Props) {
                 </p>
 
                 {item.description && <p className="queue-description">{item.description}</p>}
+
+                <AiNotes
+                  state={aiNotes[item.id]}
+                  onRetry={() => {
+                    queueRef.current.push(item.id);
+                    pump();
+                  }}
+                />
 
                 {/* Every photo, not just the cover. Opening a row to see them
                     full size is a later milestone; at six thumbnails this is
