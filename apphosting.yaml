@@ -1,0 +1,65 @@
+# Firebase App Hosting settings for the live site (runs on Cloud Run).
+#
+# Nothing in here is a secret. The NEXT_PUBLIC_ values are the Firebase web
+# config, which ships in every page's JavaScript anyway (see .env.example);
+# Firestore and Storage rules are what protect the data. Gemini needs no key at
+# all: the server signs in as the App Hosting service account, which needs the
+# role roles/aiplatform.user.
+
+runConfig:
+  # Scale to zero when nobody is using it. Set to 1 on judging day so the
+  # first visitor does not wait for a cold start.
+  minInstances: 0
+  # The cap that makes lib/ai/rateLimit.ts's daily ceiling a real ceiling.
+  # Raise it together with that file, never on its own.
+  maxInstances: 2
+  concurrency: 80
+  cpu: 1
+  # A 30-photo grouping request is held in memory while it is sent on.
+  memoryMiB: 1024
+
+env:
+  - variable: GOOGLE_CLOUD_PROJECT
+    value: reloved-app-2026
+    availability:
+      - RUNTIME
+  - variable: GOOGLE_CLOUD_LOCATION
+    value: global
+    availability:
+      - RUNTIME
+  - variable: GEMINI_MODEL
+    value: gemini-3.8-flash
+    availability:
+      - RUNTIME
+
+  # Read by the browser bundle, so needed while building as well as running.
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyD_24EIn5zILLtAzcoCqff_aAB8JsUze-o"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "reloved-app-2026.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "reloved-app-2026"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "reloved-app-2026.firebasestorage.app"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "460969774706"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:460969774706:web:4edec08f245dce3d66bceb"
+    availability:
+      - BUILD
+      - RUNTIME

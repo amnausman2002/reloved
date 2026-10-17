@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { runPhotoQuality } from "@/lib/ai/photo-quality";
+import { allowAiCall } from "@/lib/ai/rateLimit";
 
-// No sign-in check, App Check or rate limit yet. Laptop only until milestone M6.
+// No sign-in check or App Check yet (milestone M6). allowAiCall is the
+// temporary spending brake in the meantime.
 export const runtime = "nodejs";
 
 // Always 200: this check is advisory and must never look like a broken page.
 export async function POST(request: Request) {
+  if (!allowAiCall(request)) {
+    return NextResponse.json({ ok: true, flags: [], skipped: true });
+  }
+
   let photos: File[] = [];
 
   try {

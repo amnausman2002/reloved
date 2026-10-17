@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { runGroup } from "@/lib/ai/group";
+import { allowAiCall, LIMITED_MESSAGE } from "@/lib/ai/rateLimit";
 import type { PhotoMeta } from "@/lib/ai/groupRules";
 
 // POST /api/ai/group — bulk listing, Call 3.
 // Multipart: `photos` (2 to 30 thumbnails, in the order she picked them) and
 // `meta`, a JSON array of { name, lastModified } in the same order.
 //
-// No sign-in check, App Check or rate limit yet. Laptop only until milestone M6.
+// No sign-in check or App Check yet (milestone M6). allowAiCall is the
+// temporary spending brake in the meantime.
 export const runtime = "nodejs";
 
 const metaSchema = z.array(
@@ -30,6 +32,11 @@ function readMeta(value: FormDataEntryValue | null): PhotoMeta[] | undefined {
 }
 
 export async function POST(request: Request) {
+  // Over the limit, the browser offers Try again and Sort them myself.
+  if (!allowAiCall(request)) {
+    return NextResponse.json({ ok: false, reason: "ai", error: LIMITED_MESSAGE });
+  }
+
   let form: FormData;
   try {
     form = await request.formData();
