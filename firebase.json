@@ -5,5 +5,25 @@
   },
   "storage": {
     "rules": "storage.rules"
-  }
+  },
+  "apphosting": [
+    {
+      "backendId": "reloved",
+      "rootDir": "/",
+      "ignore": [
+        "node_modules",
+        ".git",
+        ".next",
+        ".env.local",
+        ".claude",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "auth-variations.html",
+        "https:",
+        "install",
+        "plugin",
+        "tsconfig.tsbuildinfo"
+      ]
+    }
+  ]
 }
