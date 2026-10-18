@@ -136,6 +136,20 @@
   color: var(--white);
 }
 
+.heroSearchSubmit {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--white);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+}
+
 .heroInputWrap {
   flex: 1;
   position: relative;
@@ -586,15 +600,23 @@
   font-weight: inherit;
 }
 
+.quoteChar {
+  opacity: 0;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .quoteText {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.7s ease, transform 0.7s ease;
+  .quoteChar {
+    transition: opacity 0.15s ease;
   }
-  .quoteRevealed .quoteText {
+}
+
+.quoteCharRevealed {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quoteChar {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 

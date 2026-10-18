@@ -175,6 +175,130 @@
   color: var(--text-primary);
 }
 
+/* ─── Sell: sticky video + scroll-synced benefits ────── */
+
+/* Mobile layout: the video is sticky at the top of the viewport (under the
+   nav and tab header), and the benefits scroll vertically beneath it. The
+   text column has padding-top equal to the video's reserved space so the
+   first benefit begins below the sticky video, not under it. On desktop the
+   video moves to the left column and the text moves to the right. */
+
+.sellLayout {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .sellLayout {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-7);
+    padding: 0 var(--space-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .sellLayout {
+    padding: 0;
+  }
+}
+
+/* On mobile the video plays once at the top of the sell section, then the
+   benefits scroll normally beneath it — sticky inside a single column makes
+   the benefit text overlap the video, so stacking is the pattern that works
+   at phone widths. On ≥768px the video moves to its own column and sticks
+   there while the benefits scroll past in the other column.
+
+   The frame is portrait (9:16) because the demo video is a phone screen
+   recording, and the inner box caps the width so the phone sits small and
+   centred inside its column (matching the Depop reference). */
+.sellMedia {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-5);
+}
+
+@media (min-width: 768px) {
+  .sellMedia {
+    position: sticky;
+    top: calc(var(--nav-height) + 96px);
+    align-self: start;
+    height: calc(100svh - var(--nav-height) - 140px);
+    min-height: 480px;
+    max-height: 720px;
+    margin-bottom: 0;
+  }
+}
+
+/* Container matches the video's own aspect ratio (488x960 = 0.508) so the
+   whole frame is visible with nothing cropped. */
+.sellMediaInner {
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 488 / 960;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--canvas);
+}
+
+@media (min-width: 768px) {
+  .sellMediaInner {
+    max-width: 300px;
+  }
+}
+
+.sellVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sellCopy {
+  display: flex;
+  flex-direction: column;
+}
+
+/* On mobile the benefits are just stacked copy blocks, so they take their
+   natural height. On ≥768px each one gets its own viewport so the sticky
+   video sits still while one benefit at a time passes beside it. */
+.sellBenefit {
+  display: flex;
+  align-items: center;
+  padding: var(--space-5) 0;
+}
+
+@media (min-width: 768px) {
+  .sellBenefit {
+    min-height: 90svh;
+    padding: var(--space-6) 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sellBenefit {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .sellBenefit.benefitCardRevealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sellBenefitInner {
+  width: 100%;
+  max-width: 460px;
+}
+
 /* ─── Bottom CTA ─────────────────────────────────────── */
 
 .bottomArea {
@@ -183,12 +307,24 @@
   padding: var(--space-4) var(--space-4) var(--space-8);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .bottomArea {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .bottomArea.benefitCardRevealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .sellCta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-3) var(--space-7);
-  background: var(--text-primary);
+  background: url('/photos/sell-cta-gradient.webp') center / cover no-repeat;
   color: var(--white);
   font-family: var(--font-inter, sans-serif);
   font-weight: 500;
@@ -196,6 +332,7 @@
   border-radius: 0;
   min-height: 48px;
   text-decoration: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 @media (prefers-reduced-motion: no-preference) {
