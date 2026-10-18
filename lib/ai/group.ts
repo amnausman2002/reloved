@@ -17,6 +17,7 @@
 
 import { MediaResolution, ThinkingLevel, type HttpRetryOptions } from "@google/genai";
 import { getAi, GEMINI_MODEL } from "@/lib/ai/client";
+import { errorLabel, logAi } from "@/lib/ai/resilient";
 import {
   photoGroupingSchema,
   photoGroupingSchemaNoHint,
@@ -207,20 +208,23 @@ export async function runGroup({ photos, meta, options = {} }: GroupInput): Prom
     };
 
     // Measured, not guessed: this line is where cost and speed numbers come from.
-    console.info(
-      `ai.group photos=${photos.length} groups=${groups.length} times=${timesUsed} ` +
-        `dropped=${dropped} orphans=${orphans} ms=${result.latencyMs} ` +
-        `tokens_in=${result.tokens.prompt ?? "?"} tokens_out=${result.tokens.output ?? "?"} ` +
-        `thoughts=${result.tokens.thoughts ?? "?"}`,
-    );
+    logAi({
+      ai_call: "group",
+      outcome: "ok",
+      ms: result.latencyMs,
+      photos: photos.length,
+      groups: groups.length,
+      times_used: timesUsed,
+      dropped,
+      orphans,
+      tokens_in: result.tokens.prompt,
+      tokens_out: result.tokens.output,
+    });
 
     return result;
   } catch (error) {
     // Failures are logged too, or the slow cases are the ones we never see.
-    console.warn(
-      `ai.group FAILED photos=${photos.length} times=${timesUsed} ms=${Date.now() - startedAt} ` +
-        `error=${plainErrorMessage(error)}`,
-    );
+    logAi({ ai_call: "group", outcome: "failed", ms: Date.now() - startedAt, photos: photos.length, times_used: timesUsed, error: errorLabel(error) });
     return { ok: false, reason: "ai", error: plainErrorMessage(error) };
   }
 }

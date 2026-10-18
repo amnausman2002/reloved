@@ -18,6 +18,7 @@
 
 import { MediaResolution, ThinkingLevel, type HttpRetryOptions } from "@google/genai";
 import { getAi, GEMINI_MODEL } from "@/lib/ai/client";
+import { errorLabel, logAi } from "@/lib/ai/resilient";
 import { listingReviewSchema, listingReviewZodSchema, type ListingReview } from "@/lib/ai/schemas";
 import { ALLOWED_MIME_TYPES, MAX_PHOTOS, plainErrorMessage, type ImagePart } from "@/lib/ai/images";
 import { BRANDS, CONDITIONS, brandLabel, categoryLabel } from "@/lib/constants";
@@ -193,15 +194,21 @@ export async function runReview(listing: ReviewListing): Promise<ReviewResult> {
     };
 
     const usage = response.usageMetadata;
-    console.info(
-      `ai.review photos=${images.length} brand=${notes.brand?.kind ?? "none"} ` +
-        `flaws=${notes.flawsNotMentioned.length} catalogue=${cataloguePhotos.length} ` +
-        `ms=${Date.now() - startedAt} tokens_in=${usage?.promptTokenCount ?? "?"}`,
-    );
+    logAi({
+      ai_call: "review",
+      outcome: "ok",
+      ms: Date.now() - startedAt,
+      photos: images.length,
+      brand_note: notes.brand?.kind ?? "none",
+      flaws: notes.flawsNotMentioned.length,
+      catalogue: cataloguePhotos.length,
+      tokens_in: usage?.promptTokenCount,
+      tokens_out: usage?.candidatesTokenCount,
+    });
 
     return { ok: true, notes, latencyMs: Date.now() - startedAt };
   } catch (error) {
-    console.warn(`ai.review FAILED ms=${Date.now() - startedAt} error=${plainErrorMessage(error)}`);
+    logAi({ ai_call: "review", outcome: "failed", ms: Date.now() - startedAt, photos: images.length, error: errorLabel(error) });
     return { ok: false, error: plainErrorMessage(error) };
   }
 }

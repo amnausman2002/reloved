@@ -32,6 +32,8 @@ type Props = {
   onMerge: () => void;
   onSplit: () => void;
   onDelete: () => void;
+  /** Shown only when both automatic reads failed. */
+  onReadAgain: () => void;
   onConfirmSplit: () => void;
   onCancelSplit: () => void;
 };
@@ -58,6 +60,7 @@ export default function BulkCard({
   onMerge,
   onSplit,
   onDelete,
+  onReadAgain,
   onConfirmSplit,
   onCancelSplit,
 }: Props) {
@@ -182,7 +185,13 @@ export default function BulkCard({
                 {fields.price ? `Rs ${Number(fields.price).toLocaleString("en-PK")}` : "No price yet"}
               </p>
               {card.status === "failed" && (
-                <p className="bulk-card-note">We could not read these photos, so this one is yours to fill in.</p>
+                <p className="bulk-card-note">
+                  We could not read these photos just now. Fill it in yourself, or{" "}
+                  <button type="button" className="bulk-card-retry" onClick={onReadAgain}>
+                    read them again
+                  </button>
+                  .
+                </p>
               )}
               {card.retakeTip && <p className="bulk-card-note">{card.retakeTip}</p>}
               {missing.length > 0 && (

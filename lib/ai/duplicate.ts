@@ -10,6 +10,7 @@
 
 import { MediaResolution, ThinkingLevel, type HttpRetryOptions } from "@google/genai";
 import { getAi, GEMINI_MODEL } from "@/lib/ai/client";
+import { errorLabel, logAi } from "@/lib/ai/resilient";
 import { duplicateCheckSchema, duplicateCheckZodSchema } from "@/lib/ai/schemas";
 import { ALLOWED_MIME_TYPES, plainErrorMessage, toImageParts, type ImagePart } from "@/lib/ai/images";
 
@@ -92,13 +93,17 @@ export async function runDuplicateCheck(photos: File[], earlier: EarlierListing[
       .filter((m) => m.confidence !== "low" && m.listing >= 1 && m.listing <= shown.length)
       .sort((a, b) => (a.confidence === "high" ? -1 : 0) - (b.confidence === "high" ? -1 : 0))[0];
 
-    console.info(
-      `ai.duplicate earlier=${shown.length} match=${best ? `${best.listing}/${best.confidence}` : "none"} ` +
-        `ms=${Date.now() - startedAt} tokens_in=${response.usageMetadata?.promptTokenCount ?? "?"}`,
-    );
+    logAi({
+      ai_call: "duplicate",
+      outcome: "ok",
+      ms: Date.now() - startedAt,
+      earlier: shown.length,
+      match: best ? best.confidence : "none",
+      tokens_in: response.usageMetadata?.promptTokenCount,
+    });
     return { ok: true, match: best ? shown[best.listing - 1].listing : null };
   } catch (error) {
-    console.warn(`ai.duplicate FAILED ms=${Date.now() - startedAt} error=${plainErrorMessage(error)}`);
+    logAi({ ai_call: "duplicate", outcome: "failed", ms: Date.now() - startedAt, error: errorLabel(error) });
     return { ok: false, error: plainErrorMessage(error) };
   }
 }

@@ -4,14 +4,8 @@
 import { MediaResolution, ThinkingLevel } from "@google/genai";
 import { getAi, GEMINI_MODEL } from "@/lib/ai/client";
 import { listingDraftSchema, listingDraftZodSchema, type ListingDraft } from "@/lib/ai/schemas";
-import {
-  AI_TIMEOUT_MS,
-  isRetryable,
-  plainErrorMessage,
-  toImageParts,
-  validatePhotos,
-  type ImagePart,
-} from "@/lib/ai/images";
+import { plainErrorMessage, toImageParts, validatePhotos, type ImagePart } from "@/lib/ai/images";
+import { RETRY_429_503, errorLabel, logAi, runTiered, type Tier } from "@/lib/ai/resilient";
 import { BRANDS } from "@/lib/constants";
 
 const SYSTEM_INSTRUCTION = `You help women in Pakistan list preloved clothing on Reloved. You draft; a person decides.
@@ -62,8 +56,20 @@ export type PrefillInput = {
   photos: File[];
 };
 
-async function generateDraft(imageParts: ImagePart[]) {
-  return getAi().models.generateContent({
+/** Full: what the call was designed for. Light: the hedge and the fallback,
+ *  smaller images so it answers faster. A label that is unreadable at low
+ *  resolution comes back as brand_evidence "none", which the brand rules
+ *  below turn into an empty brand field: the light tier can only ever be
+ *  more cautious, never more confident. */
+const FULL: Tier = { name: "full", mediaResolution: MediaResolution.MEDIA_RESOLUTION_MEDIUM, timeoutMs: 25_000 };
+const LIGHT: Tier = { name: "light", mediaResolution: MediaResolution.MEDIA_RESOLUTION_LOW, timeoutMs: 15_000 };
+
+class InvalidAnswer extends Error {}
+
+/** One attempt on one tier, including the shape check, so a malformed answer
+ *  counts as a failure and the other tier can still win. */
+async function generateDraft(imageParts: ImagePart[], tier: Tier, signal: AbortSignal) {
+  const response = await getAi().models.generateContent({
     model: GEMINI_MODEL,
     contents: [{ role: "user", parts: [...imageParts, { text: USER_TEXT }] }],
     config: {
@@ -71,10 +77,16 @@ async function generateDraft(imageParts: ImagePart[]) {
       responseMimeType: "application/json",
       responseSchema: listingDraftSchema,
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-      mediaResolution: MediaResolution.MEDIA_RESOLUTION_MEDIUM,
-      httpOptions: { timeout: AI_TIMEOUT_MS },
+      mediaResolution: tier.mediaResolution,
+      abortSignal: signal,
+      httpOptions: { timeout: tier.timeoutMs, retryOptions: RETRY_429_503 },
     },
   });
+  const text = response.text;
+  if (!text) throw new InvalidAnswer("empty");
+  const parsed = listingDraftZodSchema.safeParse(JSON.parse(text));
+  if (!parsed.success) throw new InvalidAnswer("shape");
+  return { listing: parsed.data, usage: response.usageMetadata };
 }
 
 /** Whatever the model claimed, evidence decides how much we trust the brand. */
@@ -98,31 +110,34 @@ export async function runPrefill({ photos }: PrefillInput): Promise<PrefillResul
 
   try {
     const imageParts = await toImageParts(photos);
+    const { value, tier, hedged } = await runTiered(FULL, LIGHT, (t, signal) => generateDraft(imageParts, t, signal));
+    const latencyMs = Date.now() - startedAt;
 
-    let response;
-    try {
-      response = await generateDraft(imageParts);
-    } catch (error) {
-      if (!isRetryable(error)) throw error;
-      response = await generateDraft(imageParts);
-    }
+    logAi({
+      ai_call: "prefill",
+      outcome: "ok",
+      ms: latencyMs,
+      tier,
+      hedged,
+      photos: photos.length,
+      tokens_in: value.usage?.promptTokenCount,
+      tokens_out: value.usage?.candidatesTokenCount,
+    });
 
-    const text = response.text;
-    if (!text) {
-      return { ok: false, reason: "ai", error: "The model returned an empty answer." };
-    }
-
-    const parsed = listingDraftZodSchema.safeParse(JSON.parse(text));
-    if (!parsed.success) {
-      return { ok: false, reason: "ai", error: "The model's answer was not in the expected shape." };
-    }
-
-    return {
-      ok: true,
-      listing: applyBrandRules(parsed.data),
-      latencyMs: Date.now() - startedAt,
-    };
+    return { ok: true, listing: applyBrandRules(value.listing), latencyMs };
   } catch (error) {
-    return { ok: false, reason: "ai", error: plainErrorMessage(error) };
+    const invalid = error instanceof InvalidAnswer;
+    logAi({
+      ai_call: "prefill",
+      outcome: invalid ? "invalid" : "failed",
+      ms: Date.now() - startedAt,
+      photos: photos.length,
+      error: errorLabel(error),
+    });
+    return {
+      ok: false,
+      reason: "ai",
+      error: invalid ? "The model's answer was not in the expected shape." : plainErrorMessage(error),
+    };
   }
 }
