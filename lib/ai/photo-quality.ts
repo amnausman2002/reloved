@@ -5,7 +5,8 @@
 import { MediaResolution, ThinkingLevel } from "@google/genai";
 import { getAi, GEMINI_MODEL } from "@/lib/ai/client";
 import { photoQualitySchema, photoQualityZodSchema, type PhotoQuality } from "@/lib/ai/schemas";
-import { AI_TIMEOUT_MS, isRetryable, toImageParts, validatePhotos, type ImagePart } from "@/lib/ai/images";
+import { toImageParts, validatePhotos, type ImagePart } from "@/lib/ai/images";
+import { RETRY_429_503, errorLabel, logAi, runTiered, type Tier } from "@/lib/ai/resilient";
 
 const SYSTEM_INSTRUCTION = `You check whether photos of a preloved clothing item are good enough to list on Reloved.
 You advise; you never block. A photo only has to show the item honestly, so be generous.
@@ -71,8 +72,16 @@ export type PhotoQualityInput = {
   photos: File[];
 };
 
-async function generateQuality(imageParts: ImagePart[]) {
-  return getAi().models.generateContent({
+/** Full judges sharpness at medium detail. Light is the hedge and fallback:
+ *  low detail, so it is quicker and a little less sure about blur, which only
+ *  makes it say less. The check is advisory either way. */
+const FULL: Tier = { name: "full", mediaResolution: MediaResolution.MEDIA_RESOLUTION_MEDIUM, timeoutMs: 25_000 };
+const LIGHT: Tier = { name: "light", mediaResolution: MediaResolution.MEDIA_RESOLUTION_LOW, timeoutMs: 15_000 };
+
+/** One attempt on one tier, shape check included, so a malformed answer
+ *  counts as a failure and the other tier can still win. */
+async function generateQuality(imageParts: ImagePart[], tier: Tier, signal: AbortSignal) {
+  const response = await getAi().models.generateContent({
     model: GEMINI_MODEL,
     // Each photo labelled with its number. Without labels the model picked its
     // own numbering, sometimes from 1, and a flag landed on the photo next to
@@ -88,11 +97,16 @@ async function generateQuality(imageParts: ImagePart[]) {
       responseMimeType: "application/json",
       responseSchema: photoQualitySchema,
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-      // Medium, not low: it needs enough detail to judge sharpness.
-      mediaResolution: MediaResolution.MEDIA_RESOLUTION_MEDIUM,
-      httpOptions: { timeout: AI_TIMEOUT_MS },
+      mediaResolution: tier.mediaResolution,
+      abortSignal: signal,
+      httpOptions: { timeout: tier.timeoutMs, retryOptions: RETRY_429_503 },
     },
   });
+  const text = response.text;
+  if (!text) throw new Error("empty answer");
+  const parsed = photoQualityZodSchema.safeParse(JSON.parse(text));
+  if (!parsed.success) throw new Error("answer did not match the schema");
+  return { quality: parsed.data, usage: response.usageMetadata };
 }
 
 export async function runPhotoQuality({ photos }: PhotoQualityInput): Promise<PhotoQualityResult> {
@@ -104,41 +118,39 @@ export async function runPhotoQuality({ photos }: PhotoQualityInput): Promise<Ph
 
   try {
     const imageParts = await toImageParts(photos);
-
-    let response;
-    try {
-      response = await generateQuality(imageParts);
-    } catch (error) {
-      if (!isRetryable(error)) throw error;
-      response = await generateQuality(imageParts);
-    }
-
-    const text = response.text;
-    if (!text) return SKIPPED;
-
-    const parsed = photoQualityZodSchema.safeParse(JSON.parse(text));
-    if (!parsed.success) {
-      console.warn("ai.quality answer did not match the schema");
-      return SKIPPED;
-    }
+    const { value, tier, hedged } = await runTiered(FULL, LIGHT, (t, signal) => generateQuality(imageParts, t, signal));
+    const { quality, usage } = value;
 
     // The model numbers photos from 1, as labelled; the rest of the app counts
     // from 0. Then drop any flag pointing at a photo that was not sent, so the
     // form never tries to highlight a photo that does not exist.
-    const flags = parsed.data.photo_quality
+    const flags = quality.photo_quality
       .map((flag) => ({ ...flag, photo_index: flag.photo_index - 1 }))
       .filter((flag) => flag.photo_index >= 0 && flag.photo_index < photos.length);
+
+    const latencyMs = Date.now() - startedAt;
+    logAi({
+      ai_call: "photo_quality",
+      outcome: "ok",
+      ms: latencyMs,
+      tier,
+      hedged,
+      photos: photos.length,
+      tokens_in: usage?.promptTokenCount,
+      tokens_out: usage?.candidatesTokenCount,
+      flagged: flags.length,
+    });
 
     return {
       ok: true,
       flags,
-      overallUsable: parsed.data.overall_usable,
-      retakeTip: parsed.data.retake_tip,
-      latencyMs: Date.now() - startedAt,
+      overallUsable: quality.overall_usable,
+      retakeTip: quality.retake_tip,
+      latencyMs,
     };
   } catch (error) {
     // Logged, or the slow and failing cases are the ones we never see.
-    console.warn(`ai.quality FAILED photos=${photos.length} ms=${Date.now() - startedAt} error=${String(error).slice(0, 200)}`);
+    logAi({ ai_call: "photo_quality", outcome: "failed", ms: Date.now() - startedAt, photos: photos.length, error: errorLabel(error) });
     return SKIPPED;
   }
 }

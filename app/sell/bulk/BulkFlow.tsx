@@ -52,8 +52,13 @@ import {
 
 type Step = "pick" | "preparing" | "sorting" | "sortFailed" | "review" | "edit" | "account";
 
-/** Cards read at once. Each is two calls, so this is eight requests. */
-const READ_CONCURRENCY = 4;
+/** Cards read at once. Each is two calls, and a slow call can grow a hedge
+ *  on the server, so three cards can mean up to twelve requests. */
+const READ_CONCURRENCY = 3;
+/** A card whose read fails goes to the back of the queue this many more
+ *  times before it shows Read again. One is enough to ride out a slow minute
+ *  without hammering a service that is struggling. */
+const AUTO_RETRIES = 1;
 /** Listings saved at once, after the first (which creates her account). */
 const SUBMIT_CONCURRENCY = 3;
 /** When sorting stops being a normal wait and the screen says so. */
@@ -135,6 +140,7 @@ export default function BulkFlow({
   const sortAbortRef = useRef<AbortController | null>(null);
   const queueRef = useRef<string[]>([]);
   const activeReadsRef = useRef(0);
+  const attemptsRef = useRef<Map<string, number>>(new Map());
 
   // A fresh controller on every mount. React mounts, unmounts and remounts in
   // development, and aborting the one created with the ref left the flow
@@ -181,6 +187,15 @@ export default function BulkFlow({
     pumpReads();
   }
 
+  /** "Read again" on a card whose read failed twice. A fresh start. */
+  function rereadCard(cardId: string) {
+    attemptsRef.current.delete(cardId);
+    updateCards((current) =>
+      current.map((card) => (card.id === cardId ? { ...card, status: "reading", prefillError: undefined } : card)),
+    );
+    enqueueRead(cardId);
+  }
+
   function pumpReads() {
     while (activeReadsRef.current < READ_CONCURRENCY && queueRef.current.length > 0) {
       const cardId = queueRef.current.shift()!;
@@ -222,6 +237,16 @@ export default function BulkFlow({
 
     const retakeTip =
       !quality.skipped && quality.retakeTip && flaggedCount(quality.flags) > 0 ? quality.retakeTip : undefined;
+
+    // A failed read is retried once, from the back of the queue, before the
+    // card admits defeat. The card stays a skeleton meanwhile: to her it is
+    // just still reading.
+    const attempts = (attemptsRef.current.get(cardId) ?? 0) + 1;
+    attemptsRef.current.set(cardId, attempts);
+    if (!prefill.ok && attempts <= AUTO_RETRIES) {
+      queueRef.current.push(cardId);
+      return;
+    }
 
     updateCards((current) =>
       current.map((item) => {
@@ -726,6 +751,7 @@ export default function BulkFlow({
               onMerge={() => setMergeFor(card.id)}
               onSplit={() => setSplit({ cardId: card.id, selection: [] })}
               onDelete={() => setDeleteFor(card.id)}
+              onReadAgain={() => rereadCard(card.id)}
               onConfirmSplit={confirmSplit}
               onCancelSplit={() => setSplit(null)}
             />
