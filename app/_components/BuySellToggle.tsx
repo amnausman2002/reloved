@@ -24,34 +24,16 @@ const BUY_BENEFITS = [
 
 const SELL_BENEFITS = [
   {
-    headline: 'List in minutes.',
-    body: 'Take photos, add details, and go live. Our AI fills in the basics so you can focus on the description.',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M10 3v14M3 10h14" />
-      </svg>
-    ),
+    headline: 'Take photos of everything, we’ll do the rest.',
+    body: 'Take photos of your whole wardrobe in one go. AI works out which photos belong to which item and fills in the details for you. You check, tweak, and post.',
   },
   {
-    headline: 'Direct buyer contact.',
-    body: 'Buyers message you straight on WhatsApp. No fees, no commission.',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 4h16v10H2z" /><path d="M6 14l-2 4M14 14l2 4" />
-      </svg>
-    ),
+    headline: 'No commission. Not now, not later.',
+    body: 'You keep every rupee. We don’t charge to list, we don’t take a cut when you sell, and that’s not going to change.',
   },
   {
-    headline: 'Listings reviewed before going live.',
-    body: 'Every item passes a quick check, which keeps quality high for buyers and for you.',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 10l4 4 8-8" />
-      </svg>
-    ),
+    headline: 'List in minutes. Reviewed by a real person.',
+    body: 'Upload your photos, confirm the details AI fills in, and you’re done. Before anything goes live, the team verifies your item. That’s how buyers trust what they find here.',
   },
 ];
 
@@ -59,34 +41,36 @@ export default function BuySellToggle() {
   const [tab, setTab] = useState<'buy' | 'sell'>('buy');
   const [activeIndex, setActiveIndex] = useState(0);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const ctaRef = useRef<HTMLDivElement | null>(null);
   const id = useId();
 
-  // Uses the page's own scroll, not a contained scroller, so a normal swipe
-  // or wheel gesture carries straight through this section and on into the
-  // rest of the page without getting stuck.
   useEffect(() => {
     const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
-    if (!cards.length) return;
+    const cta = ctaRef.current;
+    const observed = cta ? [...cards, cta] : cards;
+    if (!observed.length) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add(styles.benefitCardRevealed);
           const idx = cards.indexOf(entry.target as HTMLDivElement);
-          if (idx === -1) return;
-          if (entry.isIntersecting) {
-            setActiveIndex(idx);
-            entry.target.classList.add(styles.benefitCardRevealed);
-          }
+          if (idx !== -1) setActiveIndex(idx);
         });
       },
-      { threshold: 0.5 }
+      /* Benefits + CTA reveal when 35% of them is in view — a bit before
+         the midpoint so they feel like they land as you reach them, not
+         after you've scrolled past. */
+      { threshold: 0.35 }
     );
 
-    cards.forEach((card) => observer.observe(card));
+    observed.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, [tab]);
 
   const benefits = tab === 'buy' ? BUY_BENEFITS : SELL_BENEFITS;
+  const isSell = tab === 'sell';
 
   return (
     /* id: the menu's "How it works" points here. There is no separate page for
@@ -128,34 +112,65 @@ export default function BuySellToggle() {
         </div>
       </div>
 
-      {/* Benefit cards: each appears in place as the page scrolls to it */}
-      <div id={`${id}-panel`} key={tab}>
-        {benefits.map((b, i) => (
-          <div
-            key={i}
-            ref={(el) => { cardRefs.current[i] = el; }}
-            className={styles.benefitCard}
-          >
-            <div className={styles.benefitCardInner}>
-              <p className={styles.benefitHeadline}>{b.headline}</p>
-              <p className={styles.benefitBody}>{b.body}</p>
-              {'photo' in b && (
+      {/* Sell layout: a sticky demo video on the left, benefits scroll on the right.
+          Buy layout: original one-column cards with a photo per benefit. */}
+      {isSell ? (
+        <div id={`${id}-panel`} key={tab} className={styles.sellLayout}>
+          <div className={styles.sellMedia}>
+            <div className={styles.sellMediaInner}>
+              {/* Muted + playsInline + autoPlay are required for mobile autoplay.
+                  No controls, no audio — this is a loop illustration, not a video to watch. */}
+              <video
+                className={styles.sellVideo}
+                src="/photos/sell-demo.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                aria-hidden="true"
+              />
+            </div>
+          </div>
+          <div className={styles.sellCopy}>
+            {SELL_BENEFITS.map((b, i) => (
+              <div
+                key={i}
+                ref={(el) => { cardRefs.current[i] = el; }}
+                className={styles.sellBenefit}
+              >
+                <div className={styles.sellBenefitInner}>
+                  <p className={styles.benefitHeadline}>{b.headline}</p>
+                  <p className={styles.benefitBody}>{b.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div id={`${id}-panel`} key={tab}>
+          {BUY_BENEFITS.map((b, i) => (
+            <div
+              key={i}
+              ref={(el) => { cardRefs.current[i] = el; }}
+              className={styles.benefitCard}
+            >
+              <div className={styles.benefitCardInner}>
+                <p className={styles.benefitHeadline}>{b.headline}</p>
+                <p className={styles.benefitBody}>{b.body}</p>
                 <div className={styles.benefitPhotoWrap}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={b.photo} alt="" className={styles.benefitPhoto} loading={i === 0 ? 'eager' : 'lazy'} />
                 </div>
-              )}
-              {'icon' in b && (
-                <span className={styles.benefitIcon}>{b.icon}</span>
-              )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Sell CTA */}
-      {tab === 'sell' && (
-        <div className={styles.bottomArea}>
+      {isSell && (
+        <div ref={ctaRef} className={styles.bottomArea}>
           <Link href="/sell" className={styles.sellCta}>
             List your first item
           </Link>

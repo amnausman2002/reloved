@@ -6,9 +6,9 @@ import { useRouter } from 'next/navigation';
 import styles from '../page.module.css';
 
 const SUGGESTIONS = [
-  'Khaadi kurta medium size',
-  'Generation suit, excellent condition',
-  'Y2K crop top XS',
+  'Y2k crop top',
+  'khaadi lawn kurta',
+  'lama wide leg pants',
 ];
 
 const TICKER_PHRASE = 'a more circular way to shop';
@@ -103,13 +103,12 @@ export default function HeroSection() {
         <form className={styles.heroSearchBar} onSubmit={handleSubmit}>
           <svg
             className={styles.heroSearchIcon}
-            width="18" height="18" viewBox="0 0 20 20"
-            fill="none" stroke="currentColor" strokeWidth="1.5"
-            strokeLinecap="round" strokeLinejoin="round"
+            width="18" height="18" viewBox="0 0 18 18"
+            fill="none"
             aria-hidden="true"
           >
-            <circle cx="8.5" cy="8.5" r="6" />
-            <path d="M13 13L17.5 17.5" />
+            <circle cx="7.5" cy="7.5" r="6" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M12 12l4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <div className={styles.heroInputWrap}>
             <input
@@ -128,6 +127,17 @@ export default function HeroSection() {
               </span>
             )}
           </div>
+          {query.trim() && (
+            <button
+              type="submit"
+              className={styles.heroSearchSubmit}
+              aria-label="Go to results"
+            >
+              <svg width="24" height="14" viewBox="0 0 24 14" fill="none" aria-hidden="true">
+                <path d="M1 7h22M23 7l-5.5-6M23 7l-5.5 6" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
         </form>
 
         <Link href="/browse" className={styles.heroCta}>
