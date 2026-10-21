@@ -29,7 +29,7 @@ import { firebaseAuth } from "@/lib/firebase/client";
 import { fetchMyProfile } from "@/lib/myListings";
 import { knownAccountEmail, rememberAccount } from "@/lib/knownAccount";
 import SellLogin from "./SellLogin";
-import { clearDraft, loadDraft, saveDraft, type DraftFiles, type LoadedDraft } from "./draft";
+import { deleteDraft, draftsWork, loadDraft, newDraftId, saveDraft, type DraftFiles, type LoadedDraft } from "./draft";
 
 // Path 1, the whole seller flow on one page.
 //
@@ -44,9 +44,9 @@ import { clearDraft, loadDraft, saveDraft, type DraftFiles, type LoadedDraft } f
 // away and she would have to shoot the item again.
 //
 // CHANGED 21 Oct: the flow is also saved on the phone as she goes (draft.ts),
-// so leaving, a reload or the browser being killed no longer loses it. /sell
-// offers to pick it up next time. A navigation still throws away the tab's
-// copy; the draft is what survives it.
+// so leaving, a reload or the browser being killed no longer loses it. Sell
+// always starts fresh, and a draft opens only from the Drafts tab on her
+// profile, which links here as /sell?resume=<id>. Never automatically.
 
 type Step = "intro" | "photos" | "reading" | "details" | "account";
 
@@ -126,14 +126,13 @@ export default function SellFlow() {
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
   const [confirmPhoneOpen, setConfirmPhoneOpen] = useState(false);
 
-  // The draft on this phone, if any. `restore` is the one being offered in
-  // the "Pick up where you left off?" sheet, until she answers it.
-  // `draftReady` holds off saving until we know whether there was one, so an
-  // empty first screen can never overwrite it.
+  // This visit's draft. A new id every time Sell opens, so a new listing never
+  // overwrites one she left; the id of the draft she resumed when she came
+  // from the Drafts tab. `draftReady` holds off saving until that is settled.
+  const draftIdRef = useRef(newDraftId());
+  const resumeIdRef = useRef<string | null | undefined>(undefined);
   const [draftReady, setDraftReady] = useState(false);
   const [draftWorks, setDraftWorks] = useState(false);
-  const [restore, setRestore] = useState<LoadedDraft | null>(null);
-  const [restoreThumbs, setRestoreThumbs] = useState<string[]>([]);
   const [bulkDraft, setBulkDraft] = useState<LoadedDraft | null>(null);
   const savedDraftRef = useRef(false);
 
@@ -162,38 +161,29 @@ export default function SellFlow() {
     setKnownEmail(knownAccountEmail());
 
     let live = true;
-    void loadDraft().then(({ works, loaded }) => {
-      if (!live) return;
-      setDraftWorks(works);
-      // ?resume=1 is Continue on the Drafts tab of her profile. She has
-      // already chosen, so asking again would be a question too many.
-      const resuming = new URLSearchParams(window.location.search).get("resume") === "1";
-      if (resuming) window.history.replaceState(null, "", "/sell");
-      if (loaded && resuming && loaded.draft.photos.some((photo) => loaded.files[photo.id])) {
-        resumeDraft(loaded);
-        if (loaded.draft.kind === "bulk") setStep("photos");
+    // ?resume=<id> is Continue on the Drafts tab of her profile, and the only
+    // way a draft is ever opened.
+    // Read once and kept in a ref, because the address is tidied straight
+    // after and React's development double mount would otherwise find it gone.
+    if (resumeIdRef.current === undefined) {
+      resumeIdRef.current = new URLSearchParams(window.location.search).get("resume");
+      if (resumeIdRef.current) window.history.replaceState(null, "", "/sell");
+    }
+    const resumeId = resumeIdRef.current;
+    void Promise.all([draftsWork(), resumeId ? loadDraft(resumeId) : Promise.resolve(null)]).then(
+      ([works, loaded]) => {
+        if (!live) return;
+        setDraftWorks(works);
+        if (loaded) {
+          resumeDraft(loaded);
+          // Bulk takes the page over from here; the step only has to be set.
+          if (loaded.draft.kind === "bulk") setStep("photos");
+        } else {
+          setStep(seen ? "photos" : "intro");
+        }
         setDraftReady(true);
-        return;
-      }
-      if (loaded && loaded.draft.photos.some((photo) => loaded.files[photo.id])) {
-        setRestore(loaded);
-        // Up to four covers for the sheet, the same thumbnails the success
-        // sheet uses.
-        const covers =
-          loaded.draft.kind === "single"
-            ? loaded.draft.photos.slice(0, 1).map((photo) => photo.id)
-            : loaded.draft.cards.slice(0, 4).map((card) => card.photoIds[0]);
-        const urls = covers
-          .map((id) => loaded.files[id]?.file)
-          .filter((file): file is File => Boolean(file))
-          .map((file) => URL.createObjectURL(file));
-        urlsRef.current.push(...urls);
-        setRestoreThumbs(urls);
-      }
-      // A returning draft skips the guide: she has been here before.
-      setStep(seen || loaded ? "photos" : "intro");
-      setDraftReady(true);
-    });
+      },
+    );
     return () => {
       live = false;
     };
@@ -277,10 +267,10 @@ export default function SellFlow() {
   }
 
   // Saves the single-item flow on this phone a moment after each change.
-  // Never while a draft is being offered (she has not chosen yet), never in
-  // bulk (BulkFlow saves its own), and never once the listing is posted.
+  // Never in bulk (BulkFlow saves its own), and never once the listing is
+  // posted.
   useEffect(() => {
-    if (!draftReady || restore || mode === "bulk" || submitted !== null || step === null) return;
+    if (!draftReady || mode === "bulk" || submitted !== null || step === null) return;
 
     const empty =
       photos.length === 0 &&
@@ -289,7 +279,7 @@ export default function SellFlow() {
       !fields.price;
     if (empty) {
       // She removed everything. Only clear a draft this visit actually wrote.
-      if (savedDraftRef.current) void clearDraft();
+      if (savedDraftRef.current) void deleteDraft(draftIdRef.current);
       savedDraftRef.current = false;
       return;
     }
@@ -299,6 +289,7 @@ export default function SellFlow() {
       photos.forEach((photo) => (files[photo.id] = { file: photo.file }));
       savedDraftRef.current = true;
       void saveDraft(
+        draftIdRef.current,
         {
           kind: "single",
           step: step === "details" || step === "account" ? "details" : "photos",
@@ -311,11 +302,13 @@ export default function SellFlow() {
       );
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [draftReady, restore, mode, submitted, step, photos, coverId, fields, prefilled]);
+  }, [draftReady, mode, submitted, step, photos, coverId, fields, prefilled]);
 
-  /** "Continue" on the restore sheet. */
+  /** Opens a draft she chose from the Drafts tab. Saving carries on under the
+   *  same id, so the draft is updated rather than copied. */
   function resumeDraft(loaded: LoadedDraft) {
-    setRestore(null);
+    draftIdRef.current = loaded.id;
+    savedDraftRef.current = true;
     if (loaded.draft.kind === "bulk") {
       setBulkDraft(loaded);
       setMode("bulk");
@@ -336,12 +329,6 @@ export default function SellFlow() {
     setPrefilled(draft.prefilled);
     setMode("single");
     setStep(draft.step === "details" && restored.length >= MIN_LISTING_PHOTOS ? "details" : "photos");
-  }
-
-  /** "Start again" on the restore sheet. */
-  function discardDraft() {
-    setRestore(null);
-    void clearDraft();
   }
 
   useEffect(() => {
@@ -522,7 +509,7 @@ export default function SellFlow() {
     setSubmitted(finished);
     // Posted, so there is nothing left to pick up. Also keeps a finished
     // listing off a phone that may be shared.
-    void clearDraft();
+    void deleteDraft(draftIdRef.current);
     // Close the confirm sheet before opening the success one. Two sheets over
     // each other is not a state the design has, or should have.
     setConfirmPhoneOpen(false);
@@ -552,14 +539,15 @@ export default function SellFlow() {
    *  count too, because the form is long.
    *
    *  Once the listing is saved there is nothing to warn about, which is why
-   *  `submitted` ends it. Nor is there when the draft is saved on this phone:
-   *  she will be offered it when she comes back, so the warning would be
-   *  stopping her for nothing. It only appears where drafts do not work, in
-   *  private browsing for example. */
+   *  `submitted` ends it. Nor is there when she is signed in and drafts work:
+   *  the listing is under Drafts on her profile, so the warning would be
+   *  stopping her for nothing. Signed out, the draft is saved but she has no
+   *  profile to find it on yet, so she is still told. */
+  const draftReachable = draftWorks && Boolean(signedInAs);
   const hasUnsavedWork =
     (mode === "bulk" && bulkHasWork) ||
     (mode !== "bulk" &&
-    !draftWorks &&
+    !draftReachable &&
     submitted === null &&
     (photos.length > 0 ||
       Boolean(fields.title.trim() || fields.description.trim() || fields.price) ||
@@ -595,7 +583,11 @@ export default function SellFlow() {
           // One wording whether or not she has photos yet. The previous pair
           // split on photos.length, which was a distinction she would never
           // notice and two strings to keep in step.
-          body="Your progress hasn't been saved yet. If you leave now, you'll lose the photos and details you've added so far."
+          body={
+            draftWorks
+              ? "It's saved as a draft on this phone. To find it again, log in or create an account, then look under Drafts in your profile."
+              : "Your progress hasn't been saved yet. If you leave now, you'll lose the photos and details you've added so far."
+          }
         >
           <PrimaryButton onClick={() => setLeaveOpen(false)}>Keep going</PrimaryButton>
           <TextLink
@@ -604,7 +596,7 @@ export default function SellFlow() {
               window.location.href = "/";
             }}
           >
-            Leave and lose it
+            {draftWorks ? "Leave" : "Leave and lose it"}
           </TextLink>
         </BottomSheet>
       </>
@@ -629,6 +621,7 @@ export default function SellFlow() {
         onSingle={() => setMode("single")}
         draft={bulkDraft}
         draftWorks={draftWorks}
+        draftReachable={draftReachable}
         knownEmail={knownEmail}
         onSignedIn={afterSignIn}
       />,
@@ -641,7 +634,7 @@ export default function SellFlow() {
      done. Flagged for Bismah. */
   const modeSheet = (
     <BottomSheet
-      open={mode === "ask" && !restore && (step === "intro" || step === "photos") && photos.length === 0}
+      open={mode === "ask" && (step === "intro" || step === "photos") && photos.length === 0}
       onClose={closeModeSheet}
       heading="What are you selling?"
       body={`One item, or up to ${MAX_BATCH_PHOTOS} photos of several. We'll sort them into listings for you.`}
@@ -650,43 +643,6 @@ export default function SellFlow() {
       <SecondaryButton onClick={() => setMode("bulk")}>Many items</SecondaryButton>
     </BottomSheet>
   );
-
-  /* NEW 21 Oct: offered on arrival when this phone has a listing she did not
-     finish. No design in components.html; the success sheet's shape, with
-     the same cover thumbnails, and the safe choice as the button. Closing
-     it keeps the draft, because closing is not a decision to throw it away.
-     Flagged for Bismah. */
-  const restoreSheet = restore ? (
-    <BottomSheet
-      open
-      onClose={() => resumeDraft(restore)}
-      heading="Pick up where you left off?"
-      body={
-        restore.draft.kind === "single"
-          ? `${restore.draft.fields.title.trim() ? `"${restore.draft.fields.title.trim()}"` : "Your listing"}, with ${
-              restore.draft.photos.length
-            } photo${restore.draft.photos.length === 1 ? "" : "s"}, is saved on this phone.`
-          : `${restore.draft.cards.length} listing${restore.draft.cards.length === 1 ? "" : "s"} from ${
-              restore.draft.photos.length
-            } photos ${restore.draft.cards.length === 1 ? "is" : "are"} saved on this phone.`
-      }
-      dismissOnOverlayClick={false}
-      media={
-        restoreThumbs.length > 0 ? (
-          <div className="quality-thumbs">
-            {restoreThumbs.map((url) => (
-              <span key={url} className="quality-thumb">
-                <img src={url} alt="" />
-              </span>
-            ))}
-          </div>
-        ) : undefined
-      }
-    >
-      <PrimaryButton onClick={() => resumeDraft(restore)}>Continue</PrimaryButton>
-      <TextLink onClick={discardDraft}>Start again</TextLink>
-    </BottomSheet>
-  ) : null;
 
   const loginSheet = (
     <SellLogin
@@ -724,7 +680,6 @@ export default function SellFlow() {
           />
         </div>
         {modeSheet}
-        {restoreSheet}
       </div>
     );
   }
@@ -781,7 +736,6 @@ export default function SellFlow() {
         </BottomSheet>
 
         {modeSheet}
-        {restoreSheet}
       </>
     );
   }

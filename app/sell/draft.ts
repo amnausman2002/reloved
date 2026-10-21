@@ -1,9 +1,14 @@
-// The listing she is in the middle of, saved on this phone.
+// Listings she started and has not posted, saved on this phone.
 //
 // Until 21 Oct the photos only existed as object URLs in the tab, so leaving
 // the page, a reload, or the phone killing the browser in the background threw
 // away an item she might not have in her hands again. Now the flow writes its
-// state here as she goes, and /sell offers to pick it up when she comes back.
+// state here as she goes.
+//
+// A draft never opens by itself. Sell always starts a fresh listing; a draft
+// is opened only from the Drafts tab on her profile (/sell?resume=<id>). That
+// is why there can be several: starting something new must never overwrite
+// the one she left.
 //
 // IndexedDB rather than localStorage, because localStorage holds strings only
 // and caps out around 5 MB. IndexedDB stores the prepared photo Files as they
@@ -12,11 +17,8 @@
 // Nothing here leaves the phone, and nothing needs an account. It is a
 // convenience, not a record: private browsing, a full disk or a cleared
 // browser lose it, and every function here fails quietly so the flow carries
-// on exactly as it did before drafts existed.
-//
-// One draft at a time, single or bulk. Starting again replaces it, and a
-// successful submit deletes it, so a finished listing is never left sitting on
-// a phone that may be shared with the rest of the family.
+// on exactly as it did before drafts existed. A successful submit deletes its
+// draft, so a finished listing is never left on a phone that may be shared.
 
 import type { PhotoMeta } from "@/lib/ai/groupRules";
 import type { Prefilled } from "./prefillToForm";
@@ -25,10 +27,12 @@ import type { BulkCard } from "./bulk/bulkState";
 import { firebaseAuth, firebaseConfigured } from "@/lib/firebase/client";
 
 const DB_NAME = "reloved-sell";
-const DB_VERSION = 1;
+/** 2 since drafts became several, keyed by id. Version 1 held one draft under
+ *  a fixed key and is dropped on upgrade. */
+const DB_VERSION = 2;
 const DRAFTS = "drafts";
+/** Keyed `${draftId}/${photoId}`, so one draft's photos are one key range. */
 const PHOTOS = "photos";
-const KEY = "current";
 
 /** A draft older than this is dropped rather than offered. A week is long
  *  enough to come back to, and short enough that she still has the item. */
@@ -64,6 +68,7 @@ export type Draft = SingleDraft | BulkDraft;
 export type DraftFiles = { file: File; thumb?: File };
 
 export type LoadedDraft = {
+  id: string;
   draft: Draft;
   files: Record<string, DraftFiles>;
   savedAt: number;
@@ -74,7 +79,11 @@ export type LoadedDraft = {
   ownerUid?: string;
 };
 
-type StoredDraft = { draft: Draft; savedAt: number; ownerUid?: string };
+type StoredDraft = { id: string; draft: Draft; savedAt: number; ownerUid?: string };
+
+export function newDraftId(): string {
+  return `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 function currentUid(): string | undefined {
   try {
@@ -84,13 +93,20 @@ function currentUid(): string | undefined {
   }
 }
 
+function photoRange(draftId: string): IDBKeyRange {
+  return IDBKeyRange.bound(`${draftId}/`, `${draftId}/￿`);
+}
+
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(DRAFTS)) db.createObjectStore(DRAFTS);
-      if (!db.objectStoreNames.contains(PHOTOS)) db.createObjectStore(PHOTOS);
+      // Version 1's single draft is not worth migrating.
+      for (const name of [DRAFTS, PHOTOS]) {
+        if (db.objectStoreNames.contains(name)) db.deleteObjectStore(name);
+        db.createObjectStore(name);
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -113,67 +129,100 @@ function result<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
-/** Whether drafts work in this browser at all, and the draft if there is one.
- *  `works` is what decides whether the leave sheet can promise she will find
- *  her listing here when she comes back. */
-export async function loadDraft(): Promise<{ works: boolean; loaded: LoadedDraft | null }> {
-  if (typeof indexedDB === "undefined") return { works: false, loaded: null };
+async function withFiles(photoStore: IDBObjectStore, stored: StoredDraft): Promise<LoadedDraft> {
+  const files: Record<string, DraftFiles> = {};
+  for (const photo of stored.draft.photos) {
+    const saved = (await result(photoStore.get(`${stored.id}/${photo.id}`))) as DraftFiles | undefined;
+    if (saved?.file) files[photo.id] = saved;
+  }
+  return { id: stored.id, draft: stored.draft, files, savedAt: stored.savedAt, ownerUid: stored.ownerUid };
+}
+
+/** Whether drafts work in this browser at all. Decides whether leaving Sell
+ *  needs a warning. */
+export async function draftsWork(): Promise<boolean> {
+  if (typeof indexedDB === "undefined") return false;
+  try {
+    (await openDb()).close();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Every draft on this phone, newest first, with expired ones deleted on the
+ *  way. A draft whose photos have all gone is not a draft. */
+export async function listDrafts(): Promise<LoadedDraft[]> {
+  if (typeof indexedDB === "undefined") return [];
   let db: IDBDatabase;
   try {
     db = await openDb();
   } catch {
-    return { works: false, loaded: null };
+    return [];
   }
+  const expired: string[] = [];
+  const found: LoadedDraft[] = [];
   try {
     const tx = db.transaction([DRAFTS, PHOTOS], "readonly");
-    const stored = (await result(tx.objectStore(DRAFTS).get(KEY))) as StoredDraft | undefined;
-    if (!stored) return { works: true, loaded: null };
-
-    if (Date.now() - stored.savedAt > MAX_AGE_MS) {
-      db.close();
-      await clearDraft();
-      return { works: true, loaded: null };
-    }
-
+    const all = (await result(tx.objectStore(DRAFTS).getAll())) as StoredDraft[];
     const photoStore = tx.objectStore(PHOTOS);
-    const files: Record<string, DraftFiles> = {};
-    for (const photo of stored.draft.photos) {
-      const saved = (await result(photoStore.get(photo.id))) as DraftFiles | undefined;
-      if (saved?.file) files[photo.id] = saved;
+    for (const stored of all) {
+      if (Date.now() - stored.savedAt > MAX_AGE_MS) {
+        expired.push(stored.id);
+        continue;
+      }
+      const loaded = await withFiles(photoStore, stored);
+      if (Object.keys(loaded.files).length > 0) found.push(loaded);
     }
-    return {
-      works: true,
-      loaded: { draft: stored.draft, files, savedAt: stored.savedAt, ownerUid: stored.ownerUid },
-    };
   } catch {
-    // A draft we cannot read is a draft we do not offer.
-    return { works: true, loaded: null };
+    // Whatever was read before the failure is still worth showing.
   } finally {
     db.close();
   }
+  for (const id of expired) await deleteDraft(id);
+  return found.sort((a, b) => b.savedAt - a.savedAt);
 }
 
-/** Saves the draft, writing only the photos that are new since the last save
+export async function loadDraft(id: string): Promise<LoadedDraft | null> {
+  if (typeof indexedDB === "undefined") return null;
+  try {
+    const db = await openDb();
+    try {
+      const tx = db.transaction([DRAFTS, PHOTOS], "readonly");
+      const stored = (await result(tx.objectStore(DRAFTS).get(id))) as StoredDraft | undefined;
+      if (!stored || Date.now() - stored.savedAt > MAX_AGE_MS) return null;
+      const loaded = await withFiles(tx.objectStore(PHOTOS), stored);
+      return Object.keys(loaded.files).length > 0 ? loaded : null;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return null;
+  }
+}
+
+/** Saves one draft, writing only the photos that are new since its last save
  *  and deleting the ones she removed. Typing in the form rewrites a few
  *  hundred bytes, not every photo. */
-export async function saveDraft(draft: Draft, files: Record<string, DraftFiles>): Promise<boolean> {
+export async function saveDraft(id: string, draft: Draft, files: Record<string, DraftFiles>): Promise<boolean> {
   if (typeof indexedDB === "undefined") return false;
   try {
     const db = await openDb();
     try {
       const tx = db.transaction([DRAFTS, PHOTOS], "readwrite");
       const photoStore = tx.objectStore(PHOTOS);
-      const wanted = new Set(draft.photos.map((photo) => photo.id));
-      const existing = new Set((await result(photoStore.getAllKeys())).map(String));
+      const wanted = new Set(draft.photos.map((photo) => `${id}/${photo.id}`));
+      const existing = new Set((await result(photoStore.getAllKeys(photoRange(id)))).map(String));
 
-      existing.forEach((id) => {
-        if (!wanted.has(id)) photoStore.delete(id);
+      existing.forEach((key) => {
+        if (!wanted.has(key)) photoStore.delete(key);
       });
-      wanted.forEach((id) => {
-        if (!existing.has(id) && files[id]) photoStore.put(files[id], id);
+      draft.photos.forEach((photo) => {
+        const key = `${id}/${photo.id}`;
+        if (!existing.has(key) && files[photo.id]) photoStore.put(files[photo.id], key);
       });
-      const stored: StoredDraft = { draft, savedAt: Date.now(), ownerUid: currentUid() };
-      tx.objectStore(DRAFTS).put(stored, KEY);
+      const stored: StoredDraft = { id, draft, savedAt: Date.now(), ownerUid: currentUid() };
+      tx.objectStore(DRAFTS).put(stored, id);
       await done(tx);
       return true;
     } finally {
@@ -184,14 +233,14 @@ export async function saveDraft(draft: Draft, files: Record<string, DraftFiles>)
   }
 }
 
-export async function clearDraft(): Promise<void> {
+export async function deleteDraft(id: string): Promise<void> {
   if (typeof indexedDB === "undefined") return;
   try {
     const db = await openDb();
     try {
       const tx = db.transaction([DRAFTS, PHOTOS], "readwrite");
-      tx.objectStore(DRAFTS).clear();
-      tx.objectStore(PHOTOS).clear();
+      tx.objectStore(DRAFTS).delete(id);
+      tx.objectStore(PHOTOS).delete(photoRange(id));
       await done(tx);
     } finally {
       db.close();

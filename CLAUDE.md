@@ -231,12 +231,18 @@ Everything else in this file is the plan, not the code. Do not assume a file exi
 **The sell flow saves itself on the phone** (`app/sell/draft.ts`, IndexedDB,
 no account needed). Single-item saves from the first photo; bulk saves from
 the review screen on (photos still being prepared or sorted are not saved).
-Coming back to `/sell` offers "Pick up where you left off?" with Continue and
-Start again. One draft at a time, dropped after 7 days, and deleted on a
-successful submit so a posted listing does not sit on a shared phone. Nothing
-reaches Firestore until Submit, as before: there is no `draft` status. If
-IndexedDB is unavailable (private browsing), the old "Leave without posting?"
-warning comes back.
+**A draft never opens by itself** (Amna, 21 Oct): Sell always starts fresh,
+and drafts open only from the **Drafts** tab on her own profile, which links
+to `/sell?resume=<id>`. So every visit to Sell is a new draft with its own id,
+and starting something new never overwrites one she left. Drafts are dropped
+after 7 days, deleted on a successful submit, and shown only to the account
+that saved them (or anyone, if saved signed out). Nothing reaches Firestore
+until Submit: there is no `draft` status, and a draft on her phone is not on
+her laptop. Leaving Sell signed out still warns her, because without an
+account she has no profile to find the draft on.
+
+**Drafts replaced Closed** on the owner's profile. Expired and hidden listings
+moved into In review, with their notes unchanged.
 
 **A signed-out seller can log in without leaving Sell** (`app/sell/SellLogin.tsx`).
 `lib/knownAccount.ts` remembers the last email that signed in on this phone
@@ -445,3 +451,4 @@ Full field lists are in the PRD under "Domain model". Do not add, rename or remo
 - AI suggestions must look clearly different from what the seller typed ("AI suggested" or "Please check"), and must be easy to change or clear.
 - Photo quality messages are calm and helpful ("This one looks a bit dark. Retake it?") with two equal choices, Retake and Keep it. Never disable the Next button.
 - WhatsApp message, prefilled: "Hi, I'm interested in your [item title] on Reloved."
+

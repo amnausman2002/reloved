@@ -21,7 +21,7 @@ import { localId } from "../ids";
 import { firebaseAuth } from "@/lib/firebase/client";
 import BulkCard from "./BulkCard";
 import SellLogin from "../SellLogin";
-import { clearDraft, saveDraft, type DraftFiles, type LoadedDraft } from "../draft";
+import { deleteDraft, newDraftId, saveDraft, type DraftFiles, type LoadedDraft } from "../draft";
 import {
   isComplete,
   mergeCards,
@@ -51,7 +51,8 @@ import {
 //
 // Nothing reaches the database until Submit. CHANGED 21 Oct: from the review
 // screen on, the batch is saved on this phone as she works (../draft.ts), so a
-// reload no longer loses it and /sell offers it back. Photos still being
+// reload no longer loses it. It comes back only from the Drafts tab on her
+// profile, never by itself. Photos still being
 // prepared or sorted are not saved yet: there is nothing to come back to
 // until the cards exist. Listings already submitted leave the draft.
 
@@ -98,9 +99,11 @@ type Props = {
   onSingle: () => void;
   /** A batch she left unfinished, which she chose to continue. */
   draft: LoadedDraft | null;
-  /** Whether drafts save in this browser at all. When they do, leaving the
-   *  review screen loses nothing. */
+  /** Whether drafts save in this browser at all. */
   draftWorks: boolean;
+  /** Whether she could find the draft again: drafts work and she is signed
+   *  in, so it is on her profile. Only then does leaving lose nothing. */
+  draftReachable: boolean;
   /** The email this phone last signed in with, if any. */
   knownEmail: string | null;
   /** After the log-in sheet. Returns her saved number, if she has one. */
@@ -117,6 +120,7 @@ export default function BulkFlow({
   onSingle,
   draft,
   draftWorks,
+  draftReachable,
   knownEmail,
   onSignedIn,
 }: Props) {
@@ -124,6 +128,8 @@ export default function BulkFlow({
   // False while a saved batch is being put back, so neither the pick screen
   // nor an empty save flashes past first.
   const [restored, setRestored] = useState(draft === null);
+  // The draft this batch saves into: the one she resumed, or a new one.
+  const draftIdRef = useRef(draft?.id ?? newDraftId());
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
 
@@ -182,7 +188,7 @@ export default function BulkFlow({
   // Work that leaving would lose. Cards are saved on the phone when drafts
   // work; photos still being prepared or sorted are not.
   const hasWork =
-    (cards.length > 0 && !draftWorks) || step === "preparing" || step === "sorting" || step === "sortFailed";
+    (cards.length > 0 && !draftReachable) || step === "preparing" || step === "sorting" || step === "sortFailed";
   useEffect(() => onWorkChange(hasWork), [hasWork, onWorkChange]);
 
   // Putting a saved batch back. Runs once per mount, and resets the read
@@ -231,10 +237,10 @@ export default function BulkFlow({
   // review screen on. A batch with no cards left on the review screen is
   // finished or deleted, so its draft goes too.
   useEffect(() => {
-    if (!restored) return;
+    if (!restored || !draftWorks) return;
     if (step !== "review" && step !== "edit" && step !== "account") return;
     if (cards.length === 0) {
-      if (step === "review") void clearDraft();
+      if (step === "review") void deleteDraft(draftIdRef.current);
       return;
     }
     const timer = window.setTimeout(() => {
@@ -245,6 +251,7 @@ export default function BulkFlow({
       const files: Record<string, DraftFiles> = {};
       kept.forEach((id) => (files[id] = { file: photos[id].file, thumb: photos[id].thumb }));
       void saveDraft(
+        draftIdRef.current,
         {
           kind: "bulk",
           photos: kept.map((id) => ({
@@ -262,7 +269,7 @@ export default function BulkFlow({
       );
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [restored, step, cards, photos, notes, sortedBy]);
+  }, [restored, draftWorks, step, cards, photos, notes, sortedBy]);
 
   // Back from editing a card, land on that card rather than the top.
   useEffect(() => {
@@ -627,7 +634,7 @@ export default function BulkFlow({
       return;
     }
     // All posted. Nothing left to pick up on this phone.
-    void clearDraft();
+    void deleteDraft(draftIdRef.current);
     setSuccessOpen(true);
   }
 

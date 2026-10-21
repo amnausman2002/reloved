@@ -22,7 +22,7 @@ import {
 import { fetchPublicSeller, type PublicSeller } from "@/lib/fetchSeller";
 import { isRemotePhoto } from "@/lib/photoUrl";
 import PrimaryButton from "@/components/ui/PrimaryButton";
-import { loadDraft, type LoadedDraft } from "@/app/sell/draft";
+import { deleteDraft, listDrafts, type LoadedDraft } from "@/app/sell/draft";
 
 // CHANGED 21 Oct: "Closed" became "Drafts". Expired and hidden listings, which
 // were all Closed held, moved into In review with their notes unchanged:
@@ -87,12 +87,21 @@ function savedAgo(savedAt: number): string {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-/** The listing she started on this phone and has not posted
+/** A listing she started on this phone and has not posted
  *  (app/sell/draft.ts). Same row shape as a listing, with a plain <img>
  *  because the cover is a local object URL, not a Cloud Storage photo.
  *  NEW, no design in components.html. Flagged for Bismah. */
-function DraftRow({ loaded, coverUrl }: { loaded: LoadedDraft; coverUrl: string | null }) {
+function DraftRow({
+  loaded,
+  coverUrl,
+  onDelete,
+}: {
+  loaded: LoadedDraft;
+  coverUrl: string | null;
+  onDelete: () => void;
+}) {
   const { draft } = loaded;
+  const href = `/sell?resume=${encodeURIComponent(loaded.id)}`;
   const title =
     draft.kind === "single"
       ? draft.fields.title.trim() || "Untitled listing"
@@ -100,20 +109,23 @@ function DraftRow({ loaded, coverUrl }: { loaded: LoadedDraft; coverUrl: string 
   const photos = draft.photos.length;
   return (
     <div className="listing-row">
-      <Link href="/sell?resume=1" className="listing-row-photo">
+      <Link href={href} className="listing-row-photo">
         {coverUrl ? <img src={coverUrl} alt="" /> : null}
       </Link>
       <div className="listing-row-body">
-        <Link href="/sell?resume=1" className="listing-row-title">
+        <Link href={href} className="listing-row-title">
           {title}
         </Link>
         <p className="listing-row-meta">
           {photos} photo{photos === 1 ? "" : "s"} · Saved on this phone {savedAgo(loaded.savedAt)}
         </p>
       </div>
-      <div className="listing-row-action">
-        <TextLink className="listing-row-action-link" href="/sell?resume=1">
+      <div className="listing-row-action listing-row-action-stack">
+        <TextLink className="listing-row-action-link" href={href}>
           Continue
+        </TextLink>
+        <TextLink className="listing-row-action-link" onClick={onDelete}>
+          Delete
         </TextLink>
       </div>
     </div>
@@ -266,32 +278,43 @@ export default function SellerProfilePage() {
 
   const [tab, setTab] = useState<Tab>("live");
 
-  // Her unfinished listing, if this phone has one that is hers. Drafts live on
-  // the phone, not in Firestore, so this is at most one and only ever here.
-  const [draft, setDraft] = useState<LoadedDraft | null>(null);
-  const [draftCover, setDraftCover] = useState<string | null>(null);
+  // Her unfinished listings, the ones on this phone that are hers. Drafts live
+  // on the phone, not in Firestore, so they only ever show here.
+  const [drafts, setDrafts] = useState<{ loaded: LoadedDraft; coverUrl: string | null }[]>([]);
   useEffect(() => {
     if (!isOwner) return;
     let live = true;
-    let url: string | null = null;
-    void loadDraft().then(({ loaded }) => {
-      if (!live || !loaded) return;
-      // Made signed out counts as hers: she is the one signed in now.
-      if (loaded.ownerUid && loaded.ownerUid !== authUser?.uid) return;
-      const coverId =
-        loaded.draft.kind === "single"
-          ? (loaded.draft.coverId ?? loaded.draft.photos[0]?.id)
-          : loaded.draft.cards[0]?.photoIds[0];
-      const file = coverId ? loaded.files[coverId]?.file : undefined;
-      if (file) url = URL.createObjectURL(file);
-      setDraft(loaded);
-      setDraftCover(url);
+    const urls: string[] = [];
+    void listDrafts().then((all) => {
+      if (!live) return;
+      setDrafts(
+        all
+          // Made signed out counts as hers: she is the one signed in now.
+          .filter((loaded) => !loaded.ownerUid || loaded.ownerUid === authUser?.uid)
+          .map((loaded) => {
+            const coverId =
+              loaded.draft.kind === "single"
+                ? (loaded.draft.coverId ?? loaded.draft.photos[0]?.id)
+                : loaded.draft.cards[0]?.photoIds[0];
+            const file = coverId ? loaded.files[coverId]?.file : undefined;
+            const coverUrl = file ? URL.createObjectURL(file) : null;
+            if (coverUrl) urls.push(coverUrl);
+            return { loaded, coverUrl };
+          }),
+      );
     });
     return () => {
       live = false;
-      if (url) URL.revokeObjectURL(url);
+      urls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [isOwner, authUser?.uid]);
+
+  /** Straight away, no "are you sure": a draft is something she made a moment
+   *  ago on this phone, not a listing anyone has seen. */
+  function removeDraft(id: string) {
+    void deleteDraft(id);
+    setDrafts((current) => current.filter((item) => item.loaded.id !== id));
+  }
 
   const listings: ProfileListing[] = mine?.listings ?? [];
 
@@ -428,7 +451,7 @@ export default function SellerProfilePage() {
               >
                 <span>Drafts</span>
                 <span className="seller-box-sep" aria-hidden="true" />
-                <span className="tab-btn-count">{draft ? 1 : 0}</span>
+                <span className="tab-btn-count">{drafts.length}</span>
               </button>
             </div>
 
@@ -558,8 +581,15 @@ export default function SellerProfilePage() {
               ))}
 
             {tab === "drafts" &&
-              (draft ? (
-                <DraftRow loaded={draft} coverUrl={draftCover} />
+              (drafts.length > 0 ? (
+                drafts.map(({ loaded, coverUrl }) => (
+                  <DraftRow
+                    key={loaded.id}
+                    loaded={loaded}
+                    coverUrl={coverUrl}
+                    onDelete={() => removeDraft(loaded.id)}
+                  />
+                ))
               ) : (
                 <div className="empty-state">
                   <p className="empty-state-heading">No drafts</p>
