@@ -33,7 +33,7 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "firebasestorage.googleapis.com",
-        pathname: "/v0/b/reloved-app-2026.firebasestorage.app/**",
+        pathname: "/v0/b/reloved-pk.firebasestorage.app/**",
       },
     ],
   },

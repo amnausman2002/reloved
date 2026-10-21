@@ -20,7 +20,7 @@ runConfig:
 
 env:
   - variable: GOOGLE_CLOUD_PROJECT
-    value: reloved-app-2026
+    value: reloved-pk
     availability:
       - RUNTIME
   - variable: GOOGLE_CLOUD_LOCATION
@@ -34,32 +34,32 @@ env:
 
   # Read by the browser bundle, so needed while building as well as running.
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: "AIzaSyD_24EIn5zILLtAzcoCqff_aAB8JsUze-o"
+    value: "AIzaSyAkaXECV-nltv3k39vUfQOBQAWP26bz_RQ"
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: "reloved-app-2026.firebaseapp.com"
+    value: "reloved-pk.firebaseapp.com"
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: "reloved-app-2026"
+    value: "reloved-pk"
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: "reloved-app-2026.firebasestorage.app"
+    value: "reloved-pk.firebasestorage.app"
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    value: "460969774706"
+    value: "626256920425"
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: "1:460969774706:web:4edec08f245dce3d66bceb"
+    value: "1:626256920425:web:833473922c51cbce6987f8"
     availability:
       - BUILD
       - RUNTIME
