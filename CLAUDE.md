@@ -226,6 +226,26 @@ If a Gemini call fails or is slow, the flow carries on without it. AI failure ne
 
 Everything else in this file is the plan, not the code. Do not assume a file exists because it is described here.
 
+### Added 21 October: sell drafts, and logging in from Sell
+
+**The sell flow saves itself on the phone** (`app/sell/draft.ts`, IndexedDB,
+no account needed). Single-item saves from the first photo; bulk saves from
+the review screen on (photos still being prepared or sorted are not saved).
+Coming back to `/sell` offers "Pick up where you left off?" with Continue and
+Start again. One draft at a time, dropped after 7 days, and deleted on a
+successful submit so a posted listing does not sit on a shared phone. Nothing
+reaches Firestore until Submit, as before: there is no `draft` status. If
+IndexedDB is unavailable (private browsing), the old "Leave without posting?"
+warning comes back.
+
+**A signed-out seller can log in without leaving Sell** (`app/sell/SellLogin.tsx`).
+`lib/knownAccount.ts` remembers the last email that signed in on this phone
+(set in `useAuthUser`, kept on Log out on purpose). At Submit, a signed-out
+seller on a phone that remembers an email gets "Welcome back. Log in to post."
+with the email filled in; a fresh phone gets the sign-up screen, which now has
+"Already have an account? Log in". Both flows. No design in `components.html`
+for either sheet: flagged for Bismah. There is still no password reset anywhere.
+
 ### Added 13 to 14 October: accounts, real data, and the buyer gate
 
 The sections below this one were written before any of it existed. Where they

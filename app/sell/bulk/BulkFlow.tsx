@@ -20,6 +20,8 @@ import { submitListing } from "../submitListing";
 import { localId } from "../ids";
 import { firebaseAuth } from "@/lib/firebase/client";
 import BulkCard from "./BulkCard";
+import SellLogin from "../SellLogin";
+import { clearDraft, saveDraft, type DraftFiles, type LoadedDraft } from "../draft";
 import {
   isComplete,
   mergeCards,
@@ -47,8 +49,11 @@ import {
 // Every listing is written by submitListing, the same code the single-item
 // flow uses. There is no second road into the database.
 //
-// Nothing is saved until Submit. A reload loses the batch, which is accepted
-// for now, and cannot corrupt anything: listings already submitted are whole.
+// Nothing reaches the database until Submit. CHANGED 21 Oct: from the review
+// screen on, the batch is saved on this phone as she works (../draft.ts), so a
+// reload no longer loses it and /sell offers it back. Photos still being
+// prepared or sorted are not saved yet: there is nothing to come back to
+// until the cards exist. Listings already submitted leave the draft.
 
 type Step = "pick" | "preparing" | "sorting" | "sortFailed" | "review" | "edit" | "account";
 
@@ -91,6 +96,15 @@ type Props = {
   onWorkChange: (hasWork: boolean) => void;
   /** Back to the single-item flow. */
   onSingle: () => void;
+  /** A batch she left unfinished, which she chose to continue. */
+  draft: LoadedDraft | null;
+  /** Whether drafts save in this browser at all. When they do, leaving the
+   *  review screen loses nothing. */
+  draftWorks: boolean;
+  /** The email this phone last signed in with, if any. */
+  knownEmail: string | null;
+  /** After the log-in sheet. Returns her saved number, if she has one. */
+  onSignedIn: (email: string) => Promise<string | null>;
 };
 
 export default function BulkFlow({
@@ -101,8 +115,17 @@ export default function BulkFlow({
   profileCity,
   onWorkChange,
   onSingle,
+  draft,
+  draftWorks,
+  knownEmail,
+  onSignedIn,
 }: Props) {
   const [step, setStep] = useState<Step>("pick");
+  // False while a saved batch is being put back, so neither the pick screen
+  // nor an empty save flashes past first.
+  const [restored, setRestored] = useState(draft === null);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
 
   // Refs are the source of truth for photos and cards, mirrored into state
   // for drawing. The reads finish in any order, long after the tap that
@@ -156,8 +179,90 @@ export default function BulkFlow({
     };
   }, []);
 
-  const hasWork = cards.length > 0 || step === "preparing" || step === "sorting" || step === "sortFailed";
+  // Work that leaving would lose. Cards are saved on the phone when drafts
+  // work; photos still being prepared or sorted are not.
+  const hasWork =
+    (cards.length > 0 && !draftWorks) || step === "preparing" || step === "sorting" || step === "sortFailed";
   useEffect(() => onWorkChange(hasWork), [hasWork, onWorkChange]);
+
+  // Putting a saved batch back. Runs once per mount, and resets the read
+  // queue first so React's development double mount cannot read a card twice.
+  // Cards that were still being read when she left are read again.
+  useEffect(() => {
+    if (!draft || draft.draft.kind !== "bulk") return;
+    const saved = draft.draft;
+    const map: Record<string, BulkPhoto> = {};
+    for (const photo of saved.photos) {
+      const stored = draft.files[photo.id];
+      if (!stored) continue;
+      const url = URL.createObjectURL(stored.file);
+      urlsRef.current.push(url);
+      map[photo.id] = {
+        id: photo.id,
+        url,
+        file: stored.file,
+        thumb: stored.thumb ?? stored.file,
+        problem: photo.problem,
+        note: photo.note,
+        meta: photo.meta,
+      };
+    }
+    const back = saved.cards
+      .map((card) => ({ ...card, photoIds: card.photoIds.filter((id) => map[id]) }))
+      .filter((card) => card.photoIds.length > 0);
+
+    photosRef.current = map;
+    setPhotos(map);
+    orderRef.current = saved.order.filter((id) => map[id]);
+    cardsRef.current = back;
+    setCards(back);
+    setNotes(saved.notes);
+    setSortedBy(saved.sortedBy);
+    queueRef.current = [];
+    attemptsRef.current = new Map();
+    setStep("review");
+    setRestored(true);
+    back.filter((card) => card.status === "reading").forEach((card) => enqueueRead(card.id));
+    // The draft is handed in once, when she taps Continue.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Saves the batch on this phone a moment after each change, from the
+  // review screen on. A batch with no cards left on the review screen is
+  // finished or deleted, so its draft goes too.
+  useEffect(() => {
+    if (!restored) return;
+    if (step !== "review" && step !== "edit" && step !== "account") return;
+    if (cards.length === 0) {
+      if (step === "review") void clearDraft();
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const used = new Set(cards.flatMap((card) => card.photoIds));
+      const kept = orderRef.current
+        .concat(Object.keys(photos).filter((id) => !orderRef.current.includes(id)))
+        .filter((id) => used.has(id) && photos[id]);
+      const files: Record<string, DraftFiles> = {};
+      kept.forEach((id) => (files[id] = { file: photos[id].file, thumb: photos[id].thumb }));
+      void saveDraft(
+        {
+          kind: "bulk",
+          photos: kept.map((id) => ({
+            id,
+            problem: photos[id].problem,
+            note: photos[id].note,
+            meta: photos[id].meta,
+          })),
+          order: orderRef.current.filter((id) => used.has(id)),
+          cards,
+          notes,
+          sortedBy,
+        },
+        files,
+      );
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [restored, step, cards, photos, notes, sortedBy]);
 
   // Back from editing a card, land on that card rather than the top.
   useEffect(() => {
@@ -444,7 +549,25 @@ export default function BulkFlow({
     if (!complete) return;
     setSubmitError(null);
     if (savedPhone) setConfirmPhoneOpen(true);
+    // Signed out on a phone that has signed in before: log in, not sign up.
+    else if (!signedInAs && knownEmail) openLogin(knownEmail);
     else setStep("account");
+  }
+
+  function openLogin(email: string) {
+    setLoginEmail(email || knownEmail || "");
+    setLoginOpen(true);
+  }
+
+  async function handleSignedIn(email: string) {
+    const phone = await onSignedIn(email);
+    setLoginOpen(false);
+    if (phone) {
+      setStep("review");
+      setConfirmPhoneOpen(true);
+    } else {
+      setStep("account");
+    }
   }
 
   /** The first listing goes alone, because it is the one that creates her
@@ -503,6 +626,8 @@ export default function BulkFlow({
       );
       return;
     }
+    // All posted. Nothing left to pick up on this phone.
+    void clearDraft();
     setSuccessOpen(true);
   }
 
@@ -578,6 +703,26 @@ export default function BulkFlow({
       </TextLink>
     </BottomSheet>
   );
+
+  const loginSheet = (
+    <SellLogin
+      open={loginOpen}
+      onClose={() => setLoginOpen(false)}
+      initialEmail={loginEmail}
+      returning={Boolean(knownEmail)}
+      listingCount={cards.length}
+      onSignedIn={handleSignedIn}
+      onCreateAccount={() => {
+        setLoginOpen(false);
+        setStep("account");
+      }}
+    />
+  );
+
+  if (!restored) {
+    // One tick, while the saved batch is put back.
+    return <div className="sell-step" aria-busy="true" />;
+  }
 
   if (step === "pick") {
     return (
@@ -699,8 +844,10 @@ export default function BulkFlow({
           busy={submitting}
           submitError={submitError}
           signedInAs={signedInAs}
+          onLogIn={openLogin}
           onDone={(finished) => void submitAll(finished)}
         />
+        {loginSheet}
         {successSheet}
       </>
     );
@@ -921,6 +1068,7 @@ export default function BulkFlow({
         </TextLink>
       </BottomSheet>
 
+      {loginSheet}
       {successSheet}
     </>
   );

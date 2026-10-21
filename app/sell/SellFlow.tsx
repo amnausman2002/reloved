@@ -27,6 +27,9 @@ import type { City } from "@/lib/constants";
 import { onAuthStateChanged } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { fetchMyProfile } from "@/lib/myListings";
+import { knownAccountEmail, rememberAccount } from "@/lib/knownAccount";
+import SellLogin from "./SellLogin";
+import { clearDraft, loadDraft, saveDraft, type DraftFiles, type LoadedDraft } from "./draft";
 
 // Path 1, the whole seller flow on one page.
 //
@@ -39,6 +42,11 @@ import { fetchMyProfile } from "@/lib/myListings";
 // It is one component with a `step` rather than four routes because the photos
 // only exist as object URLs in this tab. A real navigation would throw them
 // away and she would have to shoot the item again.
+//
+// CHANGED 21 Oct: the flow is also saved on the phone as she goes (draft.ts),
+// so leaving, a reload or the browser being killed no longer loses it. /sell
+// offers to pick it up next time. A navigation still throws away the tab's
+// copy; the draft is what survives it.
 
 type Step = "intro" | "photos" | "reading" | "details" | "account";
 
@@ -118,6 +126,23 @@ export default function SellFlow() {
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
   const [confirmPhoneOpen, setConfirmPhoneOpen] = useState(false);
 
+  // The draft on this phone, if any. `restore` is the one being offered in
+  // the "Pick up where you left off?" sheet, until she answers it.
+  // `draftReady` holds off saving until we know whether there was one, so an
+  // empty first screen can never overwrite it.
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftWorks, setDraftWorks] = useState(false);
+  const [restore, setRestore] = useState<LoadedDraft | null>(null);
+  const [restoreThumbs, setRestoreThumbs] = useState<string[]>([]);
+  const [bulkDraft, setBulkDraft] = useState<LoadedDraft | null>(null);
+  const savedDraftRef = useRef(false);
+
+  // The email this phone last signed in with, if any. Decides whether Submit
+  // asks a signed-out seller to log in or to sign up.
+  const [knownEmail, setKnownEmail] = useState<string | null>(null);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+
   const closeModeSheet = useCallback(() => setMode("single"), []);
   const closeDuplicate = useCallback(() => setDuplicateOpen(false), []);
   const closeCatalogue = useCallback(() => setCatalogueOpen(false), []);
@@ -134,7 +159,34 @@ export default function SellFlow() {
       // Private browsing can throw on localStorage. Showing the guide one more
       // time is a far smaller problem than the page not rendering.
     }
-    setStep(seen ? "photos" : "intro");
+    setKnownEmail(knownAccountEmail());
+
+    let live = true;
+    void loadDraft().then(({ works, loaded }) => {
+      if (!live) return;
+      setDraftWorks(works);
+      if (loaded && loaded.draft.photos.some((photo) => loaded.files[photo.id])) {
+        setRestore(loaded);
+        // Up to four covers for the sheet, the same thumbnails the success
+        // sheet uses.
+        const covers =
+          loaded.draft.kind === "single"
+            ? loaded.draft.photos.slice(0, 1).map((photo) => photo.id)
+            : loaded.draft.cards.slice(0, 4).map((card) => card.photoIds[0]);
+        const urls = covers
+          .map((id) => loaded.files[id]?.file)
+          .filter((file): file is File => Boolean(file))
+          .map((file) => URL.createObjectURL(file));
+        urlsRef.current.push(...urls);
+        setRestoreThumbs(urls);
+      }
+      // A returning draft skips the guide: she has been here before.
+      setStep(seen || loaded ? "photos" : "intro");
+      setDraftReady(true);
+    });
+    return () => {
+      live = false;
+    };
   }, []);
 
   // A seller who listed something earlier in this browser is still signed in,
@@ -161,18 +213,126 @@ export default function SellFlow() {
       //
       // Stored as E.164, shown as the national part, which is what the field
       // holds and what normalisePhone would make of it anyway.
-      void fetchMyProfile().then((profile) => {
-        // Bulk listing starts every card with her city. The single-item form
-        // is left as it was.
-        if (profile?.city) setProfileCity(profile.city);
-        if (!profile?.phone) return;
-        setSavedPhone(profile.phone);
-        setAccount((current) =>
-          current.phone.trim() ? current : { ...current, phone: normalisePhone(profile.phone!) },
-        );
-      });
+      void loadProfile();
     });
   }, []);
+
+  /** Her city and saved number, from her profile. Returns the number, so a
+   *  seller who has just logged in can be sent to the right next step. */
+  async function loadProfile(): Promise<string | null> {
+    const profile = await fetchMyProfile();
+    // Bulk listing starts every card with her city. The single-item form
+    // is left as it was.
+    if (profile?.city) setProfileCity(profile.city);
+    if (!profile?.phone) return null;
+    const phone = profile.phone;
+    setSavedPhone(phone);
+    setAccount((current) => (current.phone.trim() ? current : { ...current, phone: normalisePhone(phone) }));
+    return phone;
+  }
+
+  /** She logged in from the sheet. Set straight away rather than waiting for
+   *  Firebase's listener, because the next screen depends on it. */
+  async function afterSignIn(email: string): Promise<string | null> {
+    setSignedInAs(email);
+    rememberAccount(email);
+    setKnownEmail(email);
+    return loadProfile();
+  }
+
+  function openLogin(email: string) {
+    setLoginEmail(email || knownEmail || "");
+    setLoginOpen(true);
+  }
+
+  /** Submit on the form. A seller we have a number for confirms it; a
+   *  signed-out one this phone knows is asked to log in; anyone else gets
+   *  the account screens. */
+  function submitFromForm() {
+    if (savedPhone) setConfirmPhoneOpen(true);
+    else if (signedInAs === null && knownEmail) openLogin(knownEmail);
+    else setStep("account");
+  }
+
+  async function handleSignedIn(email: string) {
+    const phone = await afterSignIn(email);
+    setLoginOpen(false);
+    if (phone) {
+      setStep("details");
+      setConfirmPhoneOpen(true);
+    } else {
+      // The account step opens on the number, because she is signed in now.
+      setStep("account");
+    }
+  }
+
+  // Saves the single-item flow on this phone a moment after each change.
+  // Never while a draft is being offered (she has not chosen yet), never in
+  // bulk (BulkFlow saves its own), and never once the listing is posted.
+  useEffect(() => {
+    if (!draftReady || restore || mode === "bulk" || submitted !== null || step === null) return;
+
+    const empty =
+      photos.length === 0 &&
+      !fields.title.trim() &&
+      !fields.description.trim() &&
+      !fields.price;
+    if (empty) {
+      // She removed everything. Only clear a draft this visit actually wrote.
+      if (savedDraftRef.current) void clearDraft();
+      savedDraftRef.current = false;
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const files: Record<string, DraftFiles> = {};
+      photos.forEach((photo) => (files[photo.id] = { file: photo.file }));
+      savedDraftRef.current = true;
+      void saveDraft(
+        {
+          kind: "single",
+          step: step === "details" || step === "account" ? "details" : "photos",
+          photos: photos.map((photo) => ({ id: photo.id, problem: photo.problem, note: photo.note })),
+          coverId,
+          fields,
+          prefilled,
+        },
+        files,
+      );
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [draftReady, restore, mode, submitted, step, photos, coverId, fields, prefilled]);
+
+  /** "Continue" on the restore sheet. */
+  function resumeDraft(loaded: LoadedDraft) {
+    setRestore(null);
+    if (loaded.draft.kind === "bulk") {
+      setBulkDraft(loaded);
+      setMode("bulk");
+      return;
+    }
+    const draft = loaded.draft;
+    const restored: SellPhoto[] = draft.photos
+      .filter((photo) => loaded.files[photo.id])
+      .map((photo) => {
+        const file = loaded.files[photo.id].file;
+        const url = URL.createObjectURL(file);
+        urlsRef.current.push(url);
+        return { id: photo.id, url, file, problem: photo.problem, note: photo.note };
+      });
+    setPhotos(restored);
+    setCoverId(restored.some((photo) => photo.id === draft.coverId) ? draft.coverId : (restored[0]?.id ?? null));
+    setFields(draft.fields);
+    setPrefilled(draft.prefilled);
+    setMode("single");
+    setStep(draft.step === "details" && restored.length >= MIN_LISTING_PHOTOS ? "details" : "photos");
+  }
+
+  /** "Start again" on the restore sheet. */
+  function discardDraft() {
+    setRestore(null);
+    void clearDraft();
+  }
 
   useEffect(() => {
     const urls = urlsRef.current;
@@ -350,6 +510,9 @@ export default function SellFlow() {
       return;
     }
     setSubmitted(finished);
+    // Posted, so there is nothing left to pick up. Also keeps a finished
+    // listing off a phone that may be shared.
+    void clearDraft();
     // Close the confirm sheet before opening the success one. Two sheets over
     // each other is not a state the design has, or should have.
     setConfirmPhoneOpen(false);
@@ -379,10 +542,15 @@ export default function SellFlow() {
    *  count too, because the form is long.
    *
    *  Once the listing is saved there is nothing to warn about, which is why
-   *  `submitted` ends it. */
+   *  `submitted` ends it. Nor is there when the draft is saved on this phone:
+   *  she will be offered it when she comes back, so the warning would be
+   *  stopping her for nothing. It only appears where drafts do not work, in
+   *  private browsing for example. */
   const hasUnsavedWork =
     (mode === "bulk" && bulkHasWork) ||
-    (submitted === null &&
+    (mode !== "bulk" &&
+    !draftWorks &&
+    submitted === null &&
     (photos.length > 0 ||
       Boolean(fields.title.trim() || fields.description.trim() || fields.price) ||
       Boolean(account.fullName.trim() || account.email.trim())));
@@ -449,6 +617,10 @@ export default function SellFlow() {
         profileCity={profileCity}
         onWorkChange={setBulkHasWork}
         onSingle={() => setMode("single")}
+        draft={bulkDraft}
+        draftWorks={draftWorks}
+        knownEmail={knownEmail}
+        onSignedIn={afterSignIn}
       />,
     );
   }
@@ -459,7 +631,7 @@ export default function SellFlow() {
      done. Flagged for Bismah. */
   const modeSheet = (
     <BottomSheet
-      open={mode === "ask" && (step === "intro" || step === "photos") && photos.length === 0}
+      open={mode === "ask" && !restore && (step === "intro" || step === "photos") && photos.length === 0}
       onClose={closeModeSheet}
       heading="What are you selling?"
       body={`One item, or up to ${MAX_BATCH_PHOTOS} photos of several. We'll sort them into listings for you.`}
@@ -467,6 +639,58 @@ export default function SellFlow() {
       <PrimaryButton onClick={closeModeSheet}>One item</PrimaryButton>
       <SecondaryButton onClick={() => setMode("bulk")}>Many items</SecondaryButton>
     </BottomSheet>
+  );
+
+  /* NEW 21 Oct: offered on arrival when this phone has a listing she did not
+     finish. No design in components.html; the success sheet's shape, with
+     the same cover thumbnails, and the safe choice as the button. Closing
+     it keeps the draft, because closing is not a decision to throw it away.
+     Flagged for Bismah. */
+  const restoreSheet = restore ? (
+    <BottomSheet
+      open
+      onClose={() => resumeDraft(restore)}
+      heading="Pick up where you left off?"
+      body={
+        restore.draft.kind === "single"
+          ? `${restore.draft.fields.title.trim() ? `"${restore.draft.fields.title.trim()}"` : "Your listing"}, with ${
+              restore.draft.photos.length
+            } photo${restore.draft.photos.length === 1 ? "" : "s"}, is saved on this phone.`
+          : `${restore.draft.cards.length} listing${restore.draft.cards.length === 1 ? "" : "s"} from ${
+              restore.draft.photos.length
+            } photos ${restore.draft.cards.length === 1 ? "is" : "are"} saved on this phone.`
+      }
+      dismissOnOverlayClick={false}
+      media={
+        restoreThumbs.length > 0 ? (
+          <div className="quality-thumbs">
+            {restoreThumbs.map((url) => (
+              <span key={url} className="quality-thumb">
+                <img src={url} alt="" />
+              </span>
+            ))}
+          </div>
+        ) : undefined
+      }
+    >
+      <PrimaryButton onClick={() => resumeDraft(restore)}>Continue</PrimaryButton>
+      <TextLink onClick={discardDraft}>Start again</TextLink>
+    </BottomSheet>
+  ) : null;
+
+  const loginSheet = (
+    <SellLogin
+      open={loginOpen}
+      onClose={() => setLoginOpen(false)}
+      initialEmail={loginEmail}
+      returning={Boolean(knownEmail)}
+      listingCount={1}
+      onSignedIn={handleSignedIn}
+      onCreateAccount={() => {
+        setLoginOpen(false);
+        setStep("account");
+      }}
+    />
   );
 
   const room = MAX_LISTING_PHOTOS - photos.length;
@@ -490,6 +714,7 @@ export default function SellFlow() {
           />
         </div>
         {modeSheet}
+        {restoreSheet}
       </div>
     );
   }
@@ -546,6 +771,7 @@ export default function SellFlow() {
         </BottomSheet>
 
         {modeSheet}
+        {restoreSheet}
       </>
     );
   }
@@ -616,9 +842,11 @@ export default function SellFlow() {
           busy={submitting}
           submitError={submitError}
           signedInAs={signedInAs ?? null}
+          onLogIn={openLogin}
           onDone={(finished) => void finishSubmit(finished)}
         />
 
+        {loginSheet}
         {successSheet}
       </>
     );
@@ -644,7 +872,7 @@ export default function SellFlow() {
           // already have a number for, that is nothing but a quick check that
           // it is still the right one, which is a sheet over the form rather
           // than a screen of its own.
-          onSubmit={() => (savedPhone ? setConfirmPhoneOpen(true) : setStep("account"))}
+          onSubmit={submitFromForm}
         />
       </div>
 
@@ -791,6 +1019,7 @@ export default function SellFlow() {
         </TextLink>
       </BottomSheet>
 
+      {loginSheet}
       {successSheet}
     </>
   );

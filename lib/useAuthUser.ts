@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { firebaseAuth, firebaseConfigured } from "@/lib/firebase/client";
+import { rememberAccount } from "@/lib/knownAccount";
 import type { City } from "@/lib/constants";
 
 export type AuthUser = {
@@ -59,6 +60,11 @@ export function useAuthUser(): { user: AuthUser | null; loading: boolean } {
         setLoading(false);
         return;
       }
+
+      // So a seller who logs out and comes back to Sell is asked to log in
+      // rather than to sign up. Every page has the nav, so this sees every
+      // sign-in, wherever it happened.
+      rememberAccount(next.email);
 
       // An account with no name on it is almost always a stale copy rather
       // than the truth. Firebase saves the account to the browser, and at
