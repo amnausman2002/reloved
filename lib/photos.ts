@@ -25,6 +25,10 @@ export type PreparedPhoto = {
   convertedFromHeic: boolean;
   /** Set only when something went wrong and we kept the original photo. */
   problem?: string;
+  /** True when the photo cannot even be drawn: a HEIC that would not convert,
+   *  or a file that decodes to nothing. Callers leave these out and say so,
+   *  rather than putting a blank tile in her grid. */
+  unusable?: boolean;
 };
 
 /** iPhones sometimes hand over a HEIC with no MIME type at all, so check the
@@ -37,7 +41,19 @@ function withJpgName(name: string): string {
   return name.replace(/\.[^.]+$/, "") + ".jpg";
 }
 
-async function heicToJpeg(file: File): Promise<File> {
+/** heic2any is not safe to run twice at once: overlapping conversions hand
+ *  back broken images, which is what put blank tiles in the grid when she
+ *  picked several iPhone photos together (21 Oct). Every conversion waits for
+ *  the one before it. */
+let heicQueue: Promise<unknown> = Promise.resolve();
+
+function heicToJpeg(file: File): Promise<File> {
+  const run = heicQueue.then(() => convertHeic(file));
+  heicQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function convertHeic(file: File): Promise<File> {
   // Loaded only when a HEIC actually turns up: the decoder is large and most
   // sellers never need it.
   const { default: heic2any } = await import("heic2any");
@@ -48,7 +64,7 @@ async function heicToJpeg(file: File): Promise<File> {
 
 async function shrink(file: File, longEdge = MAX_LONG_EDGE): Promise<File> {
   const { default: imageCompression } = await import("browser-image-compression");
-  return imageCompression(file, {
+  const options = {
     maxWidthOrHeight: longEdge,
     maxSizeMB: MAX_OUTPUT_MB,
     initialQuality: JPEG_QUALITY,
@@ -57,7 +73,28 @@ async function shrink(file: File, longEdge = MAX_LONG_EDGE): Promise<File> {
     useWebWorker: true,
     // Leave EXIF off: it carries GPS location we have no reason to keep.
     preserveExif: false,
-  });
+  };
+  try {
+    return await imageCompression(file, options);
+  } catch {
+    // Some phones decode an image to nothing inside a worker under memory
+    // pressure. Once more on the page itself, which is slower but sturdier.
+    return imageCompression(file, { ...options, useWebWorker: false });
+  }
+}
+
+/** Whether the browser can actually draw this file. A HEIC Chrome cannot
+ *  read, or a broken conversion, fails here instead of becoming a blank tile. */
+async function canDraw(file: File): Promise<boolean> {
+  if (typeof createImageBitmap === "undefined") return true;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const ok = bitmap.width > 0 && bitmap.height > 0;
+    bitmap.close();
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 /** Converts and shrinks one photo. Never throws: if anything fails the seller
@@ -72,13 +109,20 @@ export async function preparePhoto(file: File, longEdge = MAX_LONG_EDGE): Promis
       working = await heicToJpeg(working);
     }
   } catch {
-    return {
-      file,
-      originalBytes,
-      finalBytes: originalBytes,
-      convertedFromHeic: false,
-      problem: "Could not convert this iPhone photo. Try saving it as a JPEG first.",
-    };
+    // heic2any's decoder does not read every HEIC: some newer iPhone photos
+    // come back "format not supported". Safari reads them natively, so where
+    // the browser can draw the original, shrinking it below turns it into a
+    // JPEG anyway. Chrome, Firefox and Edge cannot, and those are left out.
+    if (!(await canDraw(file))) {
+      return {
+        file,
+        originalBytes,
+        finalBytes: originalBytes,
+        convertedFromHeic: false,
+        problem: "Could not convert this iPhone photo. Try saving it as a JPEG first.",
+        unusable: true,
+      };
+    }
   }
 
   try {
@@ -90,6 +134,7 @@ export async function preparePhoto(file: File, longEdge = MAX_LONG_EDGE): Promis
       finalBytes: working.size,
       convertedFromHeic: cameFromHeic,
       problem: "Could not shrink this photo, so it was sent at full size.",
+      unusable: !(await canDraw(working)),
     };
   }
 
@@ -101,8 +146,11 @@ export async function preparePhoto(file: File, longEdge = MAX_LONG_EDGE): Promis
   };
 }
 
+/** Two at a time, not all at once. Six full-size phone photos decoding
+ *  together is enough to run a mid-range phone out of memory, which is the
+ *  other way photos came back blank. */
 export async function preparePhotos(files: File[]): Promise<PreparedPhoto[]> {
-  return Promise.all(files.map(preparePhoto));
+  return mapLimited(files, 2, (file) => preparePhoto(file));
 }
 
 /** Runs `task` over `items`, at most `limit` at a time, keeping their order.

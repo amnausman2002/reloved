@@ -392,8 +392,9 @@ export default function BulkFlow({
     const map: Record<string, BulkPhoto> = {};
     const order: string[] = [];
     prepared.forEach((item, index) => {
-      // A HEIC that would not convert cannot be shown, read or listed.
-      if (!ALLOWED_TYPES.includes(item.file.type)) return;
+      // A HEIC that would not convert, or a photo that decodes to nothing,
+      // cannot be shown, read or listed.
+      if (!ALLOWED_TYPES.includes(item.file.type) || item.unusable) return;
       const id = localId();
       const url = URL.createObjectURL(item.file);
       urlsRef.current.push(url);
@@ -480,8 +481,9 @@ export default function BulkFlow({
   async function addPhotos(cardId: string, files: File[]) {
     const prepared = await preparePhotos(files);
     const added: BulkPhoto[] = prepared
-      .filter((item) => ALLOWED_TYPES.includes(item.file.type))
-      .map((item, index) => {
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => ALLOWED_TYPES.includes(item.file.type) && !item.unusable)
+      .map(({ item, index }) => {
         const url = URL.createObjectURL(item.file);
         urlsRef.current.push(url);
         return {

@@ -146,6 +146,11 @@ export default function SellFlow() {
   const closeDuplicate = useCallback(() => setDuplicateOpen(false), []);
   const closeCatalogue = useCallback(() => setCatalogueOpen(false), []);
 
+  // How many photos are in the grid right now, for handleAdd, which is
+  // created once and would otherwise only ever see the first render's count.
+  const photoCountRef = useRef(0);
+  photoCountRef.current = photos.length;
+
   // Every object URL we have handed out, so none leak when the tab closes.
   const urlsRef = useRef<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
@@ -347,14 +352,35 @@ export default function SellFlow() {
     }
   }
 
-  const handleAdd = useCallback(async (files: File[]) => {
+  const handleAdd = useCallback(async (picked: File[]) => {
+    // Only as many as there is room for. Preparing photos that are about to
+    // be thrown away costs memory, and running out of it is one of the ways
+    // photos came back blank.
+    const room = MAX_LISTING_PHOTOS - photoCountRef.current;
+    if (room <= 0) return;
+    const files = picked.slice(0, room);
     setPreparing(true);
     setPhotoError(null);
     // Converts HEIC, resizes to 1600px and strips EXIF, so her home GPS
     // location never leaves the phone. It never throws: on failure it keeps the
     // original and sets `problem`.
     const prepared = await preparePhotos(files);
-    const added: SellPhoto[] = prepared.map((item) => {
+    // A photo the browser cannot draw would be a blank tile. Leave it out and
+    // say so instead.
+    const unusable = prepared.filter((item) => item.unusable).length;
+    const notes: string[] = [];
+    if (unusable > 0) {
+      notes.push(
+        `${unusable} photo${unusable === 1 ? "" : "s"} could not be opened. Save ${
+          unusable === 1 ? "it" : "them"
+        } as a JPEG and add ${unusable === 1 ? "it" : "them"} again.`,
+      );
+    }
+    if (picked.length > files.length) {
+      notes.push(`A listing takes up to ${MAX_LISTING_PHOTOS} photos, so we kept the first ${files.length}.`);
+    }
+    if (notes.length > 0) setPhotoError(notes.join(" "));
+    const added: SellPhoto[] = prepared.filter((item) => !item.unusable).map((item) => {
       const url = URL.createObjectURL(item.file);
       urlsRef.current.push(url);
       return { id: localId(), url, problem: item.problem, file: item.file };
