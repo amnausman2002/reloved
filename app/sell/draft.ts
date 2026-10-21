@@ -22,6 +22,7 @@ import type { PhotoMeta } from "@/lib/ai/groupRules";
 import type { Prefilled } from "./prefillToForm";
 import type { FormFields } from "./types";
 import type { BulkCard } from "./bulk/bulkState";
+import { firebaseAuth, firebaseConfigured } from "@/lib/firebase/client";
 
 const DB_NAME = "reloved-sell";
 const DB_VERSION = 1;
@@ -66,9 +67,22 @@ export type LoadedDraft = {
   draft: Draft;
   files: Record<string, DraftFiles>;
   savedAt: number;
+  /** Who was signed in when it was last saved, if anyone. The Drafts tab on
+   *  a profile shows it only to that account, or to anyone if it was made
+   *  signed out, so a shared phone does not show one person's draft on
+   *  another person's profile. */
+  ownerUid?: string;
 };
 
-type StoredDraft = { draft: Draft; savedAt: number };
+type StoredDraft = { draft: Draft; savedAt: number; ownerUid?: string };
+
+function currentUid(): string | undefined {
+  try {
+    return firebaseConfigured() ? firebaseAuth().currentUser?.uid : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -127,7 +141,10 @@ export async function loadDraft(): Promise<{ works: boolean; loaded: LoadedDraft
       const saved = (await result(photoStore.get(photo.id))) as DraftFiles | undefined;
       if (saved?.file) files[photo.id] = saved;
     }
-    return { works: true, loaded: { draft: stored.draft, files, savedAt: stored.savedAt } };
+    return {
+      works: true,
+      loaded: { draft: stored.draft, files, savedAt: stored.savedAt, ownerUid: stored.ownerUid },
+    };
   } catch {
     // A draft we cannot read is a draft we do not offer.
     return { works: true, loaded: null };
@@ -155,7 +172,7 @@ export async function saveDraft(draft: Draft, files: Record<string, DraftFiles>)
       wanted.forEach((id) => {
         if (!existing.has(id) && files[id]) photoStore.put(files[id], id);
       });
-      const stored: StoredDraft = { draft, savedAt: Date.now() };
+      const stored: StoredDraft = { draft, savedAt: Date.now(), ownerUid: currentUid() };
       tx.objectStore(DRAFTS).put(stored, KEY);
       await done(tx);
       return true;

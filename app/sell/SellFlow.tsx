@@ -165,6 +165,16 @@ export default function SellFlow() {
     void loadDraft().then(({ works, loaded }) => {
       if (!live) return;
       setDraftWorks(works);
+      // ?resume=1 is Continue on the Drafts tab of her profile. She has
+      // already chosen, so asking again would be a question too many.
+      const resuming = new URLSearchParams(window.location.search).get("resume") === "1";
+      if (resuming) window.history.replaceState(null, "", "/sell");
+      if (loaded && resuming && loaded.draft.photos.some((photo) => loaded.files[photo.id])) {
+        resumeDraft(loaded);
+        if (loaded.draft.kind === "bulk") setStep("photos");
+        setDraftReady(true);
+        return;
+      }
       if (loaded && loaded.draft.photos.some((photo) => loaded.files[photo.id])) {
         setRestore(loaded);
         // Up to four covers for the sheet, the same thumbnails the success
