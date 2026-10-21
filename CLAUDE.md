@@ -151,7 +151,7 @@ Planned but not created yet, so do not expect to find them: `components/`, `lib/
 9. Commission or listing fees.
 10. Categories outside the fixed list: no wedding or formal wear, kidswear, menswear, unstitched fabric, jewellery or accessories.
 
-Also out of v1: in-app notifications, analytics dashboards, and in the admin view, user management, bulk actions and editing someone else's listing.
+Also out of v1: shoes and bags (next phase of the MVP, see Fixed lists), in-app notifications, analytics dashboards, and in the admin view, user management, bulk actions and editing someone else's listing.
 
 ## The AI rule
 
@@ -292,7 +292,7 @@ which it did, and the photos are already capped at 1,600px in the browser.
 
 **Working and tested end to end:**
 - `lib/ai/client.ts`, `GET /api/health/gemini` — Gemini on Vertex AI, location `global`, via Application Default Credentials
-- `lib/constants.ts` — brands (41 + `other` + `unknown`), 13 categories, 4 conditions, 5 photo tips, clothes and shoe sizes with `SIZE_OPTIONS` per category, 33 cities + `other`
+- `lib/constants.ts` — brands (41 + `other` + `unknown`), 11 categories, 4 conditions, 5 photo tips, clothes sizes with `SIZE_OPTIONS` per category, 33 cities + `other`
 - `app/globals.css` + `app/layout.tsx` — every token from `design-system.md`, the type scale as `.text-*` classes, Fraunces and Inter self-hosted via `next/font/google`. Verified in the browser: tokens resolve, the type scale matches the spec, and both of Fraunces' variable axes (`opsz` and weight) are live
 - `design-system.md`, `components.html` — Bismah's design system and the 25-component visual reference
 - `components/ui/` — the 8 shared components, ported from `components.html` with its class names unchanged: `PrimaryButton`, `SecondaryButton`, `TextLink`, `Input`, `Textarea`, `FilterChip` (+ `ChipRow`), `StatusChip`, `BottomSheet`. Checked in a browser against the showcase
@@ -389,8 +389,9 @@ Full field lists are in the PRD under "Domain model". Do not add, rename or remo
 
 ## Fixed lists (all live in `lib/constants.ts`)
 
-- **Categories:** kurta, pret, co_ord_set, dupatta, dress, top, bottoms, jeans, skirt, jacket, sportswear, shoes, bag
-- **Sizes:** clothes XS to XL (`CLOTHING_SIZES`), shoes UK 3 to 9 (`SHOE_SIZES`). **Bags and dupattas have no size at all** and show no size field: `SIZE_OPTIONS` maps both to `null`. `SIZE_OPTIONS` is a full `Record<Category, ...>`, so adding a category without deciding its sizes fails the type check
+- **Categories:** kurta, pret, co_ord_set, dupatta, dress, top, bottoms, jeans, skirt, jacket, sportswear
+  - **CHANGED 21 Oct: shoes and bags are moved to the next phase of the MVP.** They are out of `CATEGORIES`, the sell form, browse filters, the Gemini prefill schema and the submit route. The AI now answers `unknown` (or its nearest clothing guess) for a photo of shoes or a bag, and an admin rejects one with `not_allowed`. Any listing already saved as `shoes` or `bag` still displays, with its raw category name. To bring them back: add the values to `CATEGORIES`, recreate `SHOE_SIZES` (UK 3 to 9) and map `bag` to `null` in `SIZE_OPTIONS`, re-add the labels in `app/browse/page.tsx` and `app/item/[id]/page.tsx`, and update the PRD
+- **Sizes:** clothes XS to XL (`CLOTHING_SIZES`). **Dupattas have no size at all** and show no size field: `SIZE_OPTIONS` maps them to `null`. `SIZE_OPTIONS` is a full `Record<Category, ...>`, so adding a category without deciding its sizes fails the type check
 - **Condition** (always shown with its description):
   - `brand_new_with_tags`: Brand new with tags, "With tags, never worn"
   - `brand_new_without_tags`: Brand new without tags, "No tags, never worn"

@@ -89,9 +89,9 @@ The core entity. Status drives everything the buyer, the seller and the admin se
 | description | text | Free text in her own words. **Flaws live in here too**: flaw\_note was merged into this field on 8 Oct. Prompted on the form with "e.g. worn 3-4 times, fits true to size. small mark near the sleeve." |
 | brand | enum | Fixed list of \~30, plus other |
 | brand\_other | string | Only when brand is other |
-| category | enum | kurta, pret, co\_ord\_set, dupatta, dress, top, bottoms, jeans, skirt, jacket, sportswear, shoes, bag |
+| category | enum | kurta, pret, co\_ord\_set, dupatta, dress, top, bottoms, jeans, skirt, jacket, sportswear. **Shoes and bags moved to the next phase** (21 Oct) |
 | colour | string | Plain everyday words. Filled by photo-to-listing and used by search. **Not shown on the sell form** as of 8 Oct, so it is captured but not editable by the seller. No fixed list yet |
-| size | string | Clothes: XS–XL. Shoes: UK 3–9. **Bags and dupattas: null** (no size field shown) |
+| size | string | Clothes: XS–XL. **Dupattas: null** (no size field shown). Next phase: shoes UK 3–9, bags null |
 | measurements | string | Optional free text, inches |
 | material | enum | **Not agreed yet.** 20 fabrics in `MATERIALS`, lawn and khaddar first, plus `other`. Replaced fit\_note on the sell form on 8 Oct. Needs Bismah's agreement before buyers filter on it |
 | fit\_note | text | Optional, all categories. **No longer on the sell form** as of 8 Oct, replaced by material. Still specified here: decide whether to delete it or keep it for later |
@@ -285,6 +285,7 @@ Decisions taken during the build that differ from the spec above, or that resolv
 
 | Date | Change | Why | Status |
 | :---- | :---- | :---- | :---- |
+| 21 Oct 2026 | **Shoes and bags moved to the next phase of the MVP.** Removed from the category list, the sell form, browse filters, the AI prefill schema and the submit route. `SHOE_SIZES` deleted | Focus v1 on clothing. Shoes carry their own size scale and bags have none, so each is a separate buyer and a separate set of rules to get right | Agreed, built. Existing listings with either category still display. Revisit in the next phase |
 | 2 Oct 2026 | **Dupattas have no size**, like bags. The `size` row above originally exempted bags only | A dupatta is a scarf. There is no XS to XL for it | Agreed, built. `SIZE_OPTIONS` in `lib/constants.ts` |
 | 2 Oct 2026 | **`city` gains an `other` value**, last in the list, after 33 named cities | The north star is a woman *anywhere* in Pakistan. A fixed list of 33 is a dead end for everyone else | Agreed, built |
 | 2 Oct 2026 | **`city_other` free-text field** to pair with `other` | Without it, `other` tells a buyer nothing. Mirrors `brand_other` | **Open.** Needs Bismah's agreement: buyers see the city on browse and item detail |

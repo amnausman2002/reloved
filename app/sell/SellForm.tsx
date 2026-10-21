@@ -82,7 +82,7 @@ export default function SellForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // null means this category has no size at all: bags and dupattas.
+  // null means this category has no size at all: dupattas.
   const sizeOptions = category ? SIZE_OPTIONS[category] : null;
 
   function handleCategoryChange(next: Category | "") {
@@ -232,7 +232,7 @@ export default function SellForm({
         )}
 
 
-        {/* Bags and dupattas have no size, so the field is not shown at all. */}
+        {/* Dupattas have no size, so the field is not shown at all. */}
         {sizeOptions && (
           <div data-error={Boolean(errors.size)}>
             <span className="sell-form-section-label">Size</span>

@@ -9,7 +9,7 @@ import type { FormFields } from "./types";
  *  review screen calls complete would fail on the server. */
 export function validateFields(fields: FormFields): Partial<Record<keyof FormFields, string>> {
   const { title, category, brand, brandOther, size, condition, isReplica, price, city } = fields;
-  // null means this category has no size at all: bags and dupattas.
+  // null means this category has no size at all: dupattas.
   const sizeOptions = category ? SIZE_OPTIONS[category] : null;
 
   const found: Partial<Record<keyof FormFields, string>> = {};

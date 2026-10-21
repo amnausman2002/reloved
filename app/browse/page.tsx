@@ -46,8 +46,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   skirt: "Skirt",
   jacket: "Jacket",
   sportswear: "Sportswear",
-  shoes: "Shoes",
-  bag: "Bag",
 };
 
 const BRAND_SPECIAL: Record<string, string> = {
