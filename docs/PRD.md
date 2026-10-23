@@ -21,11 +21,11 @@ Ranked by how tempting each one is, most tempting first. When Claude Code propos
 3. **Seller reviews and ratings.** Needs transaction data that does not exist yet. With 15 listings it produces a graveyard of empty profiles, which reads worse than no reviews at all. The sold count on the seller profile carries the trust signal until then.  
 4. **Saved searches and new-stock alerts.** The strongest buyer-side hook in the whole product, and still out. It is worth building the week after launch, not the week before.  
 5. **AI deciding what goes live.** The AI helps the seller before she submits — checking her photos are usable and prefilling attributes — and it may summarise a listing for us in the queue. It never approves, rejects or hides anything. Two people reviewing 15 listings are faster and more accurate than any filter we could ship in five weeks, and an automated rejection with no human behind it is exactly the experience we are replacing.  
-6. **Duplicate-listing detection.** Newest-first ordering plus free relisting creates the incentive Vinted had to engineer against, but only at scale. At 15 listings the approval queue is the detection.  
+6. **Duplicate-listing detection.** Newest-first ordering plus free relisting creates the incentive Vinted had to engineer against, but only at scale. At 15 listings the approval queue is the detection. **Overridden for the seller side on 17 Oct** (Amna): she is warned, in a sheet she can dismiss, when she seems to be listing something she already listed. It never blocks and never reaches the queue. See the change log.  
 7. **In-app payments and integrated shipping.** Regulated, operations-heavy, and not what is broken about buying preloved on Instagram.  
 8. **Native mobile app.** App store review could eat the week 3 soft launch. A mobile web app is also shareable as a link, which is how buyers arrive.  
 9. **Commission or listing fees.** Charging nothing is the wedge against the Instagram pages taking 20%. Revenue is a post-traction conversation.  
-10. **Wedding and formal wear, kidswear, menswear, unstitched fabric, and accessories.** Each carries its own sizing system, its own buyer, or in the case of jewellery and bangles a whole second taxonomy. Adding them later costs about an hour each; adding them now makes 15 listings look scattered instead of curated.
+10. **Wedding and formal wear, kidswear, menswear, unstitched fabric, and accessories.** Shoes and bags are also out of v1 since 21 Oct, as the next phase rather than an anti-goal. Each carries its own sizing system, its own buyer, or in the case of jewellery and bangles a whole second taxonomy. Adding them later costs about an hour each; adding them now makes 15 listings look scattered instead of curated.
 
 ## **Users and views**
 
@@ -116,7 +116,7 @@ The core entity. Status drives everything the buyer, the seller and the admin se
 | brand\_new\_with\_tags | Brand new with tags | With tags, never worn |
 | brand\_new\_without\_tags | Brand new without tags | No tags, never worn |
 | very\_good | Very good | Well worn, but still in great shape |
-| fair | Fair | Shows some signs of wear — please photograph the areas that show it |
+| fair | Fair | Shows some signs of wear. Please photograph the areas that show it. |
 
 Sample row: { title: "Khaadi lawn kurta", brand: "khaadi", category: "kurta", size: "M", condition: "very\_good", fit\_note: "Roomy, would fit a large too", is\_replica: false, asking\_price: 3000, original\_price: 8500, is\_negotiable: true, city: "lahore", status: "live" }
 
@@ -196,7 +196,7 @@ Three flows. Anything not sitting on one of them goes in the backlog file, which
 4. The AI reads the photos and fills in brand, category, colour and condition. It does not suggest a price — she sets her own asking price at step 6.  
 5. She corrects whatever is wrong. This is expected, not a failure — Pakistani brands are the hard case.  
 6. She picks which photo leads, adds size, city (pre-filled from her profile), asking price, fit note if the fit is unusual, and ticks whether it is a replica.  
-7. She taps Submit. Only now is she asked for her email and her phone number: email verified by link, phone verified by code.  
+7. She taps Submit. Only now is she asked for her email and her phone number: email verified by link, phone verified by code. **As built:** email and password, and a WhatsApp number we check by hand. If this phone has signed in before, she is asked to log in instead, with her email filled in. See the change log.  
 8. She sees that her listing is under review and will be live within a day.
 
 Account creation sits at step 7 on purpose. Asking upfront loses sellers before they have invested anything, and both the email and the number are needed for the listing regardless. If the phone code fails to arrive, she can continue with email alone and we chase the number by hand — a broken code service must never block a listing.
@@ -232,9 +232,9 @@ Drafted for review — this is the part we had not specified. Deliberately small
 
 **This check is manual on purpose, and only for now.** Checking a number means one of us opening its WhatsApp link and seeing a real account answer. Once the WhatsApp Business account with Meta is approved we can send that message and record the reply automatically, and this list becomes a list of answers rather than a list of jobs. Nothing about the data model changes when that happens: `phone_verified_at` is still the one field that matters, and a seller still cannot write it herself. Until then, every row is a person one of us has to message.
 
-**Reports.** A third list in the same place, unresolved first. Each shows the listing, the reason, the reporter's detail, and how many reports it has. Actions: hide, restore, or dismiss the report. A listing that reached two unresolved reports is already hidden when we get there, flagged as auto-hidden so we know the system acted, not one of us. Whatever we decide, the reporter gets an email telling her we looked.
+**Reports.** **Not built as of 23 Oct**: the report sheet on the item page saves nothing yet. A third list in the same place, unresolved first. Each shows the listing, the reason, the reporter's detail, and how many reports it has. Actions: hide, restore, or dismiss the report. A listing that reached two unresolved reports is already hidden when we get there, flagged as auto-hidden so we know the system acted, not one of us. Whatever we decide, the reporter gets an email telling her we looked.
 
-**Listing lookup.** Search by title, seller or status, so a seller asking "where is my listing?" on WhatsApp can be answered in ten seconds. Read-only apart from hide and restore.
+**Listing lookup.** **Not built as of 23 Oct.** Search by title, seller or status, so a seller asking "where is my listing?" on WhatsApp can be answered in ten seconds. Read-only apart from hide and restore.
 
 **Not in the admin view:** user management, bulk actions, analytics, editing someone's listing on her behalf, a separate reports screen. If we need any of these by week 4, that is a finding worth writing down.
 
@@ -256,6 +256,8 @@ The seller marks the item sold from her listings page, where she also sees her v
 **AI in the product**
 
 Four features, all of them on the critical paths rather than bolted on. The rule that governs every one: the AI reads, drafts and flags; a person decides.
+
+**Status, 23 Oct:** 1, 3 and 4 are built. 2, natural-language search, is not: browse has a keyword box. Two AI calls were added that this section does not describe: grouping photos into items for bulk listing, and warning a seller who seems to be relisting the same item. See the change log.
 
 ### **1\. Photo to listing (seller side, already in Path 1\)**
 
@@ -285,7 +287,6 @@ Decisions taken during the build that differ from the spec above, or that resolv
 
 | Date | Change | Why | Status |
 | :---- | :---- | :---- | :---- |
-| 21 Oct 2026 | **Shoes and bags moved to the next phase of the MVP.** Removed from the category list, the sell form, browse filters, the AI prefill schema and the submit route. `SHOE_SIZES` deleted | Focus v1 on clothing. Shoes carry their own size scale and bags have none, so each is a separate buyer and a separate set of rules to get right | Agreed, built. Existing listings with either category still display. Revisit in the next phase |
 | 2 Oct 2026 | **Dupattas have no size**, like bags. The `size` row above originally exempted bags only | A dupatta is a scarf. There is no XS to XL for it | Agreed, built. `SIZE_OPTIONS` in `lib/constants.ts` |
 | 2 Oct 2026 | **`city` gains an `other` value**, last in the list, after 33 named cities | The north star is a woman *anywhere* in Pakistan. A fixed list of 33 is a dead end for everyone else | Agreed, built |
 | 2 Oct 2026 | **`city_other` free-text field** to pair with `other` | Without it, `other` tells a buyer nothing. Mirrors `brand_other` | **Open.** Needs Bismah's agreement: buyers see the city on browse and item detail |
@@ -300,7 +301,6 @@ Decisions taken during the build that differ from the spec above, or that resolv
 | 5 Oct 2026 | **No viewfinder of our own.** `capture="environment"` hands her to the phone's camera app | Rebuilding focus, exposure and a shutter is work we do not need, and a half-finished viewfinder encourages fewer photos | Built |
 | 5 Oct 2026 | **The photo guide shows once**, then lives behind "How to photograph it" | Remembered in `localStorage`, not on the User record: it is a convenience, and a new phone showing it again is the right outcome | Built |
 | 5 Oct 2026 | **`title_suggestion`, `colour` and `flaws_seen` carry no confidence** | `listingDraftSchema` has no `colour_confidence` or `title_confidence`, so those three are marked "AI suggested" without a confidence claim rather than being given one we invented | **Open.** Adding the two fields to the schema is a small change |
-
 | 8 Oct 2026 | **`material` added to Listing**, replacing fit\_note on the sell form | Buyers here shop by fabric as much as by brand: lawn and khaddar are seasons, not just materials | **Open.** Needs Bismah's agreement |
 | 8 Oct 2026 | **`colour` removed from the sell form**, still captured | Amna's call. She cannot correct a wrong colour, and buyers filter on it | Built. Revisit with the colour list |
 | 8 Oct 2026 | **`flaw_note` merged into `description`** | One box in her own words, flaws included. Nothing existed in a backend yet, so there was nothing to migrate | Settled. The copilot check is re-pointed, see below |
@@ -310,7 +310,6 @@ Decisions taken during the build that differ from the spec above, or that resolv
 | 8 Oct 2026 | **AI suggestions marked with a sparkle, not the words "AI suggested"** | Amna's call. Tapping the sparkle gives a tooltip; one line under the heading explains the form as a whole | Built. The trade is discoverability |
 | 8 Oct 2026 | **"Please check" dropped from medium confidence**, and the brand evidence line removed | Amna's call | Built. High and medium now look identical to her; the distinction survives in the data |
 | 8 Oct 2026 | **Only the phone is verified at submit, not the email** | Amna's position. Removes the email link and the different-browser claim flow, which was the most expensive part of the seller build | **Open and consequential.** This document's own fallback is "if the phone code fails, she continues with email alone", which has nothing to fall back to. A seller whose SMS never arrives cannot sign back in |
-
 | 13 Oct 2026 | **Accounts are email and password**, created on a page of their own at `/account`, not by an email link | The menu needs a way in for a seller who has not listed anything yet, and the sell flow's account step is reached from Submit and nowhere else. One account serves both sides | Built. The email link described above is not implemented and `email_verified_at` is still never set |
 | 14 Oct 2026 | **A seller marks her own listing sold, and can undo it** | Live to sold and back, hers only, checked on the server. It is the one status change a seller makes herself | Built. `POST /api/listings/[id]/sold` and `/unsold`. No ModerationAction is written, per the four-event rule above |
 | 14 Oct 2026 | **Unsold returns a listing to live, not to the queue** | That listing was approved once already. Sending it round again would make a mistyped tap cost her another day of waiting | Built. `expires_at` is not extended either: it keeps the 30 days it was given when posted |
@@ -322,6 +321,19 @@ Decisions taken during the build that differ from the spec above, or that resolv
 | 14 Oct 2026 | **All sample data deleted.** Browse, item detail and seller profiles read Firestore and nothing else | Keeping a fallback meant every screen had two code paths and we could not tell a bug from a mock. An empty grid is an honest answer | Built. `lib/sample-data.ts` and `lib/useCurrentUser.ts` are gone, with the sellers s1 to s8 and their listings |
 | 14 Oct 2026 | **A seller's public profile is `GET /api/sellers/[id]`** | Her user document holds her email and her phone, and Firestore rules cannot hide individual fields, so the browser is never given the document. The route picks the safe fields | Built. Name, city, bio, sold count and her live listings |
 | 14 Oct 2026 | **Phone verification is manual, by one of us, from the admin Accounts list** | There is no SMS code and no WhatsApp Business account yet | Built. Becomes automatic once Meta approves the WhatsApp Business account; the field and the rules do not change when it does |
+| 16 Oct 2026 | **Bulk listing ("Many items")**: up to 30 photos, sorted into one listing per item by a Gemini call, each read as a single item would be, then submitted together | A seller clearing a wardrobe has ten items, not one. Listing them one by one is the form being the work again | Built. If sorting fails she sorts by time on the phone, without AI |
+| 17 Oct 2026 | **Approval copilot and catalogue-photo detection built**, as one AI call per pending listing in the queue | Features 3 and 4 above | Built. Notes are shown, not stored: saving them would be a data model change |
+| 17 Oct 2026 | **Catalogue photos are also flagged to the seller**, before she submits, as a sheet with "Retake" and "Keep and carry on" | Catching it before the queue saves her a rejection and us a review | Built. Advisory only |
+| 17 Oct 2026 | **Duplicate warning for the seller**, against her own live and pending listings. Overrides anti-goal 6 for the seller side | Amna's call | Built. A sheet with "View that listing" and "It's a different item". Never blocks, never reaches the queue |
+| 17 Oct 2026 | **A spending brake on the AI routes** until App Check and per-user limits exist | The routes have no sign-in check yet | Built. Per visitor and per day, in server memory. **Not a substitute for milestone M6** |
+| 18 Oct 2026 | **Slow AI calls are hedged**: after 8 seconds a lighter request runs beside the full one and the first answer wins | Real timeouts on 18 Oct left sellers with empty forms | Built |
+| 21 Oct 2026 | **This repo moved to its own Firebase project, `reloved-pk`.** The competition submission stays on `reloved-app-2026` | Keep the submitted prototype frozen while building on | Done |
+| 21 Oct 2026 | **Shoes and bags moved to the next phase of the MVP.** Removed from the category list, the sell form, browse filters, the AI prefill schema and the submit route. `SHOE_SIZES` deleted | Focus v1 on clothing. Shoes carry their own size scale and bags have none, so each is a separate buyer and a separate set of rules to get right | Agreed, built. Existing listings with either category still display. Revisit in the next phase |
+| 21 Oct 2026 | **Unfinished listings are saved as drafts on her phone**, single and bulk. They open only from a **Drafts** tab on her profile, never by themselves | Leaving the page used to lose photos of an item she might not have in her hands again | Built. On the phone only, not in Firestore, so no new status and no data model change. Dropped after 7 days, deleted when posted |
+| 21 Oct 2026 | **Drafts replaces Closed on her own profile.** Expired and hidden listings move into In review | Amna's call | Built |
+| 21 Oct 2026 | **A signed-out seller with an account logs in from a sheet inside Sell**, with her email filled in if this phone has signed in before | Before this the account step could only sign people up, and leaving to log in lost her listing | Built. No design in `components.html`; flagged to Bismah |
+| 21 Oct 2026 | **"Cover" is the only label on photos in the photo grid** | Amna's call. Quality notes still appear in the photo quality sheet | Built |
+| 21 Oct 2026 | **The `fair` condition description loses its em dash**: "Shows some signs of wear. Please photograph the areas that show it." | `design-system.md` rules out em dashes. Bismah's wording | Built. The value `fair` is unchanged, so the AI schema is unaffected |
 
 ## **Read-it-back check**
 
