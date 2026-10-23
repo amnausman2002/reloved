@@ -7,7 +7,7 @@
 # role roles/aiplatform.user.
 
 runConfig:
-  # Scale to zero when nobody is using it. Set to 1 on judging day so the
+  # Scale to zero when nobody is using it. Set to 1 for a demo or launch day so the
   # first visitor does not wait for a cold start.
   minInstances: 0
   # The cap that makes lib/ai/rateLimit.ts's daily ceiling a real ceiling.

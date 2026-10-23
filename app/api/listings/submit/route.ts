@@ -9,7 +9,6 @@ import {
   CONDITION_VALUES,
   MATERIALS,
   CLOTHING_SIZES,
-  SHOE_SIZES,
   MIN_LISTING_PHOTOS,
   MAX_LISTING_PHOTOS,
 } from "@/lib/constants";
@@ -65,7 +64,7 @@ const bodySchema = z.object({
     brandOther: z.string().trim().max(60),
     category: z.enum(CATEGORIES),
     colour: z.string().trim().max(40),
-    size: z.enum([...CLOTHING_SIZES, ...SHOE_SIZES]).nullable(),
+    size: z.enum(CLOTHING_SIZES).nullable(),
     condition: z.enum(CONDITION_VALUES),
     isReplica: z.boolean(),
     // Whole rupees. Comes off the form as a digits-only string.
