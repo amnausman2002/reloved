@@ -4,8 +4,6 @@ Sep 28, 2026
 
 Mobile-first web app for buying and selling preloved women's clothing in Pakistan. Built by two people in five weeks, soft launch in week 3\. 
 
-**Competition constraint.** The AI Builder Cup prototype is due 18 October, which lands inside week 4\. It needs a proposal deck, a working prototype built with Google Cloud AI tools and deployed on Google, and a three-minute video. The Google Cloud requirement constrains the stack, so confirm the exact wording in the rules before CLAUDE.md is finalised.
-
 ## **North star statement**
 
 A woman anywhere in Pakistan finds a preloved item in her size and brand, and messages the seller about it on WhatsApp in under two minutes.
@@ -327,7 +325,7 @@ Decisions taken during the build that differ from the spec above, or that resolv
 | 17 Oct 2026 | **Duplicate warning for the seller**, against her own live and pending listings. Overrides anti-goal 6 for the seller side | Amna's call | Built. A sheet with "View that listing" and "It's a different item". Never blocks, never reaches the queue |
 | 17 Oct 2026 | **A spending brake on the AI routes** until App Check and per-user limits exist | The routes have no sign-in check yet | Built. Per visitor and per day, in server memory. **Not a substitute for milestone M6** |
 | 18 Oct 2026 | **Slow AI calls are hedged**: after 8 seconds a lighter request runs beside the full one and the first answer wins | Real timeouts on 18 Oct left sellers with empty forms | Built |
-| 21 Oct 2026 | **This repo moved to its own Firebase project, `reloved-pk`.** The competition submission stays on `reloved-app-2026` | Keep the submitted prototype frozen while building on | Done |
+| 21 Oct 2026 | **This repo moved to its own Firebase project, `reloved-pk`.** An earlier copy stays on `reloved-app-2026`, untouched | Keep that copy frozen while building on | Done |
 | 21 Oct 2026 | **Shoes and bags moved to the next phase of the MVP.** Removed from the category list, the sell form, browse filters, the AI prefill schema and the submit route. `SHOE_SIZES` deleted | Focus v1 on clothing. Shoes carry their own size scale and bags have none, so each is a separate buyer and a separate set of rules to get right | Agreed, built. Existing listings with either category still display. Revisit in the next phase |
 | 21 Oct 2026 | **Unfinished listings are saved as drafts on her phone**, single and bulk. They open only from a **Drafts** tab on her profile, never by themselves | Leaving the page used to lose photos of an item she might not have in her hands again | Built. On the phone only, not in Firestore, so no new status and no data model change. Dropped after 7 days, deleted when posted |
 | 21 Oct 2026 | **Drafts replaces Closed on her own profile.** Expired and hidden listings move into In review | Amna's call | Built |

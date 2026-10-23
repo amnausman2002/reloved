@@ -2,9 +2,8 @@
 
 Mobile-first web app for buying and selling preloved women's clothing in Pakistan.
 Built by two product designers, Amna and Bismah, in five weeks. Soft launch in week 3.
-Entered in the Google Cloud AI Builder Cup (Retail & Commerce track). Prototype was due 18 October
-and was submitted from the Firebase project `reloved-app-2026`, which is left untouched. Since 21 October
-this repo builds and deploys against its own project, **`reloved-pk`**.
+This repo builds and deploys against the Firebase project **`reloved-pk`** (since 21 October).
+An earlier copy lives on `reloved-app-2026` and is left untouched.
 
 **North star:** A woman anywhere in Pakistan finds a preloved item in her size and brand,
 and messages the seller on WhatsApp in under two minutes.
@@ -17,12 +16,12 @@ If this file and the PRD disagree, stop and ask us.
 
 ---
 
-## Competition rules (non-negotiable)
+## Platform rules (non-negotiable)
 
 - Every AI feature uses Google's Gemini models. Never call Anthropic, OpenAI or any other model provider from the app.
 - Everything runs on Google Cloud / Firebase. Do not add services hosted elsewhere (no Vercel, Supabase, AWS, etc.).
 - The app deploys on Firebase App Hosting, which runs on Cloud Run.
-- This is a fresh project built during the hackathon. Do not copy in code from other projects.
+- Do not copy in code from other projects.
 
 ## Stack
 
@@ -32,13 +31,13 @@ If this file and the PRD disagree, stop and ask us.
 - Cloud Firestore for data
 - Cloud Storage for Firebase for listing photos
 - Gemini through the Google Gen AI library (`@google/genai`) on Vertex AI, called only from server code
-- Firebase Trigger Email extension for emails to sellers and reporters. **Planned, not installed: the app sends no email at all yet.** (Google is retiring Firebase Extensions in March 2027, which is fine for the prototype)
+- Firebase Trigger Email extension for emails to sellers and reporters. **Planned, not installed: the app sends no email at all yet.** (Google is retiring Firebase Extensions in March 2027, which is fine for now)
 - Firebase App Hosting for deployment
 
 ### Gemini settings (easy to get wrong)
 
 - **Model:** `gemini-3.8-flash`, read from the environment variable `GEMINI_MODEL`. Never hard-code the model name in more than one place.
-- **Do not use Gemini 2.5 models.** Google retires them on 16 to 20 October 2026, around our deadline.
+- **Do not use Gemini 2.5 models.** Google retires them on 16 to 20 October 2026.
 - **Location must be `global`** (environment variable `GOOGLE_CLOUD_LOCATION=global`). Gemini 3.x models return a 404 error at `us-central1`.
 - Gemini model names change often and 3.8 Flash may be retired on short notice. Before writing or changing any model name, check Google's current documentation, and tell us if the name is out of date.
 - **No API keys anywhere.** On a laptop the server signs in through Application Default Credentials (`gcloud auth application-default login`). On App Hosting it uses the service account `firebase-app-hosting-compute@PROJECT_ID.iam.gserviceaccount.com`, which needs the role `roles/aiplatform.user`.
