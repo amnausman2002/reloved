@@ -101,9 +101,10 @@ export const CATEGORIES = [
   "skirt",
   "jacket",
   "sportswear",
-  "shoes",
-  "bag",
 ] as const;
+// Shoes and bags were in this list until 21 Oct and are moved to the next
+// phase. Shoes bring their own size scale (UK 3-9) and bags have none, so
+// bringing them back means adding the values here and deciding SIZE_OPTIONS.
 
 export type Category = (typeof CATEGORIES)[number];
 
@@ -203,12 +204,10 @@ export const REJECTION_REASON_MESSAGES: Record<RejectionReason, string> = {
     "We couldn't confirm this is the brand on the listing. If you have a label or tag, add a close-up photo of it and resubmit.",
 };
 
-// Clothes XS-XL, shoes UK 3-9, bags have no size at all.
+// Clothes XS-XL. Dupattas have no size at all.
 export const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL"] as const;
 
-export const SHOE_SIZES = ["UK 3", "UK 4", "UK 5", "UK 6", "UK 7", "UK 8", "UK 9"] as const;
-
-export type Size = (typeof CLOTHING_SIZES)[number] | (typeof SHOE_SIZES)[number];
+export type Size = (typeof CLOTHING_SIZES)[number];
 
 // Which size list each category uses. null means the category shows no size
 // field. Typed as a full Record<Category, ...> on purpose: adding a category to
@@ -217,7 +216,7 @@ export const SIZE_OPTIONS: Record<Category, readonly Size[] | null> = {
   kurta: CLOTHING_SIZES,
   pret: CLOTHING_SIZES,
   co_ord_set: CLOTHING_SIZES,
-  dupatta: null, // A dupatta has no size, same as a bag.
+  dupatta: null, // A dupatta is a scarf. There is no XS to XL for it.
   dress: CLOTHING_SIZES,
   top: CLOTHING_SIZES,
   bottoms: CLOTHING_SIZES,
@@ -225,8 +224,6 @@ export const SIZE_OPTIONS: Record<Category, readonly Size[] | null> = {
   skirt: CLOTHING_SIZES,
   jacket: CLOTHING_SIZES,
   sportswear: CLOTHING_SIZES,
-  shoes: SHOE_SIZES,
-  bag: null,
 };
 
 // Major Pakistani cities, roughly largest first so the likeliest answers sit at

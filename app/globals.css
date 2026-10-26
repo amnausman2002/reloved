@@ -2568,6 +2568,9 @@ img { max-width: 100%; display: block; }
  * not something gone wrong on her end. */
 .listing-row-meta { font-size: var(--size-caption); color: var(--text-tertiary); }
 .listing-row-action { flex-shrink: 0; min-height: 36px; font-size: var(--size-body-sm); }
+/* A draft row's two actions, Continue over Delete. NEW 21 Oct, flagged for
+ * Bismah: no other row has two. */
+.listing-row-action-stack { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); }
 /* Mark as sold / Relist / Make changes: .btn-text-link is built for a
  * full-width, centered, underlined, stacked bottom-sheet action. This row
  * action is the same shape as .reco-see-all instead — no underline, icon

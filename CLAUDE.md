@@ -2,7 +2,8 @@
 
 Mobile-first web app for buying and selling preloved women's clothing in Pakistan.
 Built by two product designers, Amna and Bismah, in five weeks. Soft launch in week 3.
-Entered in the Google Cloud AI Builder Cup (Retail & Commerce track). Prototype due 18 October.
+This repo builds and deploys against the Firebase project **`reloved-pk`** (since 21 October).
+An earlier copy lives on `reloved-app-2026` and is left untouched.
 
 **North star:** A woman anywhere in Pakistan finds a preloved item in her size and brand,
 and messages the seller on WhatsApp in under two minutes.
@@ -15,28 +16,28 @@ If this file and the PRD disagree, stop and ask us.
 
 ---
 
-## Competition rules (non-negotiable)
+## Platform rules (non-negotiable)
 
 - Every AI feature uses Google's Gemini models. Never call Anthropic, OpenAI or any other model provider from the app.
 - Everything runs on Google Cloud / Firebase. Do not add services hosted elsewhere (no Vercel, Supabase, AWS, etc.).
 - The app deploys on Firebase App Hosting, which runs on Cloud Run.
-- This is a fresh project built during the hackathon. Do not copy in code from other projects.
+- Do not copy in code from other projects.
 
 ## Stack
 
 - Next.js (App Router) with TypeScript
 - Plain global CSS in `app/globals.css`, class names matching `components.html` exactly. **Tailwind was dropped:** the design system already existed as vanilla CSS with custom properties, so converting it would have added a package and a chance to drift. Fonts via `next/font/google`, self-hosted at build time
-- Firebase Authentication: email link sign-in for everyone, phone verification by SMS code for sellers
+- Firebase Authentication: **email and password** for everyone (built 13 Oct). The email link and SMS code described in older parts of this file and the PRD were never built. Phone numbers are checked by hand from the admin Accounts tab
 - Cloud Firestore for data
 - Cloud Storage for Firebase for listing photos
 - Gemini through the Google Gen AI library (`@google/genai`) on Vertex AI, called only from server code
-- Firebase Trigger Email extension for emails to sellers and reporters (Google is retiring Firebase Extensions in March 2027, which is fine for the prototype)
+- Firebase Trigger Email extension for emails to sellers and reporters. **Planned, not installed: the app sends no email at all yet.** (Google is retiring Firebase Extensions in March 2027, which is fine for now)
 - Firebase App Hosting for deployment
 
 ### Gemini settings (easy to get wrong)
 
 - **Model:** `gemini-3.8-flash`, read from the environment variable `GEMINI_MODEL`. Never hard-code the model name in more than one place.
-- **Do not use Gemini 2.5 models.** Google retires them on 16 to 20 October 2026, around our deadline.
+- **Do not use Gemini 2.5 models.** Google retires them on 16 to 20 October 2026.
 - **Location must be `global`** (environment variable `GOOGLE_CLOUD_LOCATION=global`). Gemini 3.x models return a 404 error at `us-central1`.
 - Gemini model names change often and 3.8 Flash may be retired on short notice. Before writing or changing any model name, check Google's current documentation, and tell us if the name is out of date.
 - **No API keys anywhere.** On a laptop the server signs in through Application Default Credentials (`gcloud auth application-default login`). On App Hosting it uses the service account `firebase-app-hosting-compute@PROJECT_ID.iam.gserviceaccount.com`, which needs the role `roles/aiplatform.user`.
@@ -57,67 +58,100 @@ gcloud services enable aiplatform.googleapis.com
 ```
 
 Environment variables in `.env.local` (never committed, listed without values in `.env.example`):
-`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION=global`, `GEMINI_MODEL`.
+`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION=global`, `GEMINI_MODEL`, and the six
+`NEXT_PUBLIC_FIREBASE_*` web config values. The Firebase values are public identifiers, not
+secrets; production sets all of them in `apphosting.yaml`.
 
 Day to day:
 
 ```
-npm install                      First time, and after pulling new packages
-npm run dev                      Starts the app at http://localhost:3000
-npm run build                    Production build. Run before claiming anything works
-npx tsc --noEmit                 Type check on its own
-npm run try-prefill -- ./photos  Runs a folder of photos through Call 1, prints a table
+npm install                       First time, and after pulling new packages
+npm run dev                       Starts the app at http://localhost:3000
+npm run build                     Production build. Run before claiming anything works
+npx tsc --noEmit                  Type check on its own
+npm run try-prefill -- ./photos   Runs a folder of photos through Call 1, prints a table
+npm run try-group -- ./photos     Runs a folder through the bulk grouping call and grades it
+npm run try-review [-- <id> ...]   Runs the admin AI notes (Call 4) on the newest 5 listings, or on given ids
+npm run make-admin -- <email> ["Name"] [--revoke]   Creates or promotes an admin (sets is_admin)
 ```
 
-Check Gemini is reachable: open `http://localhost:3000/api/health/gemini`. It should
-return `{"ok":true,...,"reply":"ok"}`. If it does not, your login has probably expired —
-run `gcloud auth application-default login` again.
+Health checks, both should answer `{"ok":true,...}`. If either fails with a credentials
+error, the laptop's login has expired: run `gcloud auth application-default login` again.
 
-Try the seller AI by hand: `http://localhost:3000/dev/prefill` (development only, 404s in production).
+- `http://localhost:3000/api/health/gemini` (Vertex AI)
+- `http://localhost:3000/api/health/firebase` (Firestore)
 
-TODO: deploy commands, once App Hosting is set up.
+Test pages, development only, 404 in production: `/dev/prefill` (Calls 1 and 2 by hand),
+`/dev/group` (bulk grouping), `/dev/ui` (shared components against `components.html`).
+
+Deploying (project `reloved-pk`, App Hosting backend `reloved`, set in `firebase.json` and `.firebaserc`):
+
+```
+firebase deploy --only apphosting                  The app itself
+firebase deploy --only firestore:rules,storage     Security rules
+firebase deploy --only firestore:indexes           Indexes. The contact cap needs one (see below)
+```
+
+**`npm run dev` appends a block to this file.** Next.js 16 writes a "nextjs-agent-rules"
+section at the end of CLAUDE.md every time the dev server starts. Do not commit it.
+`agentRules: false` in `next.config.mjs` turns it off; that file is shared, so ask first.
 
 ## Folder structure
 
 ```
-app/                  Pages and routes
-  page.tsx            Marketing homepage (site root)
-  browse/             Listings grid, filters, search
-  item/[id]/          Item detail
-  seller/[id]/        Seller's public profile
-  sell/               Listing flow
-  my-listings/        Seller's own listings
-  admin/              Queue, reports, listing lookup
-  api/ai/
-    prefill/          Call 1: photos to listing fields
-    photo-quality/    Call 2: separate photo quality check
-  api/health/gemini/  Checks the Gemini connection is working
-  dev/prefill/        Throwaway test page. Development only, never linked, never deployed
+app/
+  page.tsx, _components/   Marketing homepage (site root)
+  browse/                  Listings grid, filters, keyword search
+  item/[id]/               Item detail, Message seller, share, report (report not wired to a backend)
+  seller/[id]/             Seller profile: public view, or her own (Live, In review, Sold, Drafts)
+  seller/[id]/edit/        Edit profile. The form exists; Save does not write anything yet
+  sell/                    The whole seller flow: SellFlow (one item), bulk/ (many items),
+                           AccountFlow, SellLogin, draft.ts (drafts on the phone)
+  account/                 Sign up and log in (/account, ?mode=login, ?next=)
+  admin/                   Queue (with AI notes) and Accounts tabs
+  dev/                     prefill, group, ui test pages. Development only
+  api/
+    ai/prefill/            Call 1: photos to listing fields
+    ai/photo-quality/      Call 2: photo quality, including the catalogue-photo flag
+    ai/group/              Call 3: bulk listing, which photos show the same item
+    ai/duplicate/          Call 5: has she listed this item already (signed-in sellers)
+    admin/review/          Call 4: approval copilot and catalogue check, admins only
+    admin/moderate/        Approve, reject, hide, restore, mark a number checked
+    listings/...           Browse, item, mine, submit, sold, unsold, contact (see below)
+    sellers/[id]/          A seller's public profile
+    auth/email-exists/     Sign-up screen's "already have an account?" check
+    health/gemini, health/firebase
 components/
-  ui/                 Shared components. Names match Figma exactly
-  buyer/  seller/  admin/
+  ui/                      Shared components. Names match components.html
+  buyer/  seller/          (there is no admin/ folder: admin components live in app/admin/)
 lib/
-  firebase/           Firebase setup (client and admin)
-  data/               All Firestore reads and writes
-  ai/                 All Gemini calls, one file per AI feature
-    client.ts         The one place the Gemini connection is created
-    schemas.ts        Response templates and Zod checks for every AI call
-    prefill.ts        Photo to listing
-    photo-quality.ts  Photo quality check
-    runBoth.ts        Fires both seller calls at the same time
-    images.ts         Shared photo checks and limits for both AI calls (server side)
-  photos.ts           Browser-side HEIC conversion and resizing, before upload
-  constants.ts        Every fixed list (categories, sizes, conditions, reasons, brands, cities, photo tips)
-scripts/
-  try-prefill.ts      Runs a folder of photos through the AI and prints a results table
+  firebase/                Firebase setup (client and admin)
+  data/                    All Firestore reads and writes (server side)
+  ai/                      All Gemini calls, one file per AI feature
+    client.ts              The one place the Gemini connection is created
+    schemas.ts             Response templates and Zod checks for every AI call
+    prefill.ts             Call 1          photo-quality.ts   Call 2
+    group.ts, groupRules.ts  Call 3        review.ts          Call 4
+    duplicate.ts           Call 5
+    resilient.ts           Hedged, tiered calls and the one-line JSON log per call
+    rateLimit.ts           The temporary spending brake on the AI routes
+    images.ts              Shared photo checks and limits for the AI calls (server side)
+    runBoth.ts             Fires Calls 1 and 2 together. Not called by the app any more:
+                           app/sell/aiRequests.ts does the same thing from the browser
+  photos.ts                Browser-side HEIC conversion and resizing, before upload
+  knownAccount.ts          The last email that signed in on this phone
+  useAuthUser.ts           Who is signed in
+  constants.ts             Every fixed list
+scripts/                   try-prefill, try-group, try-review, make-admin
 docs/
-  PRD.md              Product spec
-  seller-flow-research.md   Technical plan for the seller flow
+  PRD.md                   Product spec, with a dated log of every change at the end
+  seller-flow-research.md  Technical plan for the seller flow
+  design-system.md, components.html   Bismah's design system and visual reference
+firestore.rules, storage.rules, firestore.indexes.json, apphosting.yaml, firebase.json
 ```
 
-Planned but not created yet, so do not expect to find them: `components/`, `lib/firebase/`,
-`lib/data/`, `app/sell/`, `app/browse/`, `app/item/`, `app/seller/`, `app/my-listings/`,
-`app/admin/`, `eval/items.csv`, `docs/BACKLOG.md`.
+Not created yet: `eval/items.csv`, `docs/BACKLOG.md`, `app/my-listings/` (her listings live on
+her own profile instead).
 
 ## How to work with us
 
@@ -145,13 +179,13 @@ Planned but not created yet, so do not expect to find them: `components/`, `lib/
 3. Seller reviews or ratings. The sold count is the trust signal.
 4. Saved searches or new-stock alerts.
 5. AI that approves, rejects or hides anything.
-6. Duplicate-listing detection. The admin queue is the check.
+6. Duplicate-listing detection. The admin queue is the check. **Overridden for the seller side by Amna on 17 Oct:** Call 5 warns a seller who seems to be listing something she already listed, as a sheet she can dismiss. It never blocks and never reaches the queue.
 7. In-app payments or shipping.
 8. A native mobile app. Mobile web only.
 9. Commission or listing fees.
 10. Categories outside the fixed list: no wedding or formal wear, kidswear, menswear, unstitched fabric, jewellery or accessories.
 
-Also out of v1: in-app notifications, analytics dashboards, and in the admin view, user management, bulk actions and editing someone else's listing.
+Also out of v1: shoes and bags (next phase of the MVP, see Fixed lists), in-app notifications, analytics dashboards, and in the admin view, user management, bulk actions and editing someone else's listing.
 
 ## The AI rule
 
@@ -163,6 +197,8 @@ Also out of v1: in-app notifications, analytics dashboards, and in the admin vie
 4. **Approval copilot (admin).** A short summary beside each pending listing: what the photos show, whether the stated brand looks consistent with the photos, whether the price is sane against the original, and any flaw the photos show that she did not mention in her description. A listing with brand `unknown` is normal and is never flagged. Only flag a brand the seller entered that the photos cannot back up, and only as a note for us, never a rejection.
 5. **Catalogue-photo detection (admin).** Flags listings that look like a brand's studio photo instead of a real one. A flag in the queue only, never a rejection.
 
+Status, as of 23 Oct: 1, 2, 4 and 5 are **built**. 3 is **not built**: browse has a plain keyword box. Feature 5 runs twice, as the `looks_like_catalogue` flag in Call 2 (a sheet for the seller) and inside Call 4 (a flag in the queue). Three calls exist that this list does not name: **Call 3** groups bulk photos into items, **Call 4** is features 4 and 5 for the admin queue in one request (`lib/ai/review.ts`), and **Call 5** is the seller-side duplicate check. Call 4's notes are shown, not saved: storing them would be a data model change.
+
 If a Gemini call fails or is slow, the flow carries on without it. AI failure never blocks a buyer or a seller.
 
 ### Seller AI calls: rules for Call 1 and Call 2
@@ -172,7 +208,7 @@ If a Gemini call fails or is slow, the flow carries on without it. AI failure ne
 **Call 1: `POST /api/ai/prefill`** (logic in `lib/ai/prefill.ts`)
 - Input: 1 to 6 images as multipart form data (JPEG, PNG or WebP, up to 7 MB each). Nothing else: there is no `originalPrice`, because nothing uses it.
 - The API accepts a single photo so the AI can read early, while she is still adding more. A finished *listing* still needs 2 to 6. Different rules, both correct.
-- One Gemini call with all the images, structured output using `listingDraftSchema`, thinking level `LOW`, media resolution `MEDIUM`, 15 second timeout, one retry only on HTTP errors 429 or 503.
+- One Gemini call with all the images, structured output using `listingDraftSchema`, thinking level `LOW`, media resolution `MEDIUM`, 15 second timeout. **Since 18 Oct it runs through `lib/ai/resilient.ts`:** if the full call has not answered after 8 seconds, a lighter one (smaller images, same Zod check and server rules) starts beside it and the first answer wins; if the full call fails outright, the light one starts at once. 429 and 503 are retried by the Gen AI library with a growing wait. Every call writes one JSON log line, which Cloud Logging can count.
 - `listingDraftSchema` fields: brand, brand_other, brand_evidence, brand_confidence, category, category_confidence, colour, condition, condition_confidence, flaws_seen, title_suggestion. Every list comes from `lib/constants.ts` and includes `unknown`. There is **no price field**: the model never sets a price.
 - On validation failure or any error, return `{ ok: false }` with a short message. Never throw an unhandled error.
 
@@ -198,33 +234,91 @@ If a Gemini call fails or is slow, the flow carries on without it. AI failure ne
 - Revisit once there are enough real listings to work from. Until then the app must not imply it knows what an item is worth.
 
 **Call 2: `POST /api/ai/photo-quality`** (logic in `lib/ai/photo-quality.ts`)
-- Same input format. Uses `photoQualitySchema`: per photo, `photo_index`, `blurry`, `dark`, `busy_background`, `blends_into_background`, `item_cropped`, `crooked`. Overall, `overall_usable` (true or false) and one short `retake_tip` in plain English.
+- Same input format. Uses `photoQualitySchema`: per photo, `photo_index`, `blurry`, `dark`, `busy_background`, `blends_into_background`, `item_cropped`, `crooked`, and since 17 Oct `looks_like_catalogue` (a brand's studio or website photo). Overall, `overall_usable` (true or false) and one short `retake_tip` in plain English.
 - `busy_background` and `blends_into_background` are deliberately separate: a patterned bedsheet is clutter, a white shirt on a white sheet is invisible. Different problems, different advice.
 - `retake_tip` names the fix ("move somewhere with a plain background"), not just the fault. It never scolds and never implies she must redo anything.
 - Thinking level `LOW`, media resolution `MEDIUM` (it needs enough detail to judge sharpness).
 - The prompt must say: label or flaw close-ups are not "cropped", judge each photo independently, be lenient on plain fabric, never comment on people.
 - Advisory only. It returns flags and a tip and never blocks anything. On any error return `{ ok: true, flags: [], skipped: true }`.
-- The result will be saved in `Photo.quality_flags`. Not wired up yet: there is no Firestore in the project so far.
+- `Photo.quality_flags` exists in Firestore but **is always written as `null`**: the submit sends no flags yet. Wiring it up is a small change in `app/sell/submitListing.ts`.
 - The model does not reliably return one entry per photo. Never assume `flags.length === photos.length`, and match on `photo_index`.
 
 **Photo tips shown on the upload screen** (`PHOTO_TIPS` in `lib/constants.ts`): daylight, plain background, the whole item in frame, a close-up of any flaw, and "If there is a label or tag, take a close-up of it."
 
 **Photos are prepared in the browser before upload** (`lib/photos.ts`)
 - Phones hand over HEIC, which Chrome, Firefox and Edge cannot display, and 3-6 MB files. `preparePhotos()` converts HEIC to JPEG (`heic2any`, loaded only when a HEIC appears) and resizes to 1,600 px at quality 0.8 (`browser-image-compression`, in a worker). A 6 MB photo becomes about 0.2 MB.
+- **Never run conversions all at once** (fixed 21 Oct). Overlapping `heic2any` calls return broken images, which showed as blank tiles. HEIC conversion is queued one at a time and preparation runs two at a time; a failed worker resize retries on the page.
+- **Some newer iPhone HEICs cannot be read by `heic2any` at all** ("format not supported"). Safari decodes them itself, so they still work there. In Chrome, Firefox and Edge the photo is marked `unusable`, left out of the grid, and she is told to save it as JPEG. A newer decoder (`heic-to`) would fix this; it is a new package, so ask first.
 - This also strips EXIF, so a seller's home GPS location never leaves her phone.
-- It never throws. If conversion or resizing fails, the original photo is kept and a `problem` message is set.
+- It never throws. If conversion or resizing fails, the original photo is kept and a `problem` message is set. `problem` is not shown on the photo grid any more: **"Cover" is the only pill a photo in "Your photos" carries** (Amna, 21 Oct).
 - **File pickers must use `accept="image/*"`. Never list `image/heic`:** Safari 17+ then converts JPEGs *into* HEIC, creating the problem we are solving.
 - The server limits (`lib/ai/images.ts`: 1-6 photos, JPEG/PNG/WebP, 7 MB each) are unchanged and still enforced. The browser makes photos usable; the server is what makes them trusted.
 
 **Current status of the AI routes (temporary):**
-- `/api/ai/prefill` and `/api/ai/photo-quality` have no sign-in check and no spending protection yet. Run them on a laptop only. Do not deploy them publicly until sign-in, App Check, rate limits and budget alerts are added (see `docs/seller-flow-research.md`, milestone M6). If they must be deployed sooner, add a temporary secret-header check first.
-- Photos are sent inline in the request. Cloud Storage upload comes later. Browser-side conversion and resizing are done (`lib/photos.ts`).
-- Later milestone: log each AI read (what the AI suggested, what the seller finally submitted) so we can measure accuracy. Ask before creating that collection.
+- `/api/ai/prefill`, `/api/ai/photo-quality` and `/api/ai/group` still have **no sign-in check and no App Check** (milestone M6 in `docs/seller-flow-research.md`). Since 17 Oct they sit behind `lib/ai/rateLimit.ts`, a spending brake held in each server's memory: a limit per visitor and a daily total per server, with `apphosting.yaml` capping the servers at 2. Going over looks to her exactly like the AI being unavailable. It is a brake, not a lock: it resets when a server restarts.
+- `/api/ai/duplicate` needs her ID token. `/api/admin/review` and `/api/admin/moderate` need an admin's token and `is_admin`, and answer 404 to anyone else.
+- `/api/auth/email-exists` tells anyone whether an email has an account, deliberately, and is **not rate limited**. Same M6 work.
+- Budget alerts are not set up. Do not point real traffic at the site until M6 is done.
+- Photos go inline to the AI routes, and straight from the browser to Cloud Storage at submit.
+- Later milestone: log each AI read (what the AI suggested, what the seller finally submitted) so we can measure accuracy. Ask before creating that collection. The JSON log lines from `resilient.ts` say how each call went, not what it answered.
 - Accuracy testing: `eval/items.csv` does not exist yet. Once it does, re-run `scripts/try-prefill.ts` after every prompt change.
 
-## What is actually built (as of 2 October 2026, branch `foundations`)
+## What is actually built (as of 23 October 2026)
 
-Everything else in this file is the plan, not the code. Do not assume a file exists because it is described here.
+Read this section newest first. Each dated block was written when that work landed, and a newer
+block wins where two disagree. The sections above it describe the plan and the rules; this section
+is the code. Do not assume a file exists because it is described somewhere else in this file.
+
+### Still not built, as of 23 October
+
+- Natural-language search (AI feature 3). Browse has a keyword box only
+- Reports: the item page has the report sheet, but submitting it does nothing (`TODO` in `app/item/[id]/page.tsx`). No `/api/reports`, no auto-hide on two reports, no Reports tab in admin
+- Admin listing lookup
+- Any email to anyone: rejections, approvals, report outcomes. The Trigger Email extension is not installed
+- Email verification (`email_verified_at` is never set) and password reset
+- Saving the edit-profile form. It validates, then goes back to the profile without writing
+- Listing expiry: `expires_at` is set at submit and nothing acts on it. Relisting
+- Editing a submitted listing ("Make changes" on a rejected one links to the item page)
+- Saving `Photo.quality_flags` (always `null`) and saving the admin AI notes
+- App Check, per-user AI limits, budget alerts (M6)
+- The colour list, `city_other`, `eval/items.csv`
+
+### Added 21 October: sell drafts, and logging in from Sell
+
+**The sell flow saves itself on the phone** (`app/sell/draft.ts`, IndexedDB,
+no account needed). Single-item saves from the first photo; bulk saves from
+the review screen on (photos still being prepared or sorted are not saved).
+**A draft never opens by itself** (Amna, 21 Oct): Sell always starts fresh,
+and drafts open only from the **Drafts** tab on her own profile, which links
+to `/sell?resume=<id>`. So every visit to Sell is a new draft with its own id,
+and starting something new never overwrites one she left. Drafts are dropped
+after 7 days, deleted on a successful submit, and shown only to the account
+that saved them (or anyone, if saved signed out). Nothing reaches Firestore
+until Submit: there is no `draft` status, and a draft on her phone is not on
+her laptop. Leaving Sell signed out still warns her, because without an
+account she has no profile to find the draft on.
+
+**Drafts replaced Closed** on the owner's profile. Expired and hidden listings
+moved into In review, with their notes unchanged.
+
+**A signed-out seller can log in without leaving Sell** (`app/sell/SellLogin.tsx`).
+`lib/knownAccount.ts` remembers the last email that signed in on this phone
+(set in `useAuthUser`, kept on Log out on purpose). At Submit, a signed-out
+seller on a phone that remembers an email gets "Welcome back. Log in to post."
+with the email filled in; a fresh phone gets the sign-up screen, which now has
+"Already have an account? Log in". Both flows. No design in `components.html`
+for either sheet: flagged for Bismah. There is still no password reset anywhere.
+
+### Added 15 to 18 October: bulk listing, seller checks, admin AI notes, App Hosting
+
+- **Bulk listing ("Many items"),** `app/sell/bulk/`. Up to 30 photos, prepared three at a time, grouped into items by Call 3 (`lib/ai/group.ts`, thumbnails at low resolution, camera filenames and time gaps given as text). If grouping fails or she gives up waiting, "Sort them myself" splits by time on the phone (`lib/ai/groupRules.ts`). Each card is then read by Calls 1 and 2, three cards at a time, one automatic retry per card. She can move, merge, split and delete cards, edits a card in the single-item form, and submits them all with one account step. The first listing goes alone because it creates her account. Every listing goes through the same `submitListing` as a single item
+- **Seller checks on the details step** (17 Oct): the catalogue-photo sheet (from Call 2's `looks_like_catalogue`) and the duplicate sheet (Call 5, signed-in sellers only, against her own live and pending listings). Both advisory, each with a way to carry on
+- **Admin AI notes** (17 Oct), `app/admin/AiNotes.tsx` and Call 4: what the photos show, brand consistency (never flags `unknown`), price against the original, flaws she did not mention, and a catalogue flag. Notes only, never stored
+- **App Hosting ready** (17 Oct): `apphosting.yaml` (min 0, max 2 servers, 1 GiB), `firebase.json` pointed at backend `reloved`, and the spending brake above
+- **Hedged, tiered Gemini calls** (18 Oct), `lib/ai/resilient.ts`, after real 504s left sellers with empty forms. The 504 open question below is answered by this
+- **Homepage** (18 Oct): brand grid, buy/sell toggle, a working search into browse, and a sell section built around a demo video
+
+
 
 ### Added 13 to 14 October: accounts, real data, and the buyer gate
 
@@ -290,20 +384,23 @@ matters, and a seller still cannot write it herself.
 The optimiser fetches remote images on our server and gives up after 7 seconds,
 which it did, and the photos are already capped at 1,600px in the browser.
 
+### Built 2 to 13 October: foundations and the single-item sell flow
+
 **Working and tested end to end:**
 - `lib/ai/client.ts`, `GET /api/health/gemini` — Gemini on Vertex AI, location `global`, via Application Default Credentials
-- `lib/constants.ts` — brands (41 + `other` + `unknown`), 13 categories, 4 conditions, 5 photo tips, clothes and shoe sizes with `SIZE_OPTIONS` per category, 33 cities + `other`
+- `lib/constants.ts` — brands (41 + `other` + `unknown`), 11 categories, 4 conditions, 5 photo tips, clothes sizes with `SIZE_OPTIONS` per category, 33 cities + `other`
 - `app/globals.css` + `app/layout.tsx` — every token from `design-system.md`, the type scale as `.text-*` classes, Fraunces and Inter self-hosted via `next/font/google`. Verified in the browser: tokens resolve, the type scale matches the spec, and both of Fraunces' variable axes (`opsz` and weight) are live
 - `design-system.md`, `components.html` — Bismah's design system and the 25-component visual reference
-- `components/ui/` — the 8 shared components, ported from `components.html` with its class names unchanged: `PrimaryButton`, `SecondaryButton`, `TextLink`, `Input`, `Textarea`, `FilterChip` (+ `ChipRow`), `StatusChip`, `BottomSheet`. Checked in a browser against the showcase
+- `components/ui/` — the shared components, ported from `components.html` with its class names unchanged: `PrimaryButton`, `SecondaryButton`, `TextLink`, `Input`, `Textarea`, `Select`, `FilterChip` (+ `ChipRow`), `StatusChip`, `BottomSheet`, `Toast`, `Nav`. Checked in a browser against the showcase
 - `components/seller/` — `PhotoGrid` (+ `PhotoSlot`) and `ConditionPicker`, ported from `components.html` sections 10 and 11. The grid is both the uploader and the cover picker, because the showcase draws them as two states of one grid. Photo count limits for a *listing* are `MIN_LISTING_PHOTOS`/`MAX_LISTING_PHOTOS` in `lib/constants.ts`, deliberately separate from the AI call's `MIN_PHOTOS`/`MAX_PHOTOS` in `lib/ai/images.ts`
 - `app/sell/` — **the whole seller flow, photo first, with both Gemini calls wired in.** Four steps in one component (`SellFlow.tsx`), not four routes, because the photos only exist as object URLs in the tab and a navigation would throw them away:
   - **intro** — "Photo tips.", the five-step guide. First listing only, remembered in `localStorage` under `reloved.sell.guide-seen`, then always reachable from "View photo guide" beside the heading on the photos step. **The five pictures are real photographs** in `public/photo-guide/`, resized to 480px from Amna's originals
   - **photos** — `capture="environment"` opens the phone's own camera; a second input without `capture` and with `multiple` opens the gallery. **There is no viewfinder of ours**, deliberately. All six grid cells are always drawn, each empty one a live plus. Choosing a cover moves that photo to the front, so the grid is the buyer's running order. "Build my listing (n/6)" is **disabled below two photos**
   - **reading** — both routes posted at once from `aiRequests.ts`. Her own photos are the loader: the deck fans out from behind the cover, snaps back and shakes, on a loop. One line underneath cycles through six present-tense steps every 1.8s. No checklist and no progress claim, because the two calls finish in whatever order they finish. At 15 seconds the rotation stops, the screen says "Still reading", and the way out grows from a text link into a button
   - **details** — `SellForm.tsx`, part filled, every AI answer marked with a sparkle
+  - **account** — added 9 to 13 Oct, see the 13 to 14 Oct and 21 Oct blocks above
   - The form's values live in `SellFlow`, not in `SellForm`, so editing photos and coming back does not wipe what she typed. `mergePrefill` in `types.ts` is where "suggestions fill empty fields only" is actually enforced, and an edited field drops its "AI suggested" marker
-  - Tested end to end against real Gemini: brand read off a label with the evidence line, a dark photo flagged with the model's own retake tip, a failed read, and a hanging call skipped. **Nothing persists:** the write needs Firebase
+  - Tested end to end against real Gemini: brand read off a label with the evidence line, a dark photo flagged with the model's own retake tip, a failed read, and a hanging call skipped. Listings have been written to Firestore since 14 Oct
 - `app/sell/prefillToForm.ts` — the confidence rules in one place: high and medium fill and mark, low leaves the field empty and offers a "Could it be...?" chip, `unknown` offers nothing. The description is deliberately never filled
 - `components/seller/PhotoSource.tsx`, `PhotoGuide.tsx`, `GuideIllustration.tsx` — new. The five guide pictures are **real photographs**, served from `public/photo-guide/`. The originals were 2-3 MB each and are downscaled to 480px wide. Swapping one is a change to `GuideIllustration.tsx` and the matching file, nothing else
 - `components/seller/PhotoGrid.tsx` and `PhotoSlot.tsx` — **rebuilt 8 Oct.** These spent a day as drafts in `app/sell` while Amna worked on them and are now back in the shared folder. Every change from `components.html` is listed in each file's own comment
@@ -311,16 +408,12 @@ which it did, and the photos are already capped at 1,600px in the browser.
 - `lib/ai/schemas.ts` — both response schemas with matching Zod checks
 - `POST /api/ai/prefill` + `lib/ai/prefill.ts` — Call 1, including the server-side brand rules
 - `POST /api/ai/photo-quality` + `lib/ai/photo-quality.ts` — Call 2, all six flags
-- `lib/ai/runBoth.ts` — fires both at once. No HTTP route of its own yet, on purpose
-- `lib/photos.ts` — browser HEIC conversion and resizing
+- `lib/ai/runBoth.ts` — fires both at once. No longer called by the app: `app/sell/aiRequests.ts` posts both routes from the browser instead
+- `lib/photos.ts` — browser HEIC conversion and resizing (see the 21 Oct changes in the Photos section above)
 - `app/dev/prefill/` — manual test page. Returns 404 in production, verified
 - `scripts/try-prefill.ts` — runs a folder of photos and prints a table
 
-**Not built at all yet.** OUT OF DATE: Firebase, the real screens, the buyer
-side and admin all exist now. See "Added 13 to 14 October" above for what is
-real. Still genuinely missing: natural-language search, the approval copilot,
-catalogue-photo detection, reports, the colour list, listing expiry, relisting
-an expired listing, email verification, `eval/items.csv`.
+**What is not built** is listed once, at the top of this section ("Still not built").
 
 **Deliberate changes from `components.html`, flagged for Bismah.** The PRD has the full list under "Changes since this document was written", including the product-level ones. The visual ones:
 - `FilterChip` is a `<button>`, not a `<div>`. A div cannot be tabbed to, activated with the keyboard, or announced as a control. Visually identical.
@@ -331,7 +424,7 @@ an expired listing, email verification, `eval/items.csv`.
 - States added that `design-system.md` specifies but `components.html` has no CSS for: `:disabled` on inputs, textareas and chips, the error border on `.textarea`, and suppressing the hover invert on a disabled button.
 - `ConditionPicker` rows are a `<label>` around a visually hidden real `<input type="radio">`, not `<div>`s. That buys native radio behaviour: arrow keys move between options, only one can be chosen, and a screen reader announces "2 of 4". The focus ring is drawn on the row with `:has(:focus-visible)` since the input itself is hidden.
 - `PhotoSlot` and its overlay controls are `<button>`s, not `<div>`s. The remove control is a sibling positioned over the slot rather than a child, because a button cannot contain another button.
-- Photo grid additions `components.html` mocks with inline styles or omits: `.photo-slot.is-placeholder` for the dimmed empty cells, `.photo-slot-img` for the actual photo, and `.photo-slot-problem` for a quiet per-photo note when `preparePhotos` kept the original. All advisory, none blocking.
+- Photo grid additions `components.html` mocks with inline styles or omits: `.photo-slot.is-placeholder` for the dimmed empty cells, `.photo-slot-img` for the actual photo, and `.photo-slot-problem` for a quiet per-photo note. **Since 21 Oct the photo grid draws no note at all**, only "Cover"; `.photo-slot-problem` is still used on the quality, duplicate and catalogue sheets and on bulk cards.
 - **`ReplicaPicker` is provisional and needs a design.** None of the 25 sections has a checkbox or a yes/no control, so it reuses the condition picker's rows unchanged. It is deliberately two options rather than one tick: the PRD calls `is_replica` a "required declaration", and an unticked box is indistinguishable from a question she never read. Bismah to confirm or replace.
 - `Select` is lifted from `.select-input` in section 20 (the report form), the only dropdown drawn anywhere. It lives in `components/ui/` because the report form and browse filters need it too. Added `:disabled` and `.input-error` states to match `.input`.
 - `Input`, `Textarea` and `Select` take a `ReactNode` label, not just a string, so a label can carry an "(optional)" span.
@@ -357,14 +450,14 @@ an expired listing, email verification, `eval/items.csv`.
 - **Email verification at submit is under discussion.** The PRD and this file both say email verified by link, phone verified by code. Amna's position on 8 Oct is that only the phone needs verifying. **Unresolved, and it has teeth:** the PRD's own fallback is "if the phone code fails, she continues with email alone", which has nothing to fall back to if email goes. Without it, a seller whose SMS never arrives has an account she can never sign back into.
 - There is no suggested price anywhere. See the Price section above.
 - `original_price` is still a **Listing** field the seller types herself, shown to buyers and used by the admin copilot. The AI prefill call no longer takes an `originalPrice` parameter. These are different things: do not delete the Listing field.
-- A 504 from Gemini is **not** retried; only 429 and 503 are. A real 504 has been seen in testing. Open question.
-- Photos have only ever been tested against generated test images, never real clothing. **The prompts are unproven.** Testing with real garment photos is the next useful thing anyone can do.
+- A 504 from Gemini is **not** retried as such; only 429 and 503 are. Since 18 Oct a slow or failed call is rescued by the hedged light request in `lib/ai/resilient.ts` instead, which is what the 504s needed.
+- The grouping call (Call 3) was tested on a real wardrobe on 16 Oct. The prefill and quality prompts were first tested on generated images; testing them against real garment photos, with `eval/items.csv`, is still the next useful thing anyone can do.
 - `lib/pricing.ts` and `lib/pricing-table.ts` were deleted on purpose. Do not recreate them.
 
 ## Users and permissions
 
 - **Buyer:** browses and searches with no account. Creates an account the first time she taps Message seller. Never ask a buyer for a phone number. Never show view or contact counts to buyers. **BUILT 14 Oct:** signed out, the tap opens `ContactGate`, a sheet over the listing asking for email and password, with a link to the full sign-up page that returns her to the listing. One account serves both sides: the same person can list something tomorrow.
-- **Seller:** the account is created at submit, not before (Path 1, step 7), or at `/account` beforehand. Phone verified **by hand, by one of us**, from the admin Accounts tab: we open her WhatsApp link, see a real account answer, and tap "I have checked this", which is the only thing that sets `phone_verified_at`. **This becomes automatic once the WhatsApp Business account with Meta is approved** and we can send the check and read the reply ourselves; nothing about the field or the rules changes then. There is no SMS code and no email link: both are described elsewhere in this file and neither is built. A seller can never write `phone_verified_at` herself, which `firestore.rules` enforces.
+- **Seller:** the account is created at submit, not before (Path 1, step 7), or at `/account` beforehand. A signed-out seller who has an account logs in from a sheet inside Sell (21 Oct). Phone verified **by hand, by one of us**, from the admin Accounts tab: we open her WhatsApp link, see a real account answer, and tap "I have checked this", which is the only thing that sets `phone_verified_at`. **This becomes automatic once the WhatsApp Business account with Meta is approved** and we can send the check and read the reply ourselves; nothing about the field or the rules changes then. There is no SMS code and no email link: both are described elsewhere in this file and neither is built. A seller can never write `phone_verified_at` herself, which `firestore.rules` enforces.
 - **Admin:** a user with `is_admin` set to true. There is no role field.
 - Enforce permissions on the server and in Firestore security rules, never only by hiding buttons.
 
@@ -381,22 +474,23 @@ Full field lists are in the PRD under "Domain model". Do not add, rename or remo
 - Sold count is computed from the seller's listings at `sold`. Never store it.
 - **ModerationAction** is append-only and written for exactly four events: approved, rejected, hidden, restored. Marking sold or expiring writes no row.
 - **ContactEvent** is one record per WhatsApp tap by a signed-in buyer. Maximum 10 per buyer per day, enforced on the server. This is the week 3 success metric. **BUILT 14 Oct** (`lib/data/contact.ts`). Gated on having an account, not on a verified email: `email_verified_at` is still never set by anything, so gating on it would gate on nothing. Flagged in the PRD as an open question.
-- **Reports:** two unresolved reports auto-hide the listing and write a `hidden` ModerationAction with `admin_id` null.
+- **Reports:** two unresolved reports auto-hide the listing and write a `hidden` ModerationAction with `admin_id` null. **Not built:** reports are not saved yet.
 - **Photos:** two to six per listing, enforced at submit. Exactly one cover, chosen by the seller. `quality_flags` are advisory only and never block submission.
 - Prices are whole numbers in Pakistani rupees (PKR). Phone numbers are stored in E.164 format (the international format, for example +923001234567).
-- `expires_at` is `created_at` plus 30 days.
+- `expires_at` is `created_at` plus 30 days. Set at submit; nothing expires a listing yet.
 - Listings and their status are written only by the server (Admin SDK), never directly from the browser.
 
 ## Fixed lists (all live in `lib/constants.ts`)
 
-- **Categories:** kurta, pret, co_ord_set, dupatta, dress, top, bottoms, jeans, skirt, jacket, sportswear, shoes, bag
-- **Sizes:** clothes XS to XL (`CLOTHING_SIZES`), shoes UK 3 to 9 (`SHOE_SIZES`). **Bags and dupattas have no size at all** and show no size field: `SIZE_OPTIONS` maps both to `null`. `SIZE_OPTIONS` is a full `Record<Category, ...>`, so adding a category without deciding its sizes fails the type check
+- **Categories:** kurta, pret, co_ord_set, dupatta, dress, top, bottoms, jeans, skirt, jacket, sportswear
+  - **CHANGED 21 Oct: shoes and bags are moved to the next phase of the MVP.** They are out of `CATEGORIES`, the sell form, browse filters, the Gemini prefill schema and the submit route. The AI now answers `unknown` (or its nearest clothing guess) for a photo of shoes or a bag, and an admin rejects one with `not_allowed`. Any listing already saved as `shoes` or `bag` still displays, with its raw category name. To bring them back: add the values to `CATEGORIES`, recreate `SHOE_SIZES` (UK 3 to 9) and map `bag` to `null` in `SIZE_OPTIONS`, re-add the labels in `app/browse/page.tsx` and `app/item/[id]/page.tsx`, and update the PRD
+- **Sizes:** clothes XS to XL (`CLOTHING_SIZES`). **Dupattas have no size at all** and show no size field: `SIZE_OPTIONS` maps them to `null`. `SIZE_OPTIONS` is a full `Record<Category, ...>`, so adding a category without deciding its sizes fails the type check
 - **Condition** (always shown with its description):
   - `brand_new_with_tags`: Brand new with tags, "With tags, never worn"
   - `brand_new_without_tags`: Brand new without tags, "No tags, never worn"
   - `very_good`: Very good, "Well worn, but still in great shape"
-  - `fair`: Fair, "Shows some signs of wear — please photograph the areas that show it"
-- **Listing status** (`LISTING_STATUSES`, with `LISTING_STATUS_LABELS` for display): pending, live, rejected, sold, expired, hidden. `StatusChip` renders them. Sellers see a neutral amber "Needs attention" instead of the red Rejected chip on my-listings, per `components.html`: that variant is not built yet
+  - `fair`: Fair, "Shows some signs of wear. Please photograph the areas that show it." (the em dash was removed; Bismah's wording)
+- **Listing status** (`LISTING_STATUSES`, with `LISTING_STATUS_LABELS` for display): pending, live, rejected, sold, expired, hidden. `StatusChip` renders them. Sellers see a neutral amber "Needs attention" instead of the red Rejected chip on their own profile, per `components.html`: `StatusChip` with `ownerView`
 - **Rejection reasons:** bad_photos, missing_details, not_allowed, suspected_counterfeit
 - **Report reasons:** counterfeit, not_as_described, inappropriate, spam
 - **Brands:**
@@ -420,9 +514,9 @@ Full field lists are in the PRD under "Domain model". Do not add, rename or remo
 - Component names and CSS class names match `components.html` exactly, so either file can be used to find the other. Per-component CSS is lifted from it as each component is built, not rewritten.
 - Reuse existing components. Never create a new button, card or input when one exists. If a variant is needed, ask. If `components.html` has no design for something, stop and ask rather than inventing one.
 - No dark mode in v1, and no `prefers-color-scheme` handling. See `design-system.md`.
-- No em dashes in copy or UI strings (`design-system.md`). The one in the `fair` condition description in `lib/constants.ts` predates that rule and is a known exception.
+- No em dashes in copy or UI strings (`design-system.md`). There are no exceptions left: the `fair` description was the last one.
 - AI suggestions must look clearly different from what the seller typed ("AI suggested" or "Please check"), and must be easy to change or clear.
-- Photo quality messages are calm and helpful ("This one looks a bit dark. Retake it?") with two equal choices, Retake and Keep it. Never disable the Next button.
+- Photo quality messages are calm and helpful ("This one looks a bit dark. Retake it?") with two equal choices, Retake and Keep it. Never disable the Next button. (Exception, agreed 8 Oct: "Build my listing" is disabled below two photos.)
 - WhatsApp message, prefilled: "Hi, I'm interested in your [item title] on Reloved."
 
 <!-- BEGIN:nextjs-agent-rules -->

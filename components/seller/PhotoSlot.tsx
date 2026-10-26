@@ -14,6 +14,11 @@
 //    changes is the "Set as cover" bar, inverted to white on black.
 //  - the cover badge is a small white pill in the bottom-left corner at 12px
 //    radius, not a black bar across the full width.
+//
+// CHANGED 21 Oct (Amna): "Cover" is the only pill a photo in the grid ever
+// carries. The quality note ("Dark, blurry") and the "Check" marker for a
+// photo that would not shrink are no longer drawn here. The note still
+// appears in the photo quality sheet, which is where it is explained.
 
 export type GridPhoto = {
   id: string;
@@ -60,9 +65,6 @@ export default function PhotoSlot({
       >
         <img className="photo-slot-img" src={photo.url} alt="" />
         {isCover && <span className="photo-slot-cover-label">Cover</span>}
-        {(photo.note || photo.problem) && (
-          <span className="photo-slot-problem">{photo.note ?? "Check"}</span>
-        )}
       </button>
 
       {/* Sibling rather than a child: a button cannot contain another button. */}

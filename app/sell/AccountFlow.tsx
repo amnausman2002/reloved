@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import TextLink from "@/components/ui/TextLink";
 import Input from "@/components/ui/Input";
@@ -103,6 +103,9 @@ type Props = {
    *  She skips the identity screen entirely: asking a seller to make a second
    *  account for the account she is already using is nonsense. */
   signedInAs?: string | null;
+  /** Opens the log-in sheet, with whatever email she has typed so far. For a
+   *  seller who already has an account and is signed out on this phone. */
+  onLogIn?: (email: string) => void;
 };
 
 export default function AccountFlow({
@@ -114,6 +117,7 @@ export default function AccountFlow({
   busy = false,
   submitError = null,
   signedInAs = null,
+  onLogIn,
 }: Props) {
   const [step, setStep] = useState<Step>(signedInAs ? "phone" : "identity");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -125,6 +129,12 @@ export default function AccountFlow({
     setErrors({});
     setStep(next);
   }
+
+  // She logged in from the sheet while standing on the sign-up screen. Her
+  // name, email and password are now known, so the number is all that is left.
+  useEffect(() => {
+    if (signedInAs && step === "identity") goTo("phone");
+  }, [signedInAs, step]);
 
   async function submitIdentity(event: React.FormEvent) {
     event.preventDefault();
@@ -152,8 +162,11 @@ export default function AccountFlow({
       }
       setCheckingEmail(false);
       if (taken) {
-        setToast(`There is already an account for ${email}.`);
-        setErrors({ ...found, email: "Use a different email, or sign in with this one." });
+        setErrors({ ...found, email: "Use a different email, or log in with this one." });
+        // Straight to the log-in sheet with this email in it, rather than
+        // telling her to sign in somewhere this screen does not lead.
+        if (onLogIn) onLogIn(email);
+        else setToast(`There is already an account for ${email}.`);
         return;
       }
     }
@@ -276,6 +289,11 @@ export default function AccountFlow({
               <PrimaryButton type="submit" loading={checkingEmail} loadingLabel="Checking...">
                 Create account
               </PrimaryButton>
+              {onLogIn && (
+                <TextLink onClick={() => onLogIn(fields.email.trim())}>
+                  Already have an account? Log in
+                </TextLink>
+              )}
               <TextLink onClick={onBack}>Back to my listing</TextLink>
             </div>
           </form>

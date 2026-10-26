@@ -22,8 +22,12 @@ import {
 import { fetchPublicSeller, type PublicSeller } from "@/lib/fetchSeller";
 import { isRemotePhoto } from "@/lib/photoUrl";
 import PrimaryButton from "@/components/ui/PrimaryButton";
+import { deleteDraft, listDrafts, type LoadedDraft } from "@/app/sell/draft";
 
-type Tab = "live" | "inReview" | "sold" | "closed";
+// CHANGED 21 Oct: "Closed" became "Drafts". Expired and hidden listings, which
+// were all Closed held, moved into In review with their notes unchanged:
+// hidden ones are literally under review, and nothing expires on its own yet.
+type Tab = "live" | "inReview" | "sold" | "drafts";
 
 type ProfileListing = MyListing;
 
@@ -68,6 +72,63 @@ function RepeatIcon() {
     <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
       <path d="M24,128A72.08,72.08,0,0,1,96,56H204.69L194.34,45.66a8,8,0,0,1,11.32-11.32l24,24a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32-11.32L204.69,72H96a56.06,56.06,0,0,0-56,56,8,8,0,0,1-16,0Zm200-8a8,8,0,0,0-8,8,56.06,56.06,0,0,1-56,56H51.31l10.35-10.34a8,8,0,0,0-11.32-11.32l-24,24a8,8,0,0,0,0,11.32l24,24a8,8,0,0,0,11.32-11.32L51.31,200H160a72.08,72.08,0,0,0,72-72A8,8,0,0,0,224,120Z" />
     </svg>
+  );
+}
+
+/** "2 hours ago". Rough on purpose: she needs to recognise the draft, not
+ *  audit it. */
+function savedAgo(savedAt: number): string {
+  const minutes = Math.round((Date.now() - savedAt) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+/** A listing she started on this phone and has not posted
+ *  (app/sell/draft.ts). Same row shape as a listing, with a plain <img>
+ *  because the cover is a local object URL, not a Cloud Storage photo.
+ *  NEW, no design in components.html. Flagged for Bismah. */
+function DraftRow({
+  loaded,
+  coverUrl,
+  onDelete,
+}: {
+  loaded: LoadedDraft;
+  coverUrl: string | null;
+  onDelete: () => void;
+}) {
+  const { draft } = loaded;
+  const href = `/sell?resume=${encodeURIComponent(loaded.id)}`;
+  const title =
+    draft.kind === "single"
+      ? draft.fields.title.trim() || "Untitled listing"
+      : `${draft.cards.length} listing${draft.cards.length === 1 ? "" : "s"}`;
+  const photos = draft.photos.length;
+  return (
+    <div className="listing-row">
+      <Link href={href} className="listing-row-photo">
+        {coverUrl ? <img src={coverUrl} alt="" /> : null}
+      </Link>
+      <div className="listing-row-body">
+        <Link href={href} className="listing-row-title">
+          {title}
+        </Link>
+        <p className="listing-row-meta">
+          {photos} photo{photos === 1 ? "" : "s"} · Saved on this phone {savedAgo(loaded.savedAt)}
+        </p>
+      </div>
+      <div className="listing-row-action listing-row-action-stack">
+        <TextLink className="listing-row-action-link" href={href}>
+          Continue
+        </TextLink>
+        <TextLink className="listing-row-action-link" onClick={onDelete}>
+          Delete
+        </TextLink>
+      </div>
+    </div>
   );
 }
 
@@ -221,10 +282,48 @@ export default function SellerProfilePage() {
   // one that now shows what she just saved. Default is "live", same as before.
   const initialTab = ((): Tab => {
     const raw = searchParams.get("tab");
-    if (raw === "inReview" || raw === "sold" || raw === "closed") return raw;
+    if (raw === "inReview" || raw === "sold" || raw === "drafts") return raw;
     return "live";
   })();
   const [tab, setTab] = useState<Tab>(initialTab);
+
+  // Her unfinished listings, the ones on this phone that are hers. Drafts live
+  // on the phone, not in Firestore, so they only ever show here.
+  const [drafts, setDrafts] = useState<{ loaded: LoadedDraft; coverUrl: string | null }[]>([]);
+  useEffect(() => {
+    if (!isOwner) return;
+    let live = true;
+    const urls: string[] = [];
+    void listDrafts().then((all) => {
+      if (!live) return;
+      setDrafts(
+        all
+          // Made signed out counts as hers: she is the one signed in now.
+          .filter((loaded) => !loaded.ownerUid || loaded.ownerUid === authUser?.uid)
+          .map((loaded) => {
+            const coverId =
+              loaded.draft.kind === "single"
+                ? (loaded.draft.coverId ?? loaded.draft.photos[0]?.id)
+                : loaded.draft.cards[0]?.photoIds[0];
+            const file = coverId ? loaded.files[coverId]?.file : undefined;
+            const coverUrl = file ? URL.createObjectURL(file) : null;
+            if (coverUrl) urls.push(coverUrl);
+            return { loaded, coverUrl };
+          }),
+      );
+    });
+    return () => {
+      live = false;
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [isOwner, authUser?.uid]);
+
+  /** Straight away, no "are you sure": a draft is something she made a moment
+   *  ago on this phone, not a listing anyone has seen. */
+  function removeDraft(id: string) {
+    void deleteDraft(id);
+    setDrafts((current) => current.filter((item) => item.loaded.id !== id));
+  }
 
   const listings: ProfileListing[] = mine?.listings ?? [];
 
@@ -281,8 +380,7 @@ export default function SellerProfilePage() {
   const underReview = listings.filter((l) => l.status === "pending");
   const expiredListings = listings.filter((l) => l.status === "expired");
   const hiddenListings = listings.filter((l) => l.status === "hidden");
-  const inReviewListings = [...needsAttention, ...underReview];
-  const closedListings = [...expiredListings, ...hiddenListings];
+  const inReviewListings = [...needsAttention, ...underReview, ...hiddenListings, ...expiredListings];
   // What a buyer sees: her live listings, as cards.
   const publicListings = publicView?.listings ?? [];
 
@@ -357,12 +455,12 @@ export default function SellerProfilePage() {
               </button>
               <button
                 type="button"
-                className={`tab-btn${tab === "closed" ? " active" : ""}`}
-                onClick={() => setTab("closed")}
+                className={`tab-btn${tab === "drafts" ? " active" : ""}`}
+                onClick={() => setTab("drafts")}
               >
-                <span>Closed</span>
+                <span>Drafts</span>
                 <span className="seller-box-sep" aria-hidden="true" />
-                <span className="tab-btn-count">{closedListings.length}</span>
+                <span className="tab-btn-count">{drafts.length}</span>
               </button>
             </div>
 
@@ -446,7 +544,11 @@ export default function SellerProfilePage() {
                         ? l.rejectionReason
                           ? REJECTION_REASON_LABELS[l.rejectionReason]
                           : undefined
-                        : "We'll get back to you within a day"
+                        : l.status === "hidden"
+                          ? "Taken down, under review"
+                          : l.status === "expired"
+                            ? "Expired. Relisting is not built yet."
+                            : "We'll get back to you within a day"
                     }
                     action={
                       l.status === "rejected" ? (
@@ -502,26 +604,22 @@ export default function SellerProfilePage() {
                 </div>
               ))}
 
-            {tab === "closed" &&
-              (closedListings.length > 0 ? (
-                closedListings.map((l) => (
-                  <ListingRow
-                    key={l.id}
-                    listing={l}
-                    note={
-                      l.status === "hidden"
-                        ? "Taken down, under review"
-                        : "Expired. Relisting is not built yet."
-                    }
-                    // No Relist action. A relist needs a new expiry date and
-                    // arguably a fresh review, which is a decision rather than
-                    // a third copy of the sold route. Nothing expires on its
-                    // own yet either, so this tab is empty in practice.
+            {tab === "drafts" &&
+              (drafts.length > 0 ? (
+                drafts.map(({ loaded, coverUrl }) => (
+                  <DraftRow
+                    key={loaded.id}
+                    loaded={loaded}
+                    coverUrl={coverUrl}
+                    onDelete={() => removeDraft(loaded.id)}
                   />
                 ))
               ) : (
                 <div className="empty-state">
-                  <p className="empty-state-heading">Nothing closed</p>
+                  <p className="empty-state-heading">No drafts</p>
+                  <p className="empty-state-body">
+                    A listing you start and don&apos;t post is kept here, on this phone, for a week.
+                  </p>
                 </div>
               ))}
           </>

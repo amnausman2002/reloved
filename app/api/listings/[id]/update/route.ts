@@ -9,7 +9,6 @@ import {
   CONDITION_VALUES,
   MATERIALS,
   CLOTHING_SIZES,
-  SHOE_SIZES,
   MIN_LISTING_PHOTOS,
   MAX_LISTING_PHOTOS,
 } from "@/lib/constants";
@@ -68,7 +67,7 @@ const rejectedPatchSchema = z.object({
   brand: z.enum(BRANDS),
   brandOther: z.string().trim().max(60),
   category: z.enum(CATEGORIES),
-  size: z.enum([...CLOTHING_SIZES, ...SHOE_SIZES]).nullable(),
+  size: z.enum(CLOTHING_SIZES).nullable(),
   condition: z.enum(CONDITION_VALUES),
   isReplica: z.boolean(),
   price: z.string().regex(/^\d+$/),

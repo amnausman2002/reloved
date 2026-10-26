@@ -88,7 +88,7 @@ export type Listing = {
    *  Captured but not editable by the seller: there is no colour field on the
    *  form and no fixed list yet. */
   colour: string | null;
-  /** Null for bags and dupattas, which have no size at all. */
+  /** Null for dupattas, which have no size at all. */
   size: Size | null;
   measurements: string | null;
   /** Not in the PRD's Listing table as agreed yet. Needs Bismah, because
