@@ -20,8 +20,21 @@
 
 import { useRef, useState } from "react";
 import PhotoSlot from "./PhotoSlot";
+import ReadOnlyPhotoSlot from "./ReadOnlyPhotoSlot";
 import type { GridPhoto } from "./PhotoSlot";
 import { MAX_LISTING_PHOTOS } from "@/lib/constants";
+
+/** How much she can do to the grid.
+ *
+ *   "create"       the sell flow: add, remove, pick the cover.
+ *   "appendOnly"   editing a live listing: she can add new photos but existing
+ *                  ones are frozen — no remove, no reorder, no cover change.
+ *                  Matches the "add only, no swapping" rule.
+ *   "full"         editing a rejected listing: same as "create".
+ *
+ *  "appendOnly" needs to know which ids are the frozen ones, so the new photos
+ *  can still be removed before she saves. */
+export type PhotoGridMode = "create" | "appendOnly" | "full";
 
 type Props = {
   photos: GridPhoto[];
@@ -30,6 +43,10 @@ type Props = {
   onAdd: (files: File[]) => void;
   onRemove: (id: string) => void;
   onSetCover: (id: string) => void;
+  mode?: PhotoGridMode;
+  /** The ids that are already saved on the server, in appendOnly mode.
+   *  Everything else in `photos` is a new addition she can still remove. */
+  frozenIds?: ReadonlySet<string>;
 };
 
 export default function PhotoGrid({
@@ -38,6 +55,8 @@ export default function PhotoGrid({
   onAdd,
   onRemove,
   onSetCover,
+  mode = "create",
+  frozenIds,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -56,24 +75,40 @@ export default function PhotoGrid({
   return (
     <div className="photo-grid-wrap">
       <div className="photo-grid">
-        {photos.map((photo, index) => (
-          <PhotoSlot
-            key={photo.id}
-            photo={photo}
-            index={index}
-            isCover={photo.id === coverId}
-            isSelected={photo.id === selectedId}
-            onSelect={() => setSelectedId(photo.id === selectedId ? null : photo.id)}
-            onSetCover={() => {
-              onSetCover(photo.id);
-              setSelectedId(null);
-            }}
-            onRemove={() => {
-              if (photo.id === selectedId) setSelectedId(null);
-              onRemove(photo.id);
-            }}
-          />
-        ))}
+        {photos.map((photo, index) => {
+          // In appendOnly mode, the ones that are already saved are frozen:
+          // read-only tile, no remove, no cover change. Anything she added in
+          // this edit still behaves as a normal grid cell.
+          const isFrozen = mode === "appendOnly" && Boolean(frozenIds?.has(photo.id));
+          if (isFrozen) {
+            return (
+              <ReadOnlyPhotoSlot
+                key={photo.id}
+                photo={photo}
+                index={index}
+                isCover={photo.id === coverId}
+              />
+            );
+          }
+          return (
+            <PhotoSlot
+              key={photo.id}
+              photo={photo}
+              index={index}
+              isCover={photo.id === coverId}
+              isSelected={photo.id === selectedId}
+              onSelect={() => setSelectedId(photo.id === selectedId ? null : photo.id)}
+              onSetCover={() => {
+                onSetCover(photo.id);
+                setSelectedId(null);
+              }}
+              onRemove={() => {
+                if (photo.id === selectedId) setSelectedId(null);
+                onRemove(photo.id);
+              }}
+            />
+          );
+        })}
 
         {Array.from({ length: emptyCount }).map((_, i) => (
           <button

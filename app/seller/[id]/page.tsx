@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import Nav from "@/components/ui/Nav";
@@ -143,6 +143,7 @@ export default function SellerProfilePage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user: authUser, loading: authLoading } = useAuthUser();
 
   /** Whether this is her own profile. Nobody until Firebase has answered:
@@ -215,7 +216,15 @@ export default function SellerProfilePage() {
         ? sellerFromAuth(authUser)
         : undefined;
 
-  const [tab, setTab] = useState<Tab>("live");
+  // The initial tab can come from the URL: EditFlow sends her back here with
+  // ?tab=inReview after she resubmits a rejected listing, so she lands on the
+  // one that now shows what she just saved. Default is "live", same as before.
+  const initialTab = ((): Tab => {
+    const raw = searchParams.get("tab");
+    if (raw === "inReview" || raw === "sold" || raw === "closed") return raw;
+    return "live";
+  })();
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   const listings: ProfileListing[] = mine?.listings ?? [];
 
@@ -370,22 +379,34 @@ export default function SellerProfilePage() {
                     showChip={false}
                     note={`${l.viewCount} views · ${l.contactCount} contacts`}
                     action={
-                      <TextLink
-                        className="listing-row-action-link"
-                        disabled={sellingId === l.id}
-                        onClick={() => move(l.id, "sold")}
-                      >
-                        {sellingId === l.id ? (
-                          <>
-                            <span className="btn-spinner btn-spinner-inline" aria-hidden="true" />
-                            Marking sold...
-                          </>
-                        ) : (
-                          <>
-                            Mark as sold <CheckIcon />
-                          </>
-                        )}
-                      </TextLink>
+                      // Two stacked actions on a live row: Edit, then Mark as
+                      // sold. Both go through TextLink so the row keeps the
+                      // same quiet weight as before, and the destructive
+                      // "sold" one is second, below the softer "edit".
+                      <div className="listing-row-actions">
+                        <TextLink
+                          className="listing-row-action-link"
+                          href={`/sell/${l.id}/edit`}
+                        >
+                          Edit
+                        </TextLink>
+                        <TextLink
+                          className="listing-row-action-link"
+                          disabled={sellingId === l.id}
+                          onClick={() => move(l.id, "sold")}
+                        >
+                          {sellingId === l.id ? (
+                            <>
+                              <span className="btn-spinner btn-spinner-inline" aria-hidden="true" />
+                              Marking sold...
+                            </>
+                          ) : (
+                            <>
+                              Mark as sold <CheckIcon />
+                            </>
+                          )}
+                        </TextLink>
+                      </div>
                     }
                   />
                 ))
@@ -429,7 +450,10 @@ export default function SellerProfilePage() {
                     }
                     action={
                       l.status === "rejected" ? (
-                        <TextLink className="listing-row-action-link" href={`/item/${l.id}`}>
+                        <TextLink
+                          className="listing-row-action-link"
+                          href={`/sell/${l.id}/edit`}
+                        >
                           Make changes
                         </TextLink>
                       ) : undefined
