@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthUser, signOutUser } from "@/lib/useAuthUser";
+import SellChooser, { type SellMode } from "@/components/seller/SellChooser";
 
 const RECENT_SEARCHES_KEY = "reloved_recent_searches";
 const MAX_RECENT = 10;
@@ -104,6 +105,10 @@ export default function Nav({
   onBeforeLeave,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Sell, in the nav or the menu, opens the One item / Many items chooser
+  // rather than going straight to /sell (26 Oct).
+  const [sellOpen, setSellOpen] = useState(false);
+  const closeSell = useCallback(() => setSellOpen(false), []);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -188,6 +193,24 @@ export default function Nav({
     setDrawerOpen(false);
   }
 
+  /** The menu's "Sell an item" opens the same chooser as Sell in the nav. */
+  function handleMenuSell() {
+    setDrawerOpen(false);
+    setSellOpen(true);
+  }
+
+  /** /sell?mode=... skips the sell flow's own "What are you selling?" sheet,
+   *  since she has just answered it. On /sell itself a client navigation would
+   *  only change the query and keep the flow she already has, so that case is
+   *  a full load, behind the same leave check as the rest of the nav. */
+  function handleSellChoice(mode: SellMode) {
+    setSellOpen(false);
+    if (onBeforeLeave && !onBeforeLeave()) return;
+    const href = `/sell?mode=${mode}`;
+    if (window.location.pathname === "/sell") window.location.assign(href);
+    else router.push(href);
+  }
+
   async function handleSignOut() {
     await signOutUser();
     setDrawerOpen(false);
@@ -214,7 +237,17 @@ export default function Nav({
           </Link>
         </div>
         <div className="nav-right">
-          {!hideSell && <Link href="/sell" className="nav-sell">Sell</Link>}
+          {!hideSell && (
+            <button
+              type="button"
+              className="nav-sell"
+              aria-haspopup="dialog"
+              aria-expanded={sellOpen}
+              onClick={() => setSellOpen(true)}
+            >
+              Sell
+            </button>
+          )}
           <button
             type="button"
             className="nav-icon"
@@ -296,9 +329,9 @@ export default function Nav({
                     this menu she might have come here to do; then who she is;
                     then how any of it works. Signed out, the middle row is the
                     two ways into an account. */}
-                <Link href="/sell" className="menu-list-item" onClick={closeAfterNav}>
+                <button type="button" className="menu-list-item" onClick={handleMenuSell}>
                   Sell an item
-                </Link>
+                </button>
 
                 {user ? (
                   <Link
@@ -403,6 +436,7 @@ export default function Nav({
           </div>
         </div>
       )}
+      <SellChooser open={sellOpen} onClose={closeSell} onChoose={handleSellChoice} />
     </>
   );
 }

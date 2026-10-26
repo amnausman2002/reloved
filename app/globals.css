@@ -1449,6 +1449,102 @@ img { max-width: 100%; display: block; }
   color: var(--white);
 }
 
+/* Sell is a button now, not a link: it opens the Sell chooser below. */
+button.nav-sell { border: 0; cursor: pointer; }
+
+/* ── Sell chooser (components/seller/SellChooser.tsx) ──────
+ * NEW 26 Oct, no design in components.html. Flagged for Bismah.
+ * Values chosen by Amna in a prototype: 200ms (--dur-base), ease, page dimmed
+ * 55% and blurred 8px, options rising 8px and arriving bottom first 40ms apart,
+ * the close button turning 90°. 40ms has no token; it is the gap between the
+ * two options, not a duration of its own. */
+.sell-chooser {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  visibility: hidden;
+  pointer-events: none;
+}
+.sell-chooser.is-open { visibility: visible; pointer-events: auto; }
+.sell-chooser-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(45, 45, 45, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+}
+.sell-chooser-options {
+  position: absolute;
+  left: max(var(--space-4), env(safe-area-inset-left, 0px));
+  right: max(var(--space-4), env(safe-area-inset-right, 0px));
+  bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+/* .btn-secondary, changed in three ways: fits its label rather than 100%,
+ * filled white because transparent vanishes over the dimmed page, and an icon
+ * before the label. Square corners, as the design system has them. */
+.btn-secondary.sell-chooser-option {
+  width: auto;
+  min-height: 52px;
+  gap: var(--space-3);
+  background: var(--white);
+  opacity: 0;
+  transform: translateY(8px);
+}
+.sell-chooser-option svg { height: 22px; width: auto; flex: none; }
+
+/* NEW: a floating round button. There is none in the design system; built
+ * from its tokens. Phosphor X, white on --text-primary. */
+.fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--text-primary);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.45);
+}
+.fab svg { width: 24px; height: 24px; }
+.sell-chooser-close {
+  position: absolute;
+  left: 50%;
+  bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  margin-left: -28px;
+  opacity: 0;
+  transform: scale(0.6) rotate(-90deg);
+}
+
+.sell-chooser.is-open .sell-chooser-scrim { opacity: 1; }
+.sell-chooser.is-open .sell-chooser-option { opacity: 1; transform: translateY(0); }
+.sell-chooser.is-open .sell-chooser-close { opacity: 1; transform: scale(1) rotate(0deg); }
+
+/* Motion only when she has not asked for less, per design-system.md. Opening,
+ * Many items (the lower one) leads and One item follows 40ms later; closing
+ * runs the other way round. Visibility waits for the last option to leave. */
+@media (prefers-reduced-motion: no-preference) {
+  .sell-chooser { transition: visibility 0s linear calc(var(--dur-base) + 40ms); }
+  .sell-chooser.is-open { transition: visibility 0s; }
+  .sell-chooser-scrim { transition: opacity var(--dur-base) var(--ease); }
+  .sell-chooser-close { transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease); }
+  .btn-secondary.sell-chooser-option {
+    transition:
+      opacity var(--dur-base) var(--ease) var(--chooser-delay, 0ms),
+      transform var(--dur-base) var(--ease) var(--chooser-delay, 0ms),
+      border-color var(--dur-fast) var(--ease);
+  }
+  .sell-chooser-option:last-child { --chooser-delay: 40ms; }
+  .sell-chooser.is-open .sell-chooser-option:last-child { --chooser-delay: 0ms; }
+  .sell-chooser.is-open .sell-chooser-option:first-child { --chooser-delay: 40ms; }
+}
+
 /* ── Search bar (components.html section 8) ────────────── */
 .search-ai {
   position: relative;

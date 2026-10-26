@@ -131,6 +131,10 @@ export default function SellFlow() {
   // from the Drafts tab. `draftReady` holds off saving until that is settled.
   const draftIdRef = useRef(newDraftId());
   const resumeIdRef = useRef<string | null | undefined>(undefined);
+  // ?mode=single or ?mode=bulk: she already chose in the nav's Sell chooser,
+  // so the "What are you selling?" sheet is not asked again. Kept in a ref for
+  // the same double-mount reason as resumeIdRef.
+  const modeParamRef = useRef<string | null | undefined>(undefined);
   const [draftReady, setDraftReady] = useState(false);
   const [draftWorks, setDraftWorks] = useState(false);
   const [bulkDraft, setBulkDraft] = useState<LoadedDraft | null>(null);
@@ -171,10 +175,14 @@ export default function SellFlow() {
     // Read once and kept in a ref, because the address is tidied straight
     // after and React's development double mount would otherwise find it gone.
     if (resumeIdRef.current === undefined) {
-      resumeIdRef.current = new URLSearchParams(window.location.search).get("resume");
-      if (resumeIdRef.current) window.history.replaceState(null, "", "/sell");
+      const params = new URLSearchParams(window.location.search);
+      resumeIdRef.current = params.get("resume");
+      modeParamRef.current = params.get("mode");
+      if (resumeIdRef.current || modeParamRef.current) window.history.replaceState(null, "", "/sell");
     }
     const resumeId = resumeIdRef.current;
+    if (modeParamRef.current === "single") setMode("single");
+    if (modeParamRef.current === "bulk") setMode("bulk");
     void Promise.all([draftsWork(), resumeId ? loadDraft(resumeId) : Promise.resolve(null)]).then(
       ([works, loaded]) => {
         if (!live) return;

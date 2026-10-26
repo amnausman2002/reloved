@@ -283,6 +283,19 @@ is the code. Do not assume a file exists because it is described somewhere else 
 - App Check, per-user AI limits, budget alerts (M6)
 - The colour list, `city_other`, `eval/items.csv`
 
+### Added 26 October: the Sell chooser
+
+**Sell in the nav and "Sell an item" in the menu open a chooser**
+(`components/seller/SellChooser.tsx`) instead of going straight to `/sell`: the
+page dims 55% and blurs 8px, "One item" and "Many items" rise from the bottom
+(Many items first, 40ms apart, 8px, 200ms ease), and a round close button with
+the Phosphor X turns 90° into place. Escape, the X or the dimmed page close it.
+The choice goes to `/sell?mode=single` or `/sell?mode=bulk`, which skips the
+flow's own "What are you selling?" sheet; plain `/sell` (the homepage buttons)
+still asks. Values were tuned by Amna in a standalone prototype. No design in
+`components.html`: the options are `SecondaryButton` filled white and sized to
+their label, and `.fab` is new to the design system. Flagged for Bismah.
+
 ### Added 21 October: sell drafts, and logging in from Sell
 
 **The sell flow saves itself on the phone** (`app/sell/draft.ts`, IndexedDB,
