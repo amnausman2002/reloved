@@ -3524,3 +3524,105 @@ img { max-width: 100%; display: block; }
   text-underline-offset: 2px;
   cursor: pointer;
 }
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* Edit listing flow (app/sell/[id]/edit)                                   */
+/* NEW. No design in components.html for this screen — flagged for Bismah.  */
+/* Everything here reuses existing patterns:                                */
+/*   .rejection-banner       the same calm-border-and-surface shape as      */
+/*                           .sell-form-notice, in the rejected colour so   */
+/*                           it reads as "attention" without shouting.      */
+/*   .locked-field           the same block layout as .sell-form sections,  */
+/*                           with a plain value where the input would be    */
+/*                           and the "contact us" line beneath.             */
+/*   .summary-field          pending view only. One label, one value.       */
+/*   .listing-row-actions    stacks Edit above Mark as sold on the owner    */
+/*                           profile's live rows.                           */
+
+.sell-sub-tight { margin-top: 0; }
+
+/* Pink surface + rejected border, warm enough to notice, not loud enough
+ * to feel like a bug. Same radius and padding as .sell-form-notice. */
+.rejection-banner {
+  background: color-mix(in oklch, var(--status-rejected) 6%, var(--surface));
+  border: 1px solid color-mix(in oklch, var(--status-rejected) 40%, var(--border));
+  border-radius: var(--radius-sm);
+  padding: var(--space-4) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.rejection-banner-heading {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--size-body);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+.rejection-banner-reason {
+  font-size: var(--size-body-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+.rejection-banner-reason strong { font-weight: 600; }
+.rejection-banner-body {
+  font-size: var(--size-body-sm);
+  color: var(--text-secondary);
+  line-height: var(--lh-body-sm);
+}
+
+/* Live-edit summary of fields she can't change here. The value sits where the
+ * input would, so the form reads at the same rhythm; the note underneath is
+ * the only thing that marks it as read-only. */
+.locked-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.locked-field-value {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: var(--size-body);
+  color: var(--text-primary);
+}
+.locked-field-note {
+  font-size: var(--size-meta);
+  color: var(--text-tertiary);
+}
+
+/* The pending-only summary view. Looser spacing than a form, because nothing
+ * is tappable here and the eye needs to be told that. */
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+}
+.summary-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.summary-field-value {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: var(--size-body);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+/* Two stacked actions on a live-listing row: Edit above Mark as sold. The
+ * single-action rows (In review, Sold) are unaffected: .listing-row-action
+ * still wraps them without this. */
+.listing-row-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+/* A locked photo in appendOnly mode: existing live-listing photos she cannot
+ * remove. No cursor, no hover change, no border on the inner slot — the only
+ * difference from a normal filled slot is that nothing responds to the tap. */
+.photo-slot.is-locked {
+  cursor: default;
+}
+.photo-slot.is-locked:hover { border-color: var(--border); }
