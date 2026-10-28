@@ -52,7 +52,7 @@ export default function HeroWaitlistForm({ onOpenChange }: Props) {
   if (form.savedIntent) return <WaitlistSuccess intent={form.savedIntent} onDark />;
 
   return (
-    <form ref={formRef} className={styles.lineForm} onSubmit={form.onSubmit} onBlur={onBlur} noValidate>
+    <form ref={formRef} className={styles.lineFormOuter} onSubmit={form.onSubmit} onBlur={onBlur} noValidate>
       <div>
         <div className={[styles.lineField, form.emailError && styles.lineFieldError].filter(Boolean).join(" ")}>
           <input
@@ -84,7 +84,7 @@ export default function HeroWaitlistForm({ onOpenChange }: Props) {
 
       <div className={[styles.expand, open && styles.expandOpen].filter(Boolean).join(" ")} inert={!open}>
         <div className={styles.expandClip}>
-          <div className={styles.lineForm}>
+          <div className={`${styles.lineForm} ${styles.expandBody}`}>
             <div>
               <div className={[styles.lineField, form.phoneError && styles.lineFieldError].filter(Boolean).join(" ")}>
                 <span className={styles.linePrefix} aria-hidden="true">

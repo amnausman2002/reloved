@@ -230,13 +230,26 @@
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  /* Cancels the form's gap while closed. */
-  margin-top: calc(-1 * var(--space-4));
 }
 .expandOpen {
   grid-template-rows: 1fr;
   opacity: 1;
-  margin-top: 0;
+}
+/* The space above the folded fields lives inside the fold, so it closes with
+ * them rather than needing a margin animated alongside. */
+.expandBody {
+  padding-top: var(--space-4);
+}
+/* The hero form's outer column: no gap, for the same reason. */
+.lineFormOuter {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+@media (min-width: 1024px) {
+  .lineFormOuter { max-width: 480px; }
 }
 .expandClip {
   min-height: 0;
@@ -248,7 +261,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .expand {
-    transition: grid-template-rows 0.5s ease, opacity 0.5s ease, margin-top 0.5s ease;
+    transition: grid-template-rows 0.5s ease, opacity 0.5s ease;
   }
 }
 
