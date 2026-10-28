@@ -6,9 +6,8 @@ import styles from "../waitlist.module.css";
 
 // The homepage's mission paragraph (app/_components/QuoteSection.tsx), but
 // revealed by scrolling instead of on a timer: each word fades from faint to
-// full as she scrolls the paragraph up the screen, and fades back if she
-// scrolls up. The text is never invisible, so there is no blank gap while
-// it plays.
+// full as she scrolls the paragraph up the screen, and stays full after. The
+// text is never invisible, so there is no blank gap while it plays.
 //
 // Scroll only updates one number, --p, on the paragraph. Each word works out
 // its own opacity from that and its position in CSS (see .quoteWord).
@@ -51,6 +50,9 @@ export default function WaitlistQuote() {
     }
 
     let frame = 0;
+    // Only ever goes up: scrolling back never fades a word that has already
+    // filled in. A reload starts it again.
+    let furthest = 0;
     function update() {
       frame = 0;
       if (!el) return;
@@ -59,7 +61,13 @@ export default function WaitlistQuote() {
       const travelled = vh * START - rect.top;
       const distance = vh * (START - END) + rect.height;
       const progress = Math.min(1, Math.max(0, travelled / distance));
+      if (progress <= furthest) return;
+      furthest = progress;
       el.style.setProperty("--p", progress.toFixed(4));
+      if (furthest === 1) {
+        window.removeEventListener("scroll", onScroll);
+        window.removeEventListener("resize", onScroll);
+      }
     }
     function onScroll() {
       if (!frame) frame = requestAnimationFrame(update);

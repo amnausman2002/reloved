@@ -13,7 +13,7 @@ import styles from "../waitlist.module.css";
 
 // What replaces either form once she has joined. Focused when it appears, so
 // a screen reader reads it out.
-export default function WaitlistSuccess({ intent, onDark = false }: { intent: Intent; onDark?: boolean }) {
+export default function WaitlistSuccess({ intent }: { intent: Intent }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function WaitlistSuccess({ intent, onDark = false }: { intent: In
       ref={ref}
       tabIndex={-1}
       role="status"
-      className={[styles.success, onDark && styles.onDark].filter(Boolean).join(" ")}
+      className={styles.success}
     >
       <p className={styles.successHeading}>You&rsquo;re in! We&rsquo;ll email you the moment we launch.</p>
 

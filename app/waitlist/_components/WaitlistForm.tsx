@@ -1,7 +1,6 @@
 "use client";
 
 import { useId } from "react";
-import PrimaryButton from "@/components/ui/PrimaryButton";
 import { DIAL_CODE, formatNational } from "@/app/sell/account";
 import { INTENTS, INTENT_LABELS } from "../validation";
 import { useWaitlistForm } from "../useWaitlistForm";
@@ -9,15 +8,15 @@ import WaitlistSuccess from "./WaitlistSuccess";
 import Honeypot from "./Honeypot";
 import styles from "../waitlist.module.css";
 
-// The waitlist form, at the end of the page over the darkened video.
-// Deliberately outside the design system: bare underlined lines, no boxes or
-// fills, white text.
+// The waitlist form, in the frosted panel at the end of the page. Styled after
+// kindredofireland.com's newsletter sign-up rather than the design system:
+// bare underlined lines, small spaced capitals, and a text-only submit.
 export default function WaitlistForm() {
   const form = useWaitlistForm("bottom");
   const phoneId = useId();
   const emailErrorId = useId();
 
-  if (form.savedIntent) return <WaitlistSuccess intent={form.savedIntent} onDark />;
+  if (form.savedIntent) return <WaitlistSuccess intent={form.savedIntent} />;
 
   return (
     <form className={styles.lineForm} onSubmit={form.onSubmit} noValidate>
@@ -30,7 +29,7 @@ export default function WaitlistForm() {
             autoComplete="email"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder="your email"
+            placeholder="Email"
             aria-label="Your email"
             aria-invalid={form.emailError ? true : undefined}
             aria-describedby={form.emailError ? emailErrorId : undefined}
@@ -106,15 +105,16 @@ export default function WaitlistForm() {
         </p>
       )}
 
-      <PrimaryButton
-        type="submit"
-        className={styles.lineSubmit}
-        disabled={!form.valid}
-        loading={form.saving}
-        loadingLabel="Saving your spot..."
-      >
-        Join the waitlist
-      </PrimaryButton>
+      <div className={styles.lineSubmitRow}>
+        <button
+          type="submit"
+          className={styles.lineSubmit}
+          disabled={!form.valid || form.saving}
+          aria-busy={form.saving || undefined}
+        >
+          {form.saving ? "Saving your spot..." : "Join the waitlist"}
+        </button>
+      </div>
     </form>
   );
 }

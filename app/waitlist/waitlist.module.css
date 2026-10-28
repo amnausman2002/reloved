@@ -35,17 +35,13 @@
   object-fit: cover;
 }
 
-/* An even wash over the video: light behind the hero, deep behind the form
- * at the end of the page so the fields read clearly. The colour is the
- * homepage closing section's overlay colour. */
+/* A light, even wash over the video. The colour is the homepage closing
+ * section's overlay colour. */
 .heroShade {
   position: absolute;
   inset: 0;
   background: rgb(10, 10, 8);
   opacity: 0.25;
-}
-.heroShadeDeep {
-  opacity: 0.8;
 }
 
 .heroInner {
@@ -91,10 +87,11 @@
   .heroButton { max-width: 480px; }
 }
 
-/* ─── Waitlist form: bare lines on the video ──────────── */
+/* ─── Waitlist form: lines in the frosted panel ───────── */
 
-/* OFF-SYSTEM, at Bismah's request (28 Oct): underlines only, no boxes or
- * fills, white on the darkened video. */
+/* OFF-SYSTEM, at Bismah's request (28 Oct), after kindredofireland.com's
+ * newsletter sign-up: one dark underline per field, labels in small spaced
+ * capitals, no boxes or fills, and a text-only submit. */
 .lineForm {
   width: 100%;
   display: flex;
@@ -103,20 +100,15 @@
   text-align: left;
 }
 
-@media (min-width: 1024px) {
-  .lineForm { max-width: 480px; }
-}
-
 .lineField {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid var(--text-primary);
 }
-/* The line thickens and brightens on focus, which is the focus mark here. */
+/* The line doubles in weight on focus, which is the focus mark here. */
 .lineField:focus-within {
-  border-bottom-color: var(--white);
-  box-shadow: 0 1px 0 0 var(--white);
+  box-shadow: 0 1px 0 0 var(--text-primary);
 }
 .lineFieldError,
 .lineFieldError:focus-within {
@@ -133,25 +125,29 @@
   border: none;
   border-radius: 0;
   outline: none;
-  color: var(--white);
-  caret-color: var(--white);
+  color: var(--text-primary);
   font-family: var(--font-body);
   /* 16px, so iPhone does not zoom the page when the field is tapped. */
   font-size: var(--size-body);
 }
+/* The capitals are only for the label. What she types stays as typed. */
 .lineInput::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-caption);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
-/* Browser autofill paints its own background; keep the text white and the
- * line bare. */
+/* Browser autofill paints its own background; keep the line bare. */
 .lineInput:-webkit-autofill {
-  -webkit-text-fill-color: var(--white);
+  -webkit-text-fill-color: var(--text-primary);
   transition: background-color 9999s ease 0s;
 }
 
 .linePrefix {
   font-size: var(--size-body);
-  color: var(--white);
+  color: var(--text-primary);
 }
 
 .lineHint,
@@ -159,23 +155,33 @@
   margin-top: var(--space-1);
   font-size: var(--size-caption);
   line-height: var(--lh-caption);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 .lineError {
-  color: var(--white);
+  color: var(--status-rejected);
 }
 
-/* Buy / Sell / Both as words on the line, the chosen one underlined. */
+/* Small spaced capitals, shared by the "I want to" row and the submit. */
+.lineChoicesLabel,
+.lineChoice,
+.lineSubmit {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-caption);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Buy / Sell / Both along the line, the chosen one underlined. */
 .lineChoices {
   display: flex;
   align-items: center;
   gap: var(--space-5);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid var(--text-primary);
 }
 .lineChoicesLabel {
   margin-right: auto;
-  font-size: var(--size-body);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-primary);
 }
 .lineChoice {
   min-height: 48px;
@@ -183,47 +189,44 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-family: var(--font-body);
-  font-size: var(--size-body);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   text-underline-offset: 5px;
 }
 .lineChoice:hover {
-  color: var(--white);
+  color: var(--text-primary);
 }
-.lineChoice:focus-visible {
-  outline: 2px solid var(--white);
+.lineChoice:focus-visible,
+.lineSubmit:focus-visible {
+  outline: 2px solid var(--text-primary);
   outline-offset: 2px;
 }
 .lineChoiceActive {
-  color: var(--white);
+  color: var(--text-primary);
   text-decoration: underline;
 }
 
-/* The homepage hero's outlined button (page.module.css .heroCta) in place of
- * the design system's filled one. */
-.lineSubmit:global(.btn-primary) {
-  margin-top: var(--space-2);
+/* Like Kindred's "Subscribe": text on the right, no box. */
+.lineSubmitRow {
+  display: flex;
+  justify-content: flex-end;
+}
+.lineSubmit {
   min-height: 48px;
-  background: transparent;
-  border-color: var(--white);
-  color: var(--white);
-}
-.lineSubmit:global(.btn-primary):hover {
-  background: var(--white);
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
   color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 5px;
 }
-.lineSubmit:global(.btn-primary):disabled {
-  opacity: 0.5;
+.lineSubmit:disabled {
+  color: var(--text-tertiary);
+  text-decoration: none;
+  cursor: not-allowed;
 }
-.lineSubmit:global(.btn-primary):disabled:hover {
-  background: transparent;
-  color: var(--white);
-  border-color: var(--white);
-}
-.lineSubmit:global(.btn-primary):focus-visible {
-  outline: 2px solid var(--white);
-  outline-offset: 2px;
+.lineSubmit[aria-busy="true"] {
+  cursor: wait;
 }
 
 /* ─── Quote: revealed by scrolling ────────────────────── */
@@ -368,78 +371,101 @@ div.tickerBand {
   text-underline-offset: 3px;
 }
 
-/* In the hero, over the darkened video. */
-.onDark .successHeading,
-.onDark .successText,
-.onDark .successLink {
-  color: var(--white);
+/* ─── The end of the page: photo, frosted panel, links ─── */
+
+/* After kindredofireland.com's footer. The section is the photo; the panel
+ * sits at its foot and is sticky to the bottom of the screen, so from the
+ * moment the section comes in, the panel is pinned there and the photo is
+ * uncovered above it as she scrolls. Only at the very end is all of it in
+ * view.
+ *
+ * Taller than the screen on purpose: the panel can only stay pinned while
+ * there is section left to scroll past, and Kindred's is about a screen and
+ * a bit too. A "Join the waitlist" button scrolls to it and simply stops at
+ * the end of the page, which is the view with the photo in full. */
+.joinSection {
+  position: relative;
+  min-height: calc(100svh + var(--space-8));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--space-4);
+  background: var(--surface);
 }
-.onDark :global(.btn-whatsapp) {
-  background: transparent;
-  border-color: var(--white);
-  color: var(--white);
+
+@media (min-width: 640px) {
+  .joinSection { padding-left: 24px; padding-right: 24px; }
 }
-.onDark :global(.btn-whatsapp):hover {
-  background: var(--white);
+
+@media (min-width: 1024px) {
+  .joinSection { padding-left: 40px; padding-right: 40px; }
+}
+
+.joinImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .joinImage {
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+  .joinImage.joinImageIn {
+    opacity: 1;
+  }
+}
+
+/* Kindred's panel: 80% white with a 10px blur over the photo. */
+.joinPanel {
+  position: sticky;
+  bottom: var(--space-4);
+  width: 100%;
+  max-width: 560px;
+  padding: var(--space-6) var(--space-5) var(--space-5);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.joinHeading {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 28px;
+  line-height: var(--lh-h2);
+  font-variation-settings: "opsz" 144;
   color: var(--text-primary);
 }
-.onDark :global(.btn-whatsapp):focus-visible {
-  outline: 2px solid var(--white);
-  outline-offset: 2px;
-}
-
-/* ─── The form section at the end of the page ──────────── */
-
-/* Shares the hero's classes (video, shade, bottom-left column). Here it is
- * not pulled up under the nav, and it is one nav-height shorter than the
- * screen so all of it is visible when a button scrolls her here. */
-.hero.joinSection {
-  margin-top: 0;
-  min-height: calc(100svh - var(--nav-height));
-  padding-top: var(--space-8);
-  scroll-margin-top: var(--nav-height);
-}
-
 /* Focused when a button brings her here, so a screen reader announces where
  * she landed. No ring for a tap, since a heading is not something to press. */
 .joinHeading:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* ─── Footer ───────────────────────────────────────────── */
+.joinSub {
+  margin: var(--space-2) 0 var(--space-4);
+  font-size: var(--size-body-sm);
+  line-height: var(--lh-body-sm);
+  color: var(--text-primary);
+}
 
-.footer {
+.joinLinks {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-5) var(--space-4);
-  border-top: 1px solid var(--border);
-  background: var(--canvas);
+  flex-wrap: wrap;
+  gap: 0 var(--space-6);
+  margin-top: var(--space-6);
 }
-
-@media (min-width: 640px) {
-  .footer {
-    flex-direction: row;
-    justify-content: center;
-    gap: var(--space-6);
-  }
-}
-
-.footerLink {
+.joinLink {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   font-size: var(--size-body-sm);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   text-decoration: none;
 }
-.footerLink:hover {
-  color: var(--text-primary);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .footerLink {
-    transition: color var(--dur-fast) var(--ease);
-  }
+.joinLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
