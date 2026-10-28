@@ -2,13 +2,12 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import styles from "@/app/_components/BuySellToggle.module.css";
-import homeStyles from "@/app/page.module.css";
 import waitlistStyles from "../waitlist.module.css";
 
 // A copy of the homepage's Buy / Sell toggle (app/_components/BuySellToggle.tsx),
 // kept separate so the homepage file is untouched. Same CSS module, so the two
-// look identical below the switch. Differences: a "How it works" heading with
-// Buy / Sell as text links in place of the segmented control, and no "List
+// look identical below the switch. Differences: Buy / Sell as Fraunces text
+// links in place of the segmented control, and no "List
 // your first item" link under Sell, since this page has no way into the app.
 
 const BUY_BENEFITS = [
@@ -78,18 +77,11 @@ export default function WaitlistBuySellToggle() {
   const count = tab === "buy" ? BUY_BENEFITS.length : SELL_BENEFITS.length;
 
   return (
-    <section className={styles.wrapper} aria-labelledby={`${id}-heading`}>
-      {/* The heading scrolls away; the Buy / Sell row below it stays pinned
-          under the nav, so the switch is always in reach. */}
-      <div className={waitlistStyles.howHeader}>
-        <h2 id={`${id}-heading`} className={homeStyles.sectionHeading}>
-          How it works
-        </h2>
-      </div>
-
+    <section className={styles.wrapper} aria-label="How it works">
+      {/* Pinned under the nav, so the switch is always in reach. */}
       <div className={styles.stickyHeader}>
         <div className={styles.stickyInner}>
-          <div className={waitlistStyles.howTabs} role="tablist" aria-labelledby={`${id}-heading`}>
+          <div className={waitlistStyles.howTabs} role="tablist" aria-label="How it works">
             {(["buy", "sell"] as const).map((value, i) => (
               <span key={value} className={waitlistStyles.howTabItem}>
                 {i > 0 && (
