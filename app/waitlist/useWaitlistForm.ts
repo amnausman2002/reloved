@@ -26,7 +26,10 @@ export function useWaitlistForm() {
   const [phone, setPhoneRaw] = useState("");
   const [intent, setIntent] = useState<Intent | null>(null);
   const [company, setCompany] = useState("");
-  const [touched, setTouched] = useState({ email: false, phone: false });
+  // Errors are only ever set when she leaves a field, and cleared the moment
+  // she types in it again, so nothing is flagged while she is still typing.
+  const [shownEmailError, setShownEmailError] = useState<string | null>(null);
+  const [shownPhoneError, setShownPhoneError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [savedIntent, setSavedIntent] = useState<Intent | null>(null);
@@ -91,24 +94,32 @@ export function useWaitlistForm() {
 
   return {
     email,
-    setEmail,
+    setEmail: (value: string) => {
+      setEmail(value);
+      setShownEmailError(null);
+    },
     country,
-    /** A new country re-reads the digits already typed under its own rules. */
+    /** A new country re-reads the digits already typed under its own rules;
+     *  any error waits until she leaves the number field again. */
     setCountry: (next: Country) => {
       setCountry(next);
       setPhoneRaw((current) => nationalDigits(current, next.code));
+      setShownPhoneError(null);
     },
     phone,
     /** Takes the field as typed and keeps only the national digits. */
-    setPhone: (value: string) => setPhoneRaw(nationalDigits(value, country.code)),
+    setPhone: (value: string) => {
+      setPhoneRaw(nationalDigits(value, country.code));
+      setShownPhoneError(null);
+    },
     intent,
     setIntent,
     company,
     setCompany,
-    touchEmail: () => setTouched((t) => ({ ...t, email: true })),
-    touchPhone: () => setTouched((t) => ({ ...t, phone: true })),
-    emailError: touched.email ? emailError(email) : null,
-    phoneError: touched.phone ? phoneError(phone, country.code) : null,
+    touchEmail: () => setShownEmailError(emailError(email)),
+    touchPhone: () => setShownPhoneError(phoneError(phone, country.code)),
+    emailError: shownEmailError,
+    phoneError: shownPhoneError,
     valid,
     saving,
     submitError,

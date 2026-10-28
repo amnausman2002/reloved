@@ -106,7 +106,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 /* The line brightens and doubles in weight on focus: the focus mark here. */
 .lineField:focus-within {

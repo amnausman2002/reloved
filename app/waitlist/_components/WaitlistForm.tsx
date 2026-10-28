@@ -80,7 +80,11 @@ export default function WaitlistForm() {
             value={form.country.code === "92" ? formatNational(form.phone) : form.phone}
             onFocus={form.onFieldFocus}
             onChange={(event) => form.setPhone(event.target.value)}
-            onBlur={form.touchPhone}
+            onBlur={(event) => {
+              // Going to the country code is still working on the number.
+              const line = event.currentTarget.parentElement;
+              if (!line?.contains(event.relatedTarget as Node | null)) form.touchPhone();
+            }}
           />
         </div>
         <p className={styles.lineHint} id={`${phoneId}-hint`}>
