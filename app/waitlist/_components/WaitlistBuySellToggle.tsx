@@ -2,11 +2,14 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import styles from "@/app/_components/BuySellToggle.module.css";
+import homeStyles from "@/app/page.module.css";
+import waitlistStyles from "../waitlist.module.css";
 
 // A copy of the homepage's Buy / Sell toggle (app/_components/BuySellToggle.tsx),
 // kept separate so the homepage file is untouched. Same CSS module, so the two
-// look identical. The one difference: no "List your first item" link under
-// Sell, since this page has no way into the app.
+// look identical below the switch. Differences: a "How it works" heading with
+// Buy / Sell as text links in place of the segmented control, and no "List
+// your first item" link under Sell, since this page has no way into the app.
 
 const BUY_BENEFITS = [
   {
@@ -75,24 +78,40 @@ export default function WaitlistBuySellToggle() {
   const count = tab === "buy" ? BUY_BENEFITS.length : SELL_BENEFITS.length;
 
   return (
-    <section className={styles.wrapper}>
+    <section className={styles.wrapper} aria-labelledby={`${id}-heading`}>
+      {/* The heading scrolls away; the Buy / Sell row below it stays pinned
+          under the nav, so the switch is always in reach. */}
+      <div className={waitlistStyles.howHeader}>
+        <h2 id={`${id}-heading`} className={homeStyles.sectionHeading}>
+          How it works
+        </h2>
+      </div>
+
       <div className={styles.stickyHeader}>
         <div className={styles.stickyInner}>
-          <div className={styles.tabList} role="tablist">
-            {(["buy", "sell"] as const).map((value) => (
-              <button
-                key={value}
-                role="tab"
-                aria-selected={tab === value}
-                aria-controls={`${id}-panel`}
-                className={[styles.tabBtn, tab === value ? styles.tabBtnActive : ""].filter(Boolean).join(" ")}
-                onClick={() => {
-                  setTab(value);
-                  setActiveIndex(0);
-                }}
-              >
-                {value === "buy" ? "Buy" : "Sell"}
-              </button>
+          <div className={waitlistStyles.howTabs} role="tablist" aria-labelledby={`${id}-heading`}>
+            {(["buy", "sell"] as const).map((value, i) => (
+              <span key={value} className={waitlistStyles.howTabItem}>
+                {i > 0 && (
+                  <span className={waitlistStyles.howTabSep} aria-hidden="true">
+                    /
+                  </span>
+                )}
+                <button
+                  role="tab"
+                  aria-selected={tab === value}
+                  aria-controls={`${id}-panel`}
+                  className={[waitlistStyles.howTab, tab === value ? waitlistStyles.howTabActive : ""]
+                    .filter(Boolean)
+                    .join(" ")}
+                  onClick={() => {
+                    setTab(value);
+                    setActiveIndex(0);
+                  }}
+                >
+                  {value === "buy" ? "Buy" : "Sell"}
+                </button>
+              </span>
             ))}
           </div>
 

@@ -19,6 +19,64 @@
   text-align: center;
 }
 
+/* ─── How it works: heading and Buy / Sell switch ─────── */
+
+/* Lines up with the sticky row below it (BuySellToggle.module.css's
+ * .stickyInner: 600px, centred, 16px gutters). */
+.howHeader {
+  max-width: calc(600px + 2 * var(--space-4));
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.howTabs {
+  display: flex;
+  align-items: center;
+}
+
+.howTabItem {
+  display: inline-flex;
+  align-items: center;
+}
+
+.howTabSep {
+  padding: 0 var(--space-2);
+  font-size: var(--size-body);
+  color: var(--text-tertiary);
+}
+
+/* Text links: the chosen side is dark and underlined, the other quiet. */
+.howTab {
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-body);
+  color: var(--text-secondary);
+  text-decoration: none;
+  text-underline-offset: 4px;
+}
+.howTab:hover {
+  color: var(--text-primary);
+}
+.howTab:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+.howTabActive {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .howTab {
+    transition: color var(--dur-fast) var(--ease);
+  }
+}
+
 /* ─── Form ─────────────────────────────────────────────── */
 
 .form {

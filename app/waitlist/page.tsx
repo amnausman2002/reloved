@@ -22,11 +22,11 @@ export default function WaitlistPage() {
         <WaitlistHero />
 
         <div className={homeStyles.pageScroll}>
-          <WaitlistBuySellToggle />
-
           {/* The mission paragraph: the homepage's own component, with the
               same letter-by-letter reveal. */}
           <QuoteSection />
+
+          <WaitlistBuySellToggle />
 
           <section id={JOIN_SECTION_ID} className={`${homeStyles.section} ${styles.joinSection}`}>
             <div className={styles.joinInner}>
