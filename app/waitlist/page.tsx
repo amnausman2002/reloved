@@ -1,4 +1,5 @@
 import homeStyles from "@/app/page.module.css";
+import HeroVideo from "./_components/HeroVideo";
 import WaitlistNav from "./_components/WaitlistNav";
 import WaitlistHero from "./_components/WaitlistHero";
 import WaitlistQuote from "./_components/WaitlistQuote";
@@ -28,12 +29,20 @@ export default function WaitlistPage() {
 
           <WaitlistBuySellToggle />
 
-          <section id={JOIN_SECTION_ID} className={`${homeStyles.section} ${styles.joinSection}`}>
-            <div className={styles.joinInner}>
-              <h2 id={JOIN_HEADING_ID} tabIndex={-1} className={`text-h1 ${styles.joinHeading}`}>
-                Get in early.
-              </h2>
-              <p className={styles.joinSub}>Be first to shop, or be one of our founding sellers.</p>
+          {/* The form, over the same video as the hero but darkened, so it
+              reads as the page's other bookend. Where both "Join the
+              waitlist" buttons bring her. */}
+          <section id={JOIN_SECTION_ID} className={`${styles.hero} ${styles.joinSection}`}>
+            <HeroVideo className={styles.heroVideo} lazy />
+            <div className={`${styles.heroShade} ${styles.heroShadeDeep}`} aria-hidden="true" />
+
+            <div className={styles.heroInner}>
+              <div className={styles.heroIntro}>
+                <h2 id={JOIN_HEADING_ID} tabIndex={-1} className={`${styles.heroTitle} ${styles.joinHeading}`}>
+                  Get in early.
+                </h2>
+                <p className={styles.heroSub}>Be first to shop, or be one of our founding sellers.</p>
+              </div>
               <WaitlistForm />
             </div>
           </section>

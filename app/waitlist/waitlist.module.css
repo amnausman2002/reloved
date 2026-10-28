@@ -35,9 +35,9 @@
   object-fit: cover;
 }
 
-/* An even wash over the video: light at rest, deep while the form is open so
- * the fields read clearly. The colour is the homepage closing section's
- * overlay colour. */
+/* An even wash over the video: light behind the hero, deep behind the form
+ * at the end of the page so the fields read clearly. The colour is the
+ * homepage closing section's overlay colour. */
 .heroShade {
   position: absolute;
   inset: 0;
@@ -46,12 +46,6 @@
 }
 .heroShadeDeep {
   opacity: 0.8;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .heroShade {
-    transition: opacity 0.5s ease;
-  }
 }
 
 .heroInner {
@@ -87,11 +81,20 @@
   color: var(--white);
 }
 
-/* ─── Hero form: bare lines on the video ──────────────── */
+/* The homepage's outlined hero button, stretched to the column. */
+.heroButton {
+  width: 100%;
+  min-height: 48px;
+}
+
+@media (min-width: 1024px) {
+  .heroButton { max-width: 480px; }
+}
+
+/* ─── Waitlist form: bare lines on the video ──────────── */
 
 /* OFF-SYSTEM, at Bismah's request (28 Oct): underlines only, no boxes or
- * fills, white on the darkened video. The bottom form keeps the design
- * system's fields. */
+ * fills, white on the darkened video. */
 .lineForm {
   width: 100%;
   display: flex;
@@ -223,48 +226,6 @@
   outline-offset: 2px;
 }
 
-/* The rest of the form, folded away until she taps into the email. Growing
- * the grid row from 0fr to 1fr opens it to its real height, and because the
- * hero is bottom-aligned, that is what lifts the heading. */
-.expand {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-}
-.expandOpen {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-/* The space above the folded fields lives inside the fold, so it closes with
- * them rather than needing a margin animated alongside. */
-.expandBody {
-  padding-top: var(--space-4);
-}
-/* The hero form's outer column: no gap, for the same reason. */
-.lineFormOuter {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-}
-
-@media (min-width: 1024px) {
-  .lineFormOuter { max-width: 480px; }
-}
-.expandClip {
-  min-height: 0;
-  overflow: hidden;
-  /* Room for focus rings, which the clip would otherwise cut off. */
-  padding: 4px;
-  margin: -4px;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .expand {
-    transition: grid-template-rows 0.5s ease, opacity 0.5s ease;
-  }
-}
-
 /* ─── Quote: revealed by scrolling ────────────────────── */
 
 /* Each word reads its own place in the paragraph (--i of --n) and how far she
@@ -360,19 +321,6 @@ div.tickerBand {
 
 /* ─── Form ─────────────────────────────────────────────── */
 
-.form {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  text-align: left;
-}
-
-.optional {
-  font-weight: 400;
-  color: var(--text-secondary);
-}
-
 .honeypot {
   position: absolute;
   left: -10000px;
@@ -440,11 +388,15 @@ div.tickerBand {
   outline-offset: 2px;
 }
 
-/* ─── Bottom form section ──────────────────────────────── */
+/* ─── The form section at the end of the page ──────────── */
 
-.joinSection {
-  padding-bottom: var(--space-8);
-  /* Where the hero and nav buttons land: clear of the sticky nav. */
+/* Shares the hero's classes (video, shade, bottom-left column). Here it is
+ * not pulled up under the nav, and it is one nav-height shorter than the
+ * screen so all of it is visible when a button scrolls her here. */
+.hero.joinSection {
+  margin-top: 0;
+  min-height: calc(100svh - var(--nav-height));
+  padding-top: var(--space-8);
   scroll-margin-top: var(--nav-height);
 }
 
@@ -452,19 +404,6 @@ div.tickerBand {
  * she landed. No ring for a tap, since a heading is not something to press. */
 .joinHeading:focus:not(:focus-visible) {
   outline: none;
-}
-
-.joinInner {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 var(--space-4);
-}
-
-.joinSub {
-  margin: var(--space-2) 0 var(--space-6);
-  font-size: var(--size-body);
-  line-height: var(--lh-body);
-  color: var(--text-secondary);
 }
 
 /* ─── Footer ───────────────────────────────────────────── */

@@ -1,9 +1,6 @@
 "use client";
 
 import { useId } from "react";
-import Input from "@/components/ui/Input";
-import FilterChip from "@/components/ui/FilterChip";
-import ChipRow from "@/components/ui/ChipRow";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import { DIAL_CODE, formatNational } from "@/app/sell/account";
 import { INTENTS, INTENT_LABELS } from "../validation";
@@ -12,90 +9,106 @@ import WaitlistSuccess from "./WaitlistSuccess";
 import Honeypot from "./Honeypot";
 import styles from "../waitlist.module.css";
 
-// The form at the bottom of the page, built from the design system's fields.
+// The waitlist form, at the end of the page over the darkened video.
+// Deliberately outside the design system: bare underlined lines, no boxes or
+// fills, white text.
 export default function WaitlistForm() {
-  const phoneId = useId();
   const form = useWaitlistForm("bottom");
+  const phoneId = useId();
+  const emailErrorId = useId();
 
-  if (form.savedIntent) return <WaitlistSuccess intent={form.savedIntent} />;
+  if (form.savedIntent) return <WaitlistSuccess intent={form.savedIntent} onDark />;
 
   return (
-    <form className={styles.form} onSubmit={form.onSubmit} noValidate>
-      <Input
-        label="Email"
-        type="email"
-        inputMode="email"
-        autoComplete="email"
-        autoCapitalize="none"
-        spellCheck={false}
-        value={form.email}
-        error={form.emailError ?? undefined}
-        onFocus={form.onFieldFocus}
-        onChange={(event) => form.setEmail(event.target.value)}
-        onBlur={form.touchEmail}
-      />
-
+    <form className={styles.lineForm} onSubmit={form.onSubmit} noValidate>
       <div>
-        <label className="input-label" htmlFor={phoneId}>
-          WhatsApp number <span className={styles.optional}>(optional)</span>
-        </label>
-        <div className="input-with-prefix">
-          <span className="input-prefix" aria-hidden="true">
-            {DIAL_CODE}
-          </span>
+        <div className={[styles.lineField, form.emailError && styles.lineFieldError].filter(Boolean).join(" ")}>
           <input
-            id={phoneId}
-            className={form.phoneError ? "input input-error" : "input"}
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel-national"
-            placeholder="300 1234567"
-            value={formatNational(form.phone)}
-            aria-invalid={form.phoneError ? true : undefined}
-            aria-describedby={`${phoneId}-hint${form.phoneError ? ` ${phoneId}-error` : ""}`}
+            className={styles.lineInput}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder="your email"
+            aria-label="Your email"
+            aria-invalid={form.emailError ? true : undefined}
+            aria-describedby={form.emailError ? emailErrorId : undefined}
+            value={form.email}
             onFocus={form.onFieldFocus}
-            onChange={(event) => form.setPhone(event.target.value)}
-            onBlur={form.touchPhone}
+            onChange={(event) => form.setEmail(event.target.value)}
+            onBlur={form.touchEmail}
           />
         </div>
-        <p className="input-hint" id={`${phoneId}-hint`}>
-          So we can help you list faster. We&rsquo;ll never share it.
-        </p>
-        {form.phoneError && (
-          <p className="input-error-msg" id={`${phoneId}-error`}>
-            {form.phoneError}
+        {form.emailError && (
+          <p className={styles.lineError} id={emailErrorId}>
+            {form.emailError}
           </p>
         )}
       </div>
 
       <div>
-        <p className="input-label" aria-hidden="true">
-          I want to
+        <div className={[styles.lineField, form.phoneError && styles.lineFieldError].filter(Boolean).join(" ")}>
+          <span className={styles.linePrefix} aria-hidden="true">
+            {DIAL_CODE}
+          </span>
+          <input
+            id={phoneId}
+            className={styles.lineInput}
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel-national"
+            placeholder="WhatsApp number (optional)"
+            aria-label="WhatsApp number (optional)"
+            aria-invalid={form.phoneError ? true : undefined}
+            aria-describedby={`${phoneId}-hint${form.phoneError ? ` ${phoneId}-error` : ""}`}
+            value={formatNational(form.phone)}
+            onFocus={form.onFieldFocus}
+            onChange={(event) => form.setPhone(event.target.value)}
+            onBlur={form.touchPhone}
+          />
+        </div>
+        <p className={styles.lineHint} id={`${phoneId}-hint`}>
+          So we can help you list faster. We&rsquo;ll never share it.
         </p>
-        <ChipRow label="I want to">
-          {INTENTS.map((value) => (
-            <FilterChip
-              key={value}
-              active={form.intent === value}
-              onFocus={form.onFieldFocus}
-              onClick={() => form.setIntent(value)}
-            >
-              {INTENT_LABELS[value]}
-            </FilterChip>
-          ))}
-        </ChipRow>
+        {form.phoneError && (
+          <p className={styles.lineError} id={`${phoneId}-error`}>
+            {form.phoneError}
+          </p>
+        )}
+      </div>
+
+      <div className={styles.lineChoices} role="group" aria-label="I want to">
+        <span className={styles.lineChoicesLabel} aria-hidden="true">
+          I want to
+        </span>
+        {INTENTS.map((value) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={form.intent === value}
+            className={[styles.lineChoice, form.intent === value && styles.lineChoiceActive]
+              .filter(Boolean)
+              .join(" ")}
+            onFocus={form.onFieldFocus}
+            onClick={() => form.setIntent(value)}
+          >
+            {INTENT_LABELS[value]}
+          </button>
+        ))}
       </div>
 
       <Honeypot value={form.company} onChange={form.setCompany} />
 
       {form.submitError && (
-        <p className="input-error-msg" role="alert">
+        <p className={styles.lineError} role="alert">
           {form.submitError}
         </p>
       )}
 
       <PrimaryButton
         type="submit"
+        className={styles.lineSubmit}
         disabled={!form.valid}
         loading={form.saving}
         loadingLabel="Saving your spot..."
