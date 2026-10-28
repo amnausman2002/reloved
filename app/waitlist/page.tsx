@@ -1,10 +1,11 @@
 import homeStyles from "@/app/page.module.css";
 import WaitlistNav from "./_components/WaitlistNav";
 import WaitlistHero from "./_components/WaitlistHero";
-import WaitlistQuote from "./_components/WaitlistQuote";
-import WaitlistTicker from "./_components/WaitlistTicker";
+import WaitlistAnnouncement from "./_components/WaitlistAnnouncement";
 import WaitlistBuySellToggle from "./_components/WaitlistBuySellToggle";
+import WaitlistQuote from "./_components/WaitlistQuote";
 import WaitlistJoin from "./_components/WaitlistJoin";
+import WaitlistFooter from "./_components/WaitlistFooter";
 
 // The smoke-test landing page, 30 Oct to 10 Nov. Self-contained on purpose:
 // nothing here links into the app, because every link out is a visitor who
@@ -20,14 +21,15 @@ export default function WaitlistPage() {
         <WaitlistHero />
 
         <div className={homeStyles.pageScroll}>
-          <WaitlistQuote />
-          <WaitlistTicker />
+          <WaitlistAnnouncement />
           <WaitlistBuySellToggle />
-          {/* The form and the contact links: where both "Join the waitlist"
-              buttons bring her, and the end of the page. */}
+          <WaitlistQuote />
+          {/* The form: where both "Join the waitlist" buttons bring her. */}
           <WaitlistJoin />
         </div>
       </main>
+
+      <WaitlistFooter />
     </>
   );
 }

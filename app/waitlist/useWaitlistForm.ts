@@ -54,9 +54,15 @@ export function useWaitlistForm(location: FormLocation) {
     setSubmitError(null);
     const national = normalisePhone(phone);
 
+    // A save that has not answered in 20 seconds is treated as failed, so she
+    // is never left on "Saving your spot..." with no way on. Trying again is
+    // always safe: a second save of the same email updates the first.
+    const timeout = AbortSignal.timeout(20_000);
+
     try {
       const response = await fetch("/api/waitlist", {
         method: "POST",
+        signal: timeout,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,

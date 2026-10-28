@@ -1,6 +1,9 @@
 "use client";
 
 import { useId } from "react";
+import FilterChip from "@/components/ui/FilterChip";
+import ChipRow from "@/components/ui/ChipRow";
+import PrimaryButton from "@/components/ui/PrimaryButton";
 import { DIAL_CODE, formatNational } from "@/app/sell/account";
 import { INTENTS, INTENT_LABELS } from "../validation";
 import { useWaitlistForm } from "../useWaitlistForm";
@@ -8,9 +11,10 @@ import WaitlistSuccess from "./WaitlistSuccess";
 import Honeypot from "./Honeypot";
 import styles from "../waitlist.module.css";
 
-// The waitlist form, in the frosted panel at the end of the page. Styled after
-// kindredofireland.com's newsletter sign-up rather than the design system:
-// bare underlined lines, small spaced capitals, and a text-only submit.
+// The waitlist form, in the frosted panel at the end of the page. Email and
+// WhatsApp are bare underlined lines labelled in Fraunces; Buy / Sell / Both
+// are the design system's chips; the button is the hero's outlined one, in
+// dark for the light panel.
 export default function WaitlistForm() {
   const form = useWaitlistForm("bottom");
   const phoneId = useId();
@@ -77,24 +81,22 @@ export default function WaitlistForm() {
         )}
       </div>
 
-      <div className={styles.lineChoices} role="group" aria-label="I want to">
-        <span className={styles.lineChoicesLabel} aria-hidden="true">
+      <div>
+        <p className={styles.lineLabel} aria-hidden="true">
           I want to
-        </span>
-        {INTENTS.map((value) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={form.intent === value}
-            className={[styles.lineChoice, form.intent === value && styles.lineChoiceActive]
-              .filter(Boolean)
-              .join(" ")}
-            onFocus={form.onFieldFocus}
-            onClick={() => form.setIntent(value)}
-          >
-            {INTENT_LABELS[value]}
-          </button>
-        ))}
+        </p>
+        <ChipRow label="I want to">
+          {INTENTS.map((value) => (
+            <FilterChip
+              key={value}
+              active={form.intent === value}
+              onFocus={form.onFieldFocus}
+              onClick={() => form.setIntent(value)}
+            >
+              {INTENT_LABELS[value]}
+            </FilterChip>
+          ))}
+        </ChipRow>
       </div>
 
       <Honeypot value={form.company} onChange={form.setCompany} />
@@ -105,16 +107,15 @@ export default function WaitlistForm() {
         </p>
       )}
 
-      <div className={styles.lineSubmitRow}>
-        <button
-          type="submit"
-          className={styles.lineSubmit}
-          disabled={!form.valid || form.saving}
-          aria-busy={form.saving || undefined}
-        >
-          {form.saving ? "Saving your spot..." : "Join the waitlist"}
-        </button>
-      </div>
+      <PrimaryButton
+        type="submit"
+        className={styles.panelSubmit}
+        disabled={!form.valid}
+        loading={form.saving}
+        loadingLabel="Saving your spot..."
+      >
+        Join the waitlist
+      </PrimaryButton>
     </form>
   );
 }
