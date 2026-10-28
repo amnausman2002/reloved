@@ -10,7 +10,8 @@
     "try-prefill": "tsx --env-file=.env.local scripts/try-prefill.ts",
     "try-group": "tsx --env-file=.env.local scripts/try-group.ts",
     "try-review": "tsx --env-file=.env.local scripts/try-review.ts",
-    "make-admin": "tsx --env-file=.env.local scripts/make-admin.ts"
+    "make-admin": "tsx --env-file=.env.local scripts/make-admin.ts",
+    "export-waitlist": "tsx --env-file=.env.local scripts/export-waitlist.ts"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

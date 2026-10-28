@@ -1,0 +1,249 @@
+/* The waitlist page. Only what app/page.module.css, BuySellToggle.module.css
+ * and globals.css do not already cover. Tokens only. */
+
+/* ─── Hero ─────────────────────────────────────────────── */
+
+/* The homepage hero is a fixed 100svh. The form grows when it opens, so here
+ * it is a minimum, with room at the bottom for the ticker tape. */
+section.hero {
+  height: auto;
+  min-height: 100svh;
+  padding-bottom: calc(var(--space-8) + var(--space-6));
+}
+
+.heroForm {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.heroNote {
+  font-size: var(--size-body-sm);
+  line-height: var(--lh-body-sm);
+  color: var(--white);
+  text-align: center;
+}
+
+/* The form on the hero photo. Fields take the homepage hero search bar's
+ * frosted look, and the button takes its outlined "Browse all" look, so
+ * nothing here is a new style: the hero already had both. */
+.heroTone :global(.input-label),
+.heroTone :global(.input-prefix) {
+  color: var(--white);
+}
+.heroTone :global(.input-hint),
+.heroTone :global(.input-error-msg),
+.heroTone .optional {
+  color: var(--white);
+}
+.heroTone :global(.input) {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+  border-radius: 0;
+  color: var(--white);
+  caret-color: var(--white);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.heroTone :global(.input)::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+.heroTone :global(.input):focus {
+  border-color: var(--white);
+  outline-color: var(--white);
+}
+.heroTone :global(.input.input-error) {
+  border-color: var(--status-rejected);
+}
+.heroTone :global(.btn-primary),
+.heroTone :global(.btn-whatsapp) {
+  background: transparent;
+  border-color: var(--white);
+  color: var(--white);
+}
+.heroTone :global(.btn-primary):hover,
+.heroTone :global(.btn-whatsapp):hover {
+  background: var(--white);
+  color: var(--text-primary);
+}
+/* OFF-SYSTEM, flagged for Bismah: design-system.md fades a disabled button to
+ * 0.3. On the photo that made the hero's only button nearly invisible, so the
+ * first screen looked like it had no call to action. 0.6 still reads as "not
+ * yet" without disappearing. */
+.heroTone :global(.btn-primary):disabled {
+  opacity: 0.6;
+}
+.heroTone :global(.btn-primary):disabled:hover {
+  background: transparent;
+  color: var(--white);
+  border-color: var(--white);
+}
+.heroTone :global(.btn-primary):focus-visible,
+.heroTone :global(.btn-whatsapp):focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+}
+
+/* ─── Form ─────────────────────────────────────────────── */
+
+.form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  text-align: left;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+/* Phone and "I want to", folded away in the hero until she starts on the
+ * email. Animating grid rows from 0fr to 1fr opens it to its real height
+ * without measuring anything. */
+.expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  /* Cancels the form's gap while closed, so the button sits where it would
+   * if this were not here at all. */
+  margin-top: calc(-1 * var(--space-4));
+}
+.expandOpen {
+  grid-template-rows: 1fr;
+  margin-top: 0;
+}
+.expandClip {
+  min-height: 0;
+  overflow: hidden;
+  /* Room for the 2px focus ring, which overflow would otherwise clip. */
+  padding: 4px;
+  margin: -4px;
+}
+.expandContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .expand {
+    transition: grid-template-rows var(--dur-base) var(--ease),
+                margin-top var(--dur-base) var(--ease);
+  }
+}
+
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ─── Success ──────────────────────────────────────────── */
+
+.success {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  text-align: left;
+}
+.success:focus:not(:focus-visible) {
+  outline: none;
+}
+.success.heroTone {
+  text-align: center;
+}
+
+.successHeading {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--size-h2);
+  line-height: var(--lh-h2);
+  font-variation-settings: "opsz" 144;
+  color: var(--text-primary);
+}
+
+.successBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.successText {
+  font-size: var(--size-body);
+  line-height: var(--lh-body);
+  color: var(--text-secondary);
+}
+
+.successLink {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.heroTone .successHeading,
+.heroTone .successText,
+.heroTone .successLink {
+  color: var(--white);
+}
+
+/* ─── Bottom form section ──────────────────────────────── */
+
+.joinSection {
+  padding-bottom: var(--space-8);
+}
+
+.joinInner {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.joinSub {
+  margin: var(--space-2) 0 var(--space-6);
+  font-size: var(--size-body);
+  line-height: var(--lh-body);
+  color: var(--text-secondary);
+}
+
+/* ─── Footer ───────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-5) var(--space-4);
+  border-top: 1px solid var(--border);
+  background: var(--canvas);
+}
+
+@media (min-width: 640px) {
+  .footer {
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--space-6);
+  }
+}
+
+.footerLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--size-body-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.footerLink:hover {
+  color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .footerLink {
+    transition: color var(--dur-fast) var(--ease);
+  }
+}
