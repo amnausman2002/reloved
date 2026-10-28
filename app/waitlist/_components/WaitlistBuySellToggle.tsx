@@ -48,10 +48,27 @@ export default function WaitlistBuySellToggle() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const switchRef = useRef<HTMLDivElement>(null);
   const id = useId();
 
   useEffect(() => {
     setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }, []);
+
+  // The Buy / Sell row fades up as it arrives, once, like the cards below it.
+  useEffect(() => {
+    const el = switchRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        el.classList.add(waitlistStyles.revealed);
+        observer.disconnect();
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -80,7 +97,7 @@ export default function WaitlistBuySellToggle() {
     <section className={styles.wrapper} aria-label="How it works">
       {/* Pinned under the nav, so the switch is always in reach. */}
       <div className={styles.stickyHeader}>
-        <div className={styles.stickyInner}>
+        <div ref={switchRef} className={`${styles.stickyInner} ${waitlistStyles.reveal}`}>
           <div className={waitlistStyles.howTabs} role="tablist" aria-label="How it works">
             {(["buy", "sell"] as const).map((value, i) => (
               <span key={value} className={waitlistStyles.howTabItem}>

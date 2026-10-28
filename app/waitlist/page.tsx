@@ -1,7 +1,8 @@
 import homeStyles from "@/app/page.module.css";
-import QuoteSection from "@/app/_components/QuoteSection";
 import WaitlistNav from "./_components/WaitlistNav";
 import WaitlistHero from "./_components/WaitlistHero";
+import WaitlistQuote from "./_components/WaitlistQuote";
+import WaitlistTicker from "./_components/WaitlistTicker";
 import WaitlistBuySellToggle from "./_components/WaitlistBuySellToggle";
 import WaitlistForm from "./_components/WaitlistForm";
 import WaitlistFooter from "./_components/WaitlistFooter";
@@ -22,9 +23,8 @@ export default function WaitlistPage() {
         <WaitlistHero />
 
         <div className={homeStyles.pageScroll}>
-          {/* The mission paragraph: the homepage's own component, with the
-              same letter-by-letter reveal. */}
-          <QuoteSection />
+          <WaitlistQuote />
+          <WaitlistTicker />
 
           <WaitlistBuySellToggle />
 

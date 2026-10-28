@@ -4,8 +4,7 @@
 /* ─── Hero ─────────────────────────────────────────────── */
 
 /* Full screen, words at the bottom left. Pulled up under the transparent nav
- * the same way the homepage hero is. The bottom padding clears the ticker
- * tape (its 18px line plus 12px above and below). */
+ * the same way the homepage hero is. */
 .hero {
   position: relative;
   min-height: 100svh;
@@ -17,8 +16,7 @@
   /* The homepage hero's own dark fill, shown until the first frame arrives. */
   background-color: #1A1A18;
   color: var(--white);
-  padding: calc(var(--nav-height) + var(--space-7)) var(--space-4)
-    calc(18px + 2 * var(--space-3) + var(--space-6));
+  padding: calc(var(--nav-height) + var(--space-7)) var(--space-4) var(--space-6);
 }
 
 @media (min-width: 640px) {
@@ -93,6 +91,41 @@
 
 @media (min-width: 1024px) {
   .heroButton { max-width: 400px; }
+}
+
+/* ─── Quote: revealed by scrolling ────────────────────── */
+
+/* Each word reads its own place in the paragraph (--i of --n) and how far she
+ * has scrolled through it (--p, 0 to 1, set by WaitlistQuote). Words fill in
+ * one after another from faint to full; a word is never fully invisible, so
+ * the paragraph's shape is there from the start. */
+.quoteScroll {
+  --p: 0;
+}
+.quoteWord {
+  opacity: calc(0.15 + 0.85 * clamp(0, var(--p) * var(--n) - var(--i), 1));
+}
+
+/* ─── Ticker, as its own band ─────────────────────────── */
+
+/* The homepage pins this to the bottom of its hero; here it sits in the flow. */
+div.tickerBand {
+  position: relative;
+}
+
+/* ─── Fade up on arrival ──────────────────────────────── */
+
+/* Same movement as the benefit cards in BuySellToggle.module.css. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ─── How it works: the Buy / Sell switch ─────────────── */
