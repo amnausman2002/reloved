@@ -13,7 +13,7 @@ import styles from "../waitlist.module.css";
 
 // What replaces either form once she has joined. Focused when it appears, so
 // a screen reader reads it out.
-export default function WaitlistSuccess({ intent }: { intent: Intent }) {
+export default function WaitlistSuccess({ intent }: { intent: Intent | null }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function WaitlistSuccess({ intent }: { intent: Intent }) {
         </a>
       </div>
 
-      {intent !== "buy" && (
+      {(intent === "sell" || intent === "both") && (
         <p className={styles.successText}>
           Want to be a founding seller?{" "}
           <a

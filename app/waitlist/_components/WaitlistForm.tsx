@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import { formatNational } from "@/app/sell/account";
 import { INTENT_LABELS, type Intent } from "../validation";
@@ -17,13 +17,23 @@ import styles from "../waitlist.module.css";
 
 const SINGLE_CHOICES: Intent[] = ["buy", "sell", "both"];
 
-export default function WaitlistForm() {
+type Props = {
+  /** Called once she has joined, so the panel can swap its heading for the
+   *  success message. */
+  onSaved: () => void;
+};
+
+export default function WaitlistForm({ onSaved }: Props) {
   const form = useWaitlistForm();
   const phoneId = useId();
   const emailErrorId = useId();
   const phoneRef = useRef<HTMLInputElement>(null);
 
-  if (form.savedIntent) return <WaitlistSuccess intent={form.savedIntent} />;
+  useEffect(() => {
+    if (form.saved) onSaved();
+  }, [form.saved, onSaved]);
+
+  if (form.saved) return <WaitlistSuccess intent={form.savedIntent} />;
 
   /** Tapping the chosen word again clears it. */
   function choose(value: Intent) {

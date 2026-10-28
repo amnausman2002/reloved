@@ -67,7 +67,7 @@ async function main() {
   const file = join(dir, `waitlist-${today}.csv`);
   writeFileSync(file, [COLUMNS.join(","), ...rows].join("\n") + "\n");
 
-  const sellers = snapshot.docs.filter((doc) => doc.get("intent") !== "buy").length;
+  const sellers = snapshot.docs.filter((doc) => ["sell", "both"].includes(doc.get("intent"))).length;
   console.log(`${snapshot.size} on the waitlist (${sellers} want to sell). Saved to ${file}`);
 }
 

@@ -32,6 +32,8 @@ export function useWaitlistForm() {
   const [shownPhoneError, setShownPhoneError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  /** What she chose, as saved. Null if she skipped "I want to". */
   const [savedIntent, setSavedIntent] = useState<Intent | null>(null);
 
   const attribution = useRef<Attribution>({
@@ -51,11 +53,12 @@ export function useWaitlistForm() {
     };
   }, []);
 
-  const valid = isEmailValid(email) && phoneError(phone, country.code) === null && intent !== null;
+  // Only the email is required. A number, if she types one, has to look real.
+  const valid = isEmailValid(email) && phoneError(phone, country.code) === null;
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!valid || saving || !intent) return;
+    if (!valid || saving) return;
 
     setSaving(true);
     setSubmitError(null);
@@ -83,8 +86,9 @@ export function useWaitlistForm() {
       const result = (await response.json().catch(() => null)) as { ok?: boolean } | null;
       if (!response.ok || !result?.ok) throw new Error(`waitlist ${response.status}`);
 
-      track("form_submit", { intent, has_phone: phone !== "", form_location: FORM_LOCATION });
+      track("form_submit", { intent: intent ?? "none", has_phone: phone !== "", form_location: FORM_LOCATION });
       setSavedIntent(intent);
+      setSaved(true);
     } catch {
       setSubmitError("Something went wrong on our side. Give it another go?");
     } finally {
@@ -123,6 +127,7 @@ export function useWaitlistForm() {
     valid,
     saving,
     submitError,
+    saved,
     savedIntent,
     onFieldFocus: () => trackFormStart(FORM_LOCATION),
     onSubmit,

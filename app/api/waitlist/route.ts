@@ -30,7 +30,11 @@ const bodySchema = z
       .default(PAKISTAN.code),
     /** The number without its country code. Blank means none. */
     phone: z.string().max(30).nullish(),
-    intent: z.enum(INTENTS),
+    /** Optional: only the email is required. */
+    intent: z
+      .enum(INTENTS)
+      .nullish()
+      .transform((value) => value ?? null),
   form_location: z.enum(["hero", "bottom"]),
   utm_source: optionalText(200),
   utm_medium: optionalText(200),
