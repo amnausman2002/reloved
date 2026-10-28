@@ -3,20 +3,102 @@
 
 /* ─── Hero ─────────────────────────────────────────────── */
 
-/* The button and the launch note under it, sitting where the homepage has
- * its search bar and "Browse all". */
-.heroAction {
+/* Full screen, words at the bottom left. Pulled up under the transparent nav
+ * the same way the homepage hero is. The bottom padding clears the ticker
+ * tape (its 18px line plus 12px above and below). */
+.hero {
+  position: relative;
+  min-height: 100svh;
+  margin-top: calc(-1 * var(--nav-height));
   display: flex;
   flex-direction: column;
-  align-items: center;
+  justify-content: flex-end;
+  overflow: hidden;
+  /* The homepage hero's own dark fill, shown until the first frame arrives. */
+  background-color: #1A1A18;
+  color: var(--white);
+  padding: calc(var(--nav-height) + var(--space-7)) var(--space-4)
+    calc(18px + 2 * var(--space-3) + var(--space-6));
+}
+
+@media (min-width: 640px) {
+  .hero { padding-left: 24px; padding-right: 24px; }
+}
+
+@media (min-width: 1024px) {
+  .hero { padding-left: 40px; padding-right: 40px; }
+}
+
+.heroVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Darkens the top for the nav and the bottom for the words, and leaves the
+ * middle of the video alone. The 0.55 is the homepage closing section's
+ * overlay over its own video. */
+.heroShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 10, 8, 0.3) 0%,
+    rgba(10, 10, 8, 0) 22%,
+    rgba(10, 10, 8, 0) 40%,
+    rgba(10, 10, 8, 0.55) 100%
+  );
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
 }
 
-.heroNote {
+.heroIntro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+/* Same face, weight and optical size as the homepage headline, larger. */
+.heroTitle {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(44px, 12.5vw, 96px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 144;
+}
+
+.heroSub {
   font-size: var(--size-body-sm);
   line-height: var(--lh-body-sm);
   color: var(--white);
-  text-align: center;
+}
+
+/* The homepage's outlined hero button, stretched to the column. */
+.heroButton {
+  width: 100%;
+  min-height: 48px;
+}
+
+@media (min-width: 1024px) {
+  .heroButton { max-width: 400px; }
+}
+
+.heroNote {
+  font-size: var(--size-caption);
+  line-height: var(--lh-caption);
+  color: var(--white);
 }
 
 /* ─── How it works: the Buy / Sell switch ─────────────── */
