@@ -23,7 +23,7 @@ export default function HeroVideo({ className }: { className: string }) {
     <video
       ref={ref}
       className={className}
-      src="/photos/hero-video-small.mp4"
+      src="/photos/hero-video-hd.mp4"
       poster="/photos/hero-video-poster.jpg"
       muted
       loop

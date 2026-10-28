@@ -95,12 +95,6 @@
   .heroButton { max-width: 400px; }
 }
 
-.heroNote {
-  font-size: var(--size-caption);
-  line-height: var(--lh-caption);
-  color: var(--white);
-}
-
 /* ─── How it works: the Buy / Sell switch ─────────────── */
 
 /* Fraunces at the homepage's section heading size (page.module.css's

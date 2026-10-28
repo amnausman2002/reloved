@@ -36,7 +36,6 @@ export default function WaitlistHero() {
         </div>
 
         <JoinButton className={`${homeStyles.heroCta} ${styles.heroButton}`} />
-        <p className={styles.heroNote}>Launching across Pakistan soon.</p>
       </div>
 
       <div className={homeStyles.tickerTape} aria-hidden="true">
