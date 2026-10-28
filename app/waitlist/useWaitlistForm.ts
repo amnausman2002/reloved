@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { normalisePhone } from "@/app/sell/account";
-import { emailError, isEmailValid, phoneError, type Intent } from "./validation";
+import { emailError, isEmailValid, nationalDigits, phoneError, type Intent } from "./validation";
+import { PAKISTAN, type Country } from "./countries";
 import { track, trackFormStart } from "./analytics";
 
-// Everything the two waitlist forms share: their state, the checks, and the
-// save. The hero form and the bottom form differ only in how they look.
+// The waitlist form's state, its checks, and the save, kept apart from how
+// the form looks.
 
-export type FormLocation = "hero" | "bottom";
+/** Saved with every entry and sent to GA. There is one form now, at the end
+ *  of the page; the field stays so a second placement can be told apart. */
+const FORM_LOCATION = "bottom";
 
 type Attribution = {
   utm_source: string | null;
@@ -17,8 +19,10 @@ type Attribution = {
   referrer: string | null;
 };
 
-export function useWaitlistForm(location: FormLocation) {
+export function useWaitlistForm() {
   const [email, setEmail] = useState("");
+  const [country, setCountry] = useState<Country>(PAKISTAN);
+  /** Digits only, without the country code. */
   const [phone, setPhoneRaw] = useState("");
   const [intent, setIntent] = useState<Intent | null>(null);
   const [company, setCompany] = useState("");
@@ -44,7 +48,7 @@ export function useWaitlistForm(location: FormLocation) {
     };
   }, []);
 
-  const valid = isEmailValid(email) && phoneError(phone) === null && intent !== null;
+  const valid = isEmailValid(email) && phoneError(phone, country.code) === null && intent !== null;
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -52,7 +56,6 @@ export function useWaitlistForm(location: FormLocation) {
 
     setSaving(true);
     setSubmitError(null);
-    const national = normalisePhone(phone);
 
     // A save that has not answered in 20 seconds is treated as failed, so she
     // is never left on "Saving your spot..." with no way on. Trying again is
@@ -66,9 +69,10 @@ export function useWaitlistForm(location: FormLocation) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
-          phone: national || null,
+          country_code: country.code,
+          phone: phone || null,
           intent,
-          form_location: location,
+          form_location: FORM_LOCATION,
           company,
           ...attribution.current,
         }),
@@ -76,7 +80,7 @@ export function useWaitlistForm(location: FormLocation) {
       const result = (await response.json().catch(() => null)) as { ok?: boolean } | null;
       if (!response.ok || !result?.ok) throw new Error(`waitlist ${response.status}`);
 
-      track("form_submit", { intent, has_phone: national !== "", form_location: location });
+      track("form_submit", { intent, has_phone: phone !== "", form_location: FORM_LOCATION });
       setSavedIntent(intent);
     } catch {
       setSubmitError("Something went wrong on our side. Give it another go?");
@@ -88,9 +92,15 @@ export function useWaitlistForm(location: FormLocation) {
   return {
     email,
     setEmail,
+    country,
+    /** A new country re-reads the digits already typed under its own rules. */
+    setCountry: (next: Country) => {
+      setCountry(next);
+      setPhoneRaw((current) => nationalDigits(current, next.code));
+    },
     phone,
     /** Takes the field as typed and keeps only the national digits. */
-    setPhone: (value: string) => setPhoneRaw(normalisePhone(value)),
+    setPhone: (value: string) => setPhoneRaw(nationalDigits(value, country.code)),
     intent,
     setIntent,
     company,
@@ -98,12 +108,12 @@ export function useWaitlistForm(location: FormLocation) {
     touchEmail: () => setTouched((t) => ({ ...t, email: true })),
     touchPhone: () => setTouched((t) => ({ ...t, phone: true })),
     emailError: touched.email ? emailError(email) : null,
-    phoneError: touched.phone ? phoneError(phone) : null,
+    phoneError: touched.phone ? phoneError(phone, country.code) : null,
     valid,
     saving,
     submitError,
     savedIntent,
-    onFieldFocus: () => trackFormStart(location),
+    onFieldFocus: () => trackFormStart(FORM_LOCATION),
     onSubmit,
   };
 }

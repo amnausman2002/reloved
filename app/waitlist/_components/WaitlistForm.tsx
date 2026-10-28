@@ -1,26 +1,35 @@
 "use client";
 
-import { useId } from "react";
-import FilterChip from "@/components/ui/FilterChip";
-import ChipRow from "@/components/ui/ChipRow";
+import { useId, useRef } from "react";
 import PrimaryButton from "@/components/ui/PrimaryButton";
-import { DIAL_CODE, formatNational } from "@/app/sell/account";
-import { INTENTS, INTENT_LABELS } from "../validation";
+import { formatNational } from "@/app/sell/account";
+import { INTENT_LABELS, type Intent } from "../validation";
 import { useWaitlistForm } from "../useWaitlistForm";
 import WaitlistSuccess from "./WaitlistSuccess";
 import Honeypot from "./Honeypot";
+import CountryCodePicker from "./CountryCodePicker";
 import styles from "../waitlist.module.css";
 
-// The waitlist form, in the frosted panel at the end of the page. Email and
-// WhatsApp are bare underlined lines labelled in Fraunces; Buy / Sell / Both
-// are the design system's chips; the button is the hero's outlined one, in
-// dark for the light panel.
+// The waitlist form, in the dark panel at the end of the page. Email and
+// WhatsApp are bare white lines labelled in Fraunces; "I want to" has its
+// choices beside it as Fraunces words, the chosen one underlined; the button
+// is the hero's outlined one.
+
+const SINGLE_CHOICES: Intent[] = ["buy", "sell", "both"];
+
 export default function WaitlistForm() {
-  const form = useWaitlistForm("bottom");
+  const form = useWaitlistForm();
   const phoneId = useId();
   const emailErrorId = useId();
+  const phoneRef = useRef<HTMLInputElement>(null);
 
   if (form.savedIntent) return <WaitlistSuccess intent={form.savedIntent} />;
+
+  /** Tapping the chosen word again clears it. */
+  function choose(value: Intent) {
+    form.setIntent(form.intent === value ? null : value);
+    form.onFieldFocus();
+  }
 
   return (
     <form className={styles.lineForm} onSubmit={form.onSubmit} noValidate>
@@ -52,10 +61,13 @@ export default function WaitlistForm() {
 
       <div>
         <div className={[styles.lineField, form.phoneError && styles.lineFieldError].filter(Boolean).join(" ")}>
-          <span className={styles.linePrefix} aria-hidden="true">
-            {DIAL_CODE}
-          </span>
+          <CountryCodePicker
+            value={form.country}
+            onChange={form.setCountry}
+            onPicked={() => phoneRef.current?.focus()}
+          />
           <input
+            ref={phoneRef}
             id={phoneId}
             className={styles.lineInput}
             type="tel"
@@ -65,7 +77,7 @@ export default function WaitlistForm() {
             aria-label="WhatsApp number (optional)"
             aria-invalid={form.phoneError ? true : undefined}
             aria-describedby={`${phoneId}-hint${form.phoneError ? ` ${phoneId}-error` : ""}`}
-            value={formatNational(form.phone)}
+            value={form.country.code === "92" ? formatNational(form.phone) : form.phone}
             onFocus={form.onFieldFocus}
             onChange={(event) => form.setPhone(event.target.value)}
             onBlur={form.touchPhone}
@@ -81,22 +93,38 @@ export default function WaitlistForm() {
         )}
       </div>
 
-      <div>
-        <p className={styles.lineLabel} aria-hidden="true">
+      {/* Choosing Both folds the three words into one, "Buy and sell";
+          tapping that clears it and brings the three back. */}
+      <div className={styles.intentRow} role="group" aria-label="I want to">
+        <span className={styles.intentLabel} aria-hidden="true">
           I want to
-        </p>
-        <ChipRow label="I want to">
-          {INTENTS.map((value) => (
-            <FilterChip
-              key={value}
-              active={form.intent === value}
-              onFocus={form.onFieldFocus}
-              onClick={() => form.setIntent(value)}
+        </span>
+        <div className={styles.intentChoices}>
+          {form.intent === "both" ? (
+            <button
+              type="button"
+              aria-pressed="true"
+              className={`${styles.intentChoice} ${styles.intentChoiceActive}`}
+              onClick={() => choose("both")}
             >
-              {INTENT_LABELS[value]}
-            </FilterChip>
-          ))}
-        </ChipRow>
+              Buy and sell
+            </button>
+          ) : (
+            SINGLE_CHOICES.map((value) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={form.intent === value}
+                className={[styles.intentChoice, form.intent === value && styles.intentChoiceActive]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => choose(value)}
+              >
+                {INTENT_LABELS[value]}
+              </button>
+            ))
+          )}
+        </div>
       </div>
 
       <Honeypot value={form.company} onChange={form.setCompany} />

@@ -32,11 +32,22 @@ export function emailError(value: string): string | null {
   return "That email looks a little off. Mind checking it?";
 }
 
-export function phoneError(value: string): string | null {
-  const national = normalisePhone(value);
+/** The number without its country code, digits only. Pakistan's habits (a
+ *  leading 0, or 92 typed again) are handled by the sell flow's own rule;
+ *  elsewhere a leading 0 is the local trunk prefix and is dropped. */
+export function nationalDigits(value: string, countryCode: string): string {
+  if (countryCode === "92") return normalisePhone(value);
+  return value.replace(/\D/g, "").replace(/^0+/, "");
+}
+
+/** Pakistan: a mobile, 10 digits starting with 3. Anywhere else: a plausible
+ *  length, since an international number can be at most 15 digits in all. */
+export function phoneError(national: string, countryCode: string): string | null {
   if (!national) return null;
-  if (!NATIONAL_MOBILE_PATTERN.test(national)) {
+  if (countryCode === "92") {
+    if (NATIONAL_MOBILE_PATTERN.test(national)) return null;
     return "That doesn't look like a Pakistani mobile number. It should start with 3, like 300 1234567.";
   }
-  return null;
+  if (national.length >= 4 && countryCode.length + national.length <= 15) return null;
+  return "That number doesn't look quite right. Mind checking it?";
 }

@@ -88,29 +88,30 @@
   .heroButton { max-width: 480px; }
 }
 
-/* ─── Waitlist form: lines in the frosted panel ───────── */
+/* ─── Waitlist form: white on the dark panel ──────────── */
 
-/* OFF-SYSTEM, at Bismah's request (28 Oct): email and WhatsApp are one dark
- * underline each with no box or fill, after kindredofireland.com's sign-up.
- * Their labels, and "I want to", are in Fraunces. The chips and the button
- * are the design system's own. */
+/* OFF-SYSTEM, at Bismah's request (28 Oct): email and WhatsApp are one white
+ * underline each with no box or fill. Labels, "I want to" and its choices
+ * are in Fraunces; the button is the hero's outlined one. */
 .lineForm {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
   text-align: left;
 }
 
 .lineField {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  border-bottom: 1px solid var(--text-primary);
+  gap: var(--space-3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
 }
-/* The line doubles in weight on focus, which is the focus mark here. */
+/* The line brightens and doubles in weight on focus: the focus mark here. */
 .lineField:focus-within {
-  box-shadow: 0 1px 0 0 var(--text-primary);
+  border-bottom-color: var(--white);
+  box-shadow: 0 1px 0 0 var(--white);
 }
 .lineFieldError,
 .lineFieldError:focus-within {
@@ -127,7 +128,8 @@
   border: none;
   border-radius: 0;
   outline: none;
-  color: var(--text-primary);
+  color: var(--white);
+  caret-color: var(--white);
   font-family: var(--font-body);
   /* 16px, so iPhone does not zoom the page when the field is tapped. */
   font-size: var(--size-body);
@@ -135,7 +137,7 @@
 /* The label sits in the line as its placeholder, in Fraunces. What she
  * types is in the body face. */
 .lineInput::placeholder {
-  color: var(--text-primary);
+  color: var(--white);
   font-family: var(--font-display);
   font-weight: 300;
   font-size: var(--size-h3);
@@ -143,13 +145,8 @@
 }
 /* Browser autofill paints its own background; keep the line bare. */
 .lineInput:-webkit-autofill {
-  -webkit-text-fill-color: var(--text-primary);
+  -webkit-text-fill-color: var(--white);
   transition: background-color 9999s ease 0s;
-}
-
-.linePrefix {
-  font-size: var(--size-body);
-  color: var(--text-primary);
 }
 
 .lineHint,
@@ -157,40 +154,156 @@
   margin-top: var(--space-1);
   font-size: var(--size-caption);
   line-height: var(--lh-caption);
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.7);
 }
 .lineError {
-  color: var(--status-rejected);
+  color: var(--white);
 }
 
-/* "I want to", in the same Fraunces as the field labels, above the chips. */
-.lineLabel {
-  margin-bottom: var(--space-2);
+/* ─── Country code picker ─────────────────────────────── */
+
+.codePicker {
+  position: static;
+}
+.codeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 48px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+  color: var(--white);
+}
+.codeButton:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+}
+/* Opens above the line, the width of the line: the panel sits low on the
+ * screen, so there is room above it and none below. */
+.codePopover {
+  position: absolute;
+  bottom: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: var(--z-drawer);
+  background: #1A1A18;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.codeSearch {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  outline: none;
+  color: var(--white);
+  caret-color: var(--white);
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+}
+.codeSearch::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+.codeList {
+  max-height: 240px;
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+.codeOption {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 44px;
+  align-items: center;
+  padding: 0 var(--space-4);
+  cursor: pointer;
+  font-size: var(--size-body-sm);
+  color: var(--white);
+}
+.codeOption[aria-selected="true"] {
+  font-weight: 500;
+}
+.codeOptionActive {
+  background: rgba(255, 255, 255, 0.1);
+}
+.codeOptionCode {
+  color: rgba(255, 255, 255, 0.7);
+}
+.codeEmpty {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--size-body-sm);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ─── I want to: words beside the label ───────────────── */
+
+.intentRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+.intentLabel,
+.intentChoice {
   font-family: var(--font-display);
   font-weight: 300;
   font-size: var(--size-h3);
-  line-height: var(--lh-h3);
   font-variation-settings: "opsz" 144;
-  color: var(--text-primary);
+  color: var(--white);
+}
+.intentChoices {
+  display: flex;
+  gap: var(--space-5);
+}
+.intentChoice {
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+}
+.intentChoice:hover {
+  opacity: 0.75;
+}
+.intentChoice:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+}
+.intentChoiceActive {
+  text-decoration-line: underline;
 }
 
-/* The hero's outlined full-width button (page.module.css .heroCta), drawn in
- * dark because the panel is light. Hover fills it, like the hero's. */
+/* The hero's outlined full-width button (page.module.css .heroCta), white on
+ * the dark panel. Hover fills it, like the hero's. */
 .panelSubmit:global(.btn-primary) {
   margin-top: var(--space-2);
   min-height: 48px;
   background: transparent;
-  border-color: var(--text-primary);
-  color: var(--text-primary);
+  border-color: var(--white);
+  color: var(--white);
 }
 .panelSubmit:global(.btn-primary):hover {
-  background: var(--text-primary);
-  color: var(--white);
+  background: var(--white);
+  color: var(--text-primary);
 }
 .panelSubmit:global(.btn-primary):disabled:hover {
   background: transparent;
-  color: var(--text-primary);
-  border-color: var(--text-primary);
+  color: var(--white);
+  border-color: var(--white);
+}
+.panelSubmit:global(.btn-primary):focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
 }
 
 /* ─── Quote: revealed by scrolling ────────────────────── */
@@ -351,7 +464,7 @@
   text-underline-offset: 3px;
 }
 
-/* ─── The end of the page: photo, frosted panel, links ─── */
+/* ─── The form section: photo and frosted panel ───────── */
 
 /* After kindredofireland.com's footer. The section is the photo; the panel
  * sits at its foot and is sticky to the bottom of the screen, so from the
@@ -398,37 +511,58 @@
   }
 }
 
-/* Kindred's panel: 80% white with a 10px blur over the photo. */
+/* Kindred's panel, inverted at Bismah's request: near-opaque dark with the
+ * same 10px blur, so the photo only just shows through. */
 .joinPanel {
   position: sticky;
   bottom: var(--space-4);
   width: 100%;
   max-width: 560px;
   padding: var(--space-6) var(--space-5) var(--space-5);
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(26, 26, 24, 0.9);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
 
+/* Large and light, at the hero headline's scale, for an editorial feel. */
 .joinHeading {
   font-family: var(--font-display);
   font-weight: 300;
-  font-size: 28px;
-  line-height: var(--lh-h2);
+  font-size: clamp(48px, 13vw, 88px);
+  line-height: 1;
+  letter-spacing: -0.02em;
   font-variation-settings: "opsz" 144;
-  color: var(--text-primary);
+  color: var(--white);
 }
-/* Focused when a button brings her here, so a screen reader announces where
- * she landed. No ring for a tap, since a heading is not something to press. */
 .joinHeading:focus:not(:focus-visible) {
   outline: none;
 }
 
 .joinSub {
-  margin: var(--space-2) 0 var(--space-4);
+  margin: var(--space-3) 0 var(--space-6);
   font-size: var(--size-body-sm);
   line-height: var(--lh-body-sm);
+  color: var(--white);
+}
+
+/* The success message inside the dark panel. */
+.joinPanel .successHeading,
+.joinPanel .successText,
+.joinPanel .successLink {
+  color: var(--white);
+}
+.joinPanel :global(.btn-whatsapp) {
+  background: transparent;
+  border-color: var(--white);
+  color: var(--white);
+}
+.joinPanel :global(.btn-whatsapp):hover {
+  background: var(--white);
   color: var(--text-primary);
+}
+.joinPanel :global(.btn-whatsapp):focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
 }
 
 /* ─── Footer ───────────────────────────────────────────── */
@@ -437,7 +571,7 @@
   display: flex;
   justify-content: center;
   gap: var(--space-6);
-  padding: var(--space-5) var(--space-4);
+  padding: var(--space-1) var(--space-4);
   border-top: 1px solid var(--border);
   background: var(--canvas);
 }

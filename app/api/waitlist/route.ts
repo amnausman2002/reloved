@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { upsertWaitlistEntry } from "@/lib/data/waitlist";
-import { normalisePhone, DIAL_CODE } from "@/app/sell/account";
-import { EMAIL_PATTERN, INTENTS, NATIONAL_MOBILE_PATTERN } from "@/app/waitlist/validation";
+import { EMAIL_PATTERN, INTENTS, nationalDigits, phoneError } from "@/app/waitlist/validation";
+import { COUNTRY_CODES, PAKISTAN } from "@/app/waitlist/countries";
 
 // POST /api/waitlist
 //
@@ -19,24 +19,33 @@ const optionalText = (max: number) =>
     .nullish()
     .transform((value) => (value ? value.slice(0, max) : null));
 
-const bodySchema = z.object({
-  email: z.string().trim().toLowerCase().max(254).regex(EMAIL_PATTERN),
-  /** As typed: spaces, a leading 0 or 92 are all fine. Blank means none. */
-  phone: z
-    .string()
-    .max(30)
-    .nullish()
-    .transform((value) => (value ? normalisePhone(value) : ""))
-    .refine((national) => national === "" || NATIONAL_MOBILE_PATTERN.test(national)),
-  intent: z.enum(INTENTS),
+const bodySchema = z
+  .object({
+    email: z.string().trim().toLowerCase().max(254).regex(EMAIL_PATTERN),
+    /** Digits only, one of ours. Pakistan when missing. */
+    country_code: z
+      .string()
+      .regex(/^\d{1,4}$/)
+      .refine((code) => COUNTRY_CODES.has(code))
+      .default(PAKISTAN.code),
+    /** The number without its country code. Blank means none. */
+    phone: z.string().max(30).nullish(),
+    intent: z.enum(INTENTS),
   form_location: z.enum(["hero", "bottom"]),
   utm_source: optionalText(200),
   utm_medium: optionalText(200),
   utm_campaign: optionalText(200),
   referrer: optionalText(500),
-  /** The honeypot. Hidden from people, so only a bot fills it in. */
-  company: z.string().max(200).nullish(),
-});
+    /** The honeypot. Hidden from people, so only a bot fills it in. */
+    company: z.string().max(200).nullish(),
+  })
+  // Read under the chosen country's rules, then checked the same way the form
+  // checks it. Stored as E.164: + country code + national digits.
+  .transform((body) => ({
+    ...body,
+    phone: nationalDigits(body.phone ?? "", body.country_code),
+  }))
+  .refine((body) => phoneError(body.phone, body.country_code) === null);
 
 // A brake on scripted signups, held in this server's memory like
 // lib/ai/rateLimit.ts. Generous on purpose: mobile networks in Pakistan put
@@ -82,7 +91,7 @@ export async function POST(request: Request) {
   try {
     await upsertWaitlistEntry({
       email: body.email,
-      phone: body.phone ? `${DIAL_CODE}${body.phone}` : null,
+      phone: body.phone ? `+${body.country_code}${body.phone}` : null,
       intent: body.intent,
       utm_source: body.utm_source,
       utm_medium: body.utm_medium,
