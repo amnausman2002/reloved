@@ -5,6 +5,7 @@ import WaitlistHero from "./_components/WaitlistHero";
 import WaitlistBuySellToggle from "./_components/WaitlistBuySellToggle";
 import WaitlistForm from "./_components/WaitlistForm";
 import WaitlistFooter from "./_components/WaitlistFooter";
+import { JOIN_HEADING_ID, JOIN_SECTION_ID } from "./_components/JoinButton";
 import styles from "./waitlist.module.css";
 
 // The smoke-test landing page, 30 Oct to 10 Nov. Self-contained on purpose:
@@ -12,27 +13,28 @@ import styles from "./waitlist.module.css";
 // did not join. Built from the homepage's sections; the homepage itself is
 // untouched.
 
-const HERO_EMAIL_ID = "waitlist-hero-email";
-
 export default function WaitlistPage() {
   return (
     <>
-      <WaitlistNav emailInputId={HERO_EMAIL_ID} />
+      <WaitlistNav />
 
       <main>
-        <WaitlistHero emailInputId={HERO_EMAIL_ID} />
+        <WaitlistHero />
 
         <div className={homeStyles.pageScroll}>
           <WaitlistBuySellToggle />
 
-          {/* The mission paragraph, the homepage's own component. */}
+          {/* The mission paragraph: the homepage's own component, with the
+              same letter-by-letter reveal. */}
           <QuoteSection />
 
-          <section className={`${homeStyles.section} ${styles.joinSection}`}>
+          <section id={JOIN_SECTION_ID} className={`${homeStyles.section} ${styles.joinSection}`}>
             <div className={styles.joinInner}>
-              <h2 className="text-h1">Get in early.</h2>
+              <h2 id={JOIN_HEADING_ID} tabIndex={-1} className={`text-h1 ${styles.joinHeading}`}>
+                Get in early.
+              </h2>
               <p className={styles.joinSub}>Be first to shop, or be one of our founding sellers.</p>
-              <WaitlistForm location="bottom" />
+              <WaitlistForm />
             </div>
           </section>
         </div>

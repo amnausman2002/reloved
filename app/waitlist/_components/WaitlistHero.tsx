@@ -1,10 +1,11 @@
 import homeStyles from "@/app/page.module.css";
 import styles from "../waitlist.module.css";
-import WaitlistForm from "./WaitlistForm";
+import JoinButton from "./JoinButton";
 
-// The homepage hero (app/_components/HeroSection.tsx) with the search bar and
-// "Browse all" swapped for the waitlist form. Same classes from
-// app/page.module.css, so a change to the homepage hero's look carries over.
+// The homepage hero (app/_components/HeroSection.tsx) with the search bar
+// removed and "Browse all" swapped for a button down to the form. Same
+// classes from app/page.module.css, so a change to the homepage hero's look
+// carries over.
 
 const TICKER_PHRASE = "a more circular way to shop";
 const TICKER_REPEAT = 6;
@@ -22,9 +23,9 @@ function HeartIcon() {
   );
 }
 
-export default function WaitlistHero({ emailInputId }: { emailInputId: string }) {
+export default function WaitlistHero() {
   return (
-    <section className={`${homeStyles.hero} ${styles.hero}`}>
+    <section className={homeStyles.hero}>
       <div className={homeStyles.heroOverlay} aria-hidden="true" />
 
       <div className={homeStyles.heroContent}>
@@ -33,12 +34,12 @@ export default function WaitlistHero({ emailInputId }: { emailInputId: string })
             great style doesn&rsquo;t have to cost full price.
           </h1>
           <p className={homeStyles.heroSubheading}>
-            Buy and sell preloved women&rsquo;s fashion in Pakistan
+            Buy and sell preloved women&rsquo;s fashion.
           </p>
         </div>
 
-        <div className={styles.heroForm}>
-          <WaitlistForm location="hero" emailInputId={emailInputId} />
+        <div className={styles.heroAction}>
+          <JoinButton className={homeStyles.heroCta} />
           <p className={styles.heroNote}>Launching across Pakistan soon.</p>
         </div>
       </div>

@@ -24,7 +24,9 @@ import {
 import { track, trackFormStart } from "../analytics";
 import styles from "../waitlist.module.css";
 
-type FormLocation = "hero" | "bottom";
+/** Saved with every entry and sent to GA. The form only lives at the bottom
+ *  now; the hero and the nav have buttons that bring her down to it. */
+const FORM_LOCATION = "bottom";
 
 type Attribution = {
   utm_source: string | null;
@@ -33,17 +35,7 @@ type Attribution = {
   referrer: string | null;
 };
 
-type Props = {
-  location: FormLocation;
-  /** Lets the nav's "Join the waitlist" find the email field. */
-  emailInputId?: string;
-};
-
-// One form, two places. In the hero it starts as just the email field and the
-// button, and opens once she focuses or types in the email; at the bottom it
-// is open from the start.
-export default function WaitlistForm({ location, emailInputId }: Props) {
-  const isHero = location === "hero";
+export default function WaitlistForm() {
   const phoneId = useId();
 
   const [email, setEmail] = useState("");
@@ -51,7 +43,6 @@ export default function WaitlistForm({ location, emailInputId }: Props) {
   const [intent, setIntent] = useState<Intent | null>(null);
   const [company, setCompany] = useState("");
   const [touched, setTouched] = useState({ email: false, phone: false });
-  const [expanded, setExpanded] = useState(!isHero);
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [savedIntent, setSavedIntent] = useState<Intent | null>(null);
@@ -83,7 +74,7 @@ export default function WaitlistForm({ location, emailInputId }: Props) {
   const valid = isEmailValid(email) && phoneError(phone) === null && intent !== null;
 
   function onFieldFocus() {
-    trackFormStart(location);
+    trackFormStart(FORM_LOCATION);
   }
 
   async function onSubmit(event: React.FormEvent) {
@@ -102,7 +93,7 @@ export default function WaitlistForm({ location, emailInputId }: Props) {
           email,
           phone: national || null,
           intent,
-          form_location: location,
+          form_location: FORM_LOCATION,
           company,
           ...attribution.current,
         }),
@@ -110,7 +101,7 @@ export default function WaitlistForm({ location, emailInputId }: Props) {
       const result = (await response.json().catch(() => null)) as { ok?: boolean } | null;
       if (!response.ok || !result?.ok) throw new Error(`waitlist ${response.status}`);
 
-      track("form_submit", { intent, has_phone: national !== "", form_location: location });
+      track("form_submit", { intent, has_phone: national !== "", form_location: FORM_LOCATION });
       setSavedIntent(intent);
     } catch {
       setSubmitError("Something went wrong on our side. Give it another go?");
@@ -119,16 +110,9 @@ export default function WaitlistForm({ location, emailInputId }: Props) {
     }
   }
 
-  const toneClass = isHero ? styles.heroTone : undefined;
-
   if (savedIntent) {
     return (
-      <div
-        ref={successRef}
-        tabIndex={-1}
-        role="status"
-        className={[styles.success, toneClass].filter(Boolean).join(" ")}
-      >
+      <div ref={successRef} tabIndex={-1} role="status" className={styles.success}>
         <p className={styles.successHeading}>You&rsquo;re in! We&rsquo;ll email you the moment we launch.</p>
 
         <div className={styles.successBlock}>
@@ -161,13 +145,8 @@ export default function WaitlistForm({ location, emailInputId }: Props) {
   }
 
   return (
-    <form
-      className={[styles.form, toneClass].filter(Boolean).join(" ")}
-      onSubmit={onSubmit}
-      noValidate
-    >
+    <form className={styles.form} onSubmit={onSubmit} noValidate>
       <Input
-        id={emailInputId}
         label="Email"
         type="email"
         inputMode="email"
@@ -176,74 +155,60 @@ export default function WaitlistForm({ location, emailInputId }: Props) {
         spellCheck={false}
         value={email}
         error={visibleEmailError ?? undefined}
-        onFocus={() => {
-          setExpanded(true);
-          onFieldFocus();
-        }}
-        onChange={(event) => {
-          setEmail(event.target.value);
-          setExpanded(true);
-        }}
+        onFocus={onFieldFocus}
+        onChange={(event) => setEmail(event.target.value)}
         onBlur={() => setTouched((t) => ({ ...t, email: true }))}
       />
 
-      {/* Collapsed in the hero until she starts on the email. inert keeps the
-          hidden fields out of the tab order while they are closed. */}
-      <div className={[styles.expand, expanded && styles.expandOpen].filter(Boolean).join(" ")} inert={!expanded}>
-        <div className={styles.expandClip}>
-          <div className={styles.expandContent}>
-            <div>
-              <label className="input-label" htmlFor={phoneId}>
-                WhatsApp number <span className={styles.optional}>(optional)</span>
-              </label>
-              <div className="input-with-prefix">
-                <span className="input-prefix" aria-hidden="true">
-                  {DIAL_CODE}
-                </span>
-                <input
-                  id={phoneId}
-                  className={visiblePhoneError ? "input input-error" : "input"}
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel-national"
-                  placeholder="300 1234567"
-                  value={formatNational(phone)}
-                  aria-invalid={visiblePhoneError ? true : undefined}
-                  aria-describedby={`${phoneId}-hint${visiblePhoneError ? ` ${phoneId}-error` : ""}`}
-                  onFocus={onFieldFocus}
-                  onChange={(event) => setPhone(normalisePhone(event.target.value))}
-                  onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
-                />
-              </div>
-              <p className="input-hint" id={`${phoneId}-hint`}>
-                So we can help you list faster. We&rsquo;ll never share it.
-              </p>
-              {visiblePhoneError && (
-                <p className="input-error-msg" id={`${phoneId}-error`}>
-                  {visiblePhoneError}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <p className="input-label" aria-hidden="true">
-                I want to
-              </p>
-              <ChipRow label="I want to">
-                {INTENTS.map((value) => (
-                  <FilterChip
-                    key={value}
-                    active={intent === value}
-                    onFocus={onFieldFocus}
-                    onClick={() => setIntent(value)}
-                  >
-                    {INTENT_LABELS[value]}
-                  </FilterChip>
-                ))}
-              </ChipRow>
-            </div>
-          </div>
+      <div>
+        <label className="input-label" htmlFor={phoneId}>
+          WhatsApp number <span className={styles.optional}>(optional)</span>
+        </label>
+        <div className="input-with-prefix">
+          <span className="input-prefix" aria-hidden="true">
+            {DIAL_CODE}
+          </span>
+          <input
+            id={phoneId}
+            className={visiblePhoneError ? "input input-error" : "input"}
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel-national"
+            placeholder="300 1234567"
+            value={formatNational(phone)}
+            aria-invalid={visiblePhoneError ? true : undefined}
+            aria-describedby={`${phoneId}-hint${visiblePhoneError ? ` ${phoneId}-error` : ""}`}
+            onFocus={onFieldFocus}
+            onChange={(event) => setPhone(normalisePhone(event.target.value))}
+            onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
+          />
         </div>
+        <p className="input-hint" id={`${phoneId}-hint`}>
+          So we can help you list faster. We&rsquo;ll never share it.
+        </p>
+        {visiblePhoneError && (
+          <p className="input-error-msg" id={`${phoneId}-error`}>
+            {visiblePhoneError}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <p className="input-label" aria-hidden="true">
+          I want to
+        </p>
+        <ChipRow label="I want to">
+          {INTENTS.map((value) => (
+            <FilterChip
+              key={value}
+              active={intent === value}
+              onFocus={onFieldFocus}
+              onClick={() => setIntent(value)}
+            >
+              {INTENT_LABELS[value]}
+            </FilterChip>
+          ))}
+        </ChipRow>
       </div>
 
       {/* The honeypot. Off screen and out of the tab order, so only a bot

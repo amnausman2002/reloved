@@ -5,9 +5,8 @@ import styles from "@/app/_components/BuySellToggle.module.css";
 
 // A copy of the homepage's Buy / Sell toggle (app/_components/BuySellToggle.tsx),
 // kept separate so the homepage file is untouched. Same CSS module, so the two
-// look identical. Differences: the Sell side has the waitlist's three lines,
-// and there is no "List your first item" link, since this page has no way
-// into the app.
+// look identical. The one difference: no "List your first item" link under
+// Sell, since this page has no way into the app.
 
 const BUY_BENEFITS = [
   {
@@ -27,10 +26,19 @@ const BUY_BENEFITS = [
   },
 ];
 
-const SELL_LINES = [
-  "List in minutes. Our AI fills in the details from your photos.",
-  "Zero commission. Keep every rupee.",
-  "Bulk-list a whole closet in one go.",
+const SELL_BENEFITS = [
+  {
+    headline: "Take photos of everything, we’ll do the rest.",
+    body: "Take photos of your whole wardrobe in one go. AI works out which photos belong to which item and fills in the details for you. You check, tweak, and post.",
+  },
+  {
+    headline: "No commission. Not now, not later.",
+    body: "You keep every rupee. We don’t charge to list, we don’t take a cut when you sell, and that’s not going to change.",
+  },
+  {
+    headline: "List in minutes. Reviewed by a real person.",
+    body: "Upload your photos, confirm the details AI fills in, and you’re done. Before anything goes live, the team verifies your item. That’s how buyers trust what they find here.",
+  },
 ];
 
 export default function WaitlistBuySellToggle() {
@@ -64,7 +72,7 @@ export default function WaitlistBuySellToggle() {
     return () => observer.disconnect();
   }, [tab]);
 
-  const count = tab === "buy" ? BUY_BENEFITS.length : SELL_LINES.length;
+  const count = tab === "buy" ? BUY_BENEFITS.length : SELL_BENEFITS.length;
 
   return (
     <section className={styles.wrapper}>
@@ -121,16 +129,17 @@ export default function WaitlistBuySellToggle() {
             </div>
           </div>
           <div className={styles.sellCopy}>
-            {SELL_LINES.map((line, i) => (
+            {SELL_BENEFITS.map((b, i) => (
               <div
-                key={line}
+                key={b.headline}
                 ref={(el) => {
                   cardRefs.current[i] = el;
                 }}
                 className={styles.sellBenefit}
               >
                 <div className={styles.sellBenefitInner}>
-                  <p className={styles.benefitHeadline}>{line}</p>
+                  <p className={styles.benefitHeadline}>{b.headline}</p>
+                  <p className={styles.benefitBody}>{b.body}</p>
                 </div>
               </div>
             ))}
