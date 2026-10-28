@@ -35,19 +35,23 @@
   object-fit: cover;
 }
 
-/* Darkens the top for the nav and the bottom for the words, and leaves the
- * middle of the video alone. The 0.55 is the homepage closing section's
- * overlay over its own video. */
+/* An even wash over the video: light at rest, deep while the form is open so
+ * the fields read clearly. The colour is the homepage closing section's
+ * overlay colour. */
 .heroShade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(10, 10, 8, 0.3) 0%,
-    rgba(10, 10, 8, 0) 22%,
-    rgba(10, 10, 8, 0) 40%,
-    rgba(10, 10, 8, 0.55) 100%
-  );
+  background: rgb(10, 10, 8);
+  opacity: 0.25;
+}
+.heroShadeDeep {
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .heroShade {
+    transition: opacity 0.5s ease;
+  }
 }
 
 .heroInner {
@@ -83,14 +87,169 @@
   color: var(--white);
 }
 
-/* The homepage's outlined hero button, stretched to the column. */
-.heroButton {
+/* ─── Hero form: bare lines on the video ──────────────── */
+
+/* OFF-SYSTEM, at Bismah's request (28 Oct): underlines only, no boxes or
+ * fills, white on the darkened video. The bottom form keeps the design
+ * system's fields. */
+.lineForm {
   width: 100%;
-  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  text-align: left;
 }
 
 @media (min-width: 1024px) {
-  .heroButton { max-width: 400px; }
+  .lineForm { max-width: 480px; }
+}
+
+.lineField {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+}
+/* The line thickens and brightens on focus, which is the focus mark here. */
+.lineField:focus-within {
+  border-bottom-color: var(--white);
+  box-shadow: 0 1px 0 0 var(--white);
+}
+.lineFieldError,
+.lineFieldError:focus-within {
+  border-bottom-color: var(--status-rejected);
+  box-shadow: none;
+}
+
+.lineInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: var(--space-3) 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  color: var(--white);
+  caret-color: var(--white);
+  font-family: var(--font-body);
+  /* 16px, so iPhone does not zoom the page when the field is tapped. */
+  font-size: var(--size-body);
+}
+.lineInput::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+/* Browser autofill paints its own background; keep the text white and the
+ * line bare. */
+.lineInput:-webkit-autofill {
+  -webkit-text-fill-color: var(--white);
+  transition: background-color 9999s ease 0s;
+}
+
+.linePrefix {
+  font-size: var(--size-body);
+  color: var(--white);
+}
+
+.lineHint,
+.lineError {
+  margin-top: var(--space-1);
+  font-size: var(--size-caption);
+  line-height: var(--lh-caption);
+  color: rgba(255, 255, 255, 0.8);
+}
+.lineError {
+  color: var(--white);
+}
+
+/* Buy / Sell / Both as words on the line, the chosen one underlined. */
+.lineChoices {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+}
+.lineChoicesLabel {
+  margin-right: auto;
+  font-size: var(--size-body);
+  color: rgba(255, 255, 255, 0.7);
+}
+.lineChoice {
+  min-height: 48px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+  color: rgba(255, 255, 255, 0.7);
+  text-underline-offset: 5px;
+}
+.lineChoice:hover {
+  color: var(--white);
+}
+.lineChoice:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+}
+.lineChoiceActive {
+  color: var(--white);
+  text-decoration: underline;
+}
+
+/* The homepage hero's outlined button (page.module.css .heroCta) in place of
+ * the design system's filled one. */
+.lineSubmit:global(.btn-primary) {
+  margin-top: var(--space-2);
+  min-height: 48px;
+  background: transparent;
+  border-color: var(--white);
+  color: var(--white);
+}
+.lineSubmit:global(.btn-primary):hover {
+  background: var(--white);
+  color: var(--text-primary);
+}
+.lineSubmit:global(.btn-primary):disabled {
+  opacity: 0.5;
+}
+.lineSubmit:global(.btn-primary):disabled:hover {
+  background: transparent;
+  color: var(--white);
+  border-color: var(--white);
+}
+.lineSubmit:global(.btn-primary):focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+}
+
+/* The rest of the form, folded away until she taps into the email. Growing
+ * the grid row from 0fr to 1fr opens it to its real height, and because the
+ * hero is bottom-aligned, that is what lifts the heading. */
+.expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  /* Cancels the form's gap while closed. */
+  margin-top: calc(-1 * var(--space-4));
+}
+.expandOpen {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 0;
+}
+.expandClip {
+  min-height: 0;
+  overflow: hidden;
+  /* Room for focus rings, which the clip would otherwise cut off. */
+  padding: 4px;
+  margin: -4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .expand {
+    transition: grid-template-rows 0.5s ease, opacity 0.5s ease, margin-top 0.5s ease;
+  }
 }
 
 /* ─── Quote: revealed by scrolling ────────────────────── */
@@ -246,6 +405,26 @@ div.tickerBand {
   color: var(--text-primary);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* In the hero, over the darkened video. */
+.onDark .successHeading,
+.onDark .successText,
+.onDark .successLink {
+  color: var(--white);
+}
+.onDark :global(.btn-whatsapp) {
+  background: transparent;
+  border-color: var(--white);
+  color: var(--white);
+}
+.onDark :global(.btn-whatsapp):hover {
+  background: var(--white);
+  color: var(--text-primary);
+}
+.onDark :global(.btn-whatsapp):focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
 }
 
 /* ─── Bottom form section ──────────────────────────────── */

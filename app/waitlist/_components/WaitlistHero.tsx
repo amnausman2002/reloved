@@ -1,17 +1,24 @@
-import homeStyles from "@/app/page.module.css";
+"use client";
+
+import { useState } from "react";
 import styles from "../waitlist.module.css";
 import HeroVideo from "./HeroVideo";
-import JoinButton from "./JoinButton";
+import HeroWaitlistForm from "./HeroWaitlistForm";
 
 // A video hero with the words at the bottom left: a large heading, a small
-// line under it, and one full-width button down to the form. The outlined
-// button style is the homepage hero's own (app/page.module.css).
+// line under it, and the email line. Tapping into the email darkens the video
+// and opens the rest of the form, which pushes the heading up.
 
 export default function WaitlistHero() {
+  const [formOpen, setFormOpen] = useState(false);
+
   return (
     <section className={styles.hero}>
       <HeroVideo className={styles.heroVideo} />
-      <div className={styles.heroShade} aria-hidden="true" />
+      <div
+        className={[styles.heroShade, formOpen && styles.heroShadeDeep].filter(Boolean).join(" ")}
+        aria-hidden="true"
+      />
 
       <div className={styles.heroInner}>
         <div className={styles.heroIntro}>
@@ -19,7 +26,7 @@ export default function WaitlistHero() {
           <p className={styles.heroSub}>Buy and sell preloved women&rsquo;s fashion.</p>
         </div>
 
-        <JoinButton className={`${homeStyles.heroCta} ${styles.heroButton}`} />
+        <HeroWaitlistForm onOpenChange={setFormOpen} />
       </div>
     </section>
   );

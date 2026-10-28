@@ -1,0 +1,59 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import type { Intent } from "../validation";
+import {
+  FOUNDING_SELLER_MESSAGE,
+  SHARE_MESSAGE,
+  WAITLIST_WHATSAPP_NUMBER,
+  shareUrl,
+  whatsappLink,
+} from "../config";
+import styles from "../waitlist.module.css";
+
+// What replaces either form once she has joined. Focused when it appears, so
+// a screen reader reads it out.
+export default function WaitlistSuccess({ intent, onDark = false }: { intent: Intent; onDark?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      tabIndex={-1}
+      role="status"
+      className={[styles.success, onDark && styles.onDark].filter(Boolean).join(" ")}
+    >
+      <p className={styles.successHeading}>You&rsquo;re in! We&rsquo;ll email you the moment we launch.</p>
+
+      <div className={styles.successBlock}>
+        <p className={styles.successText}>Know someone with a closet to clear?</p>
+        <a
+          className="btn-whatsapp"
+          href={whatsappLink(`${SHARE_MESSAGE} ${shareUrl()}`)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Share on WhatsApp
+        </a>
+      </div>
+
+      {intent !== "buy" && (
+        <p className={styles.successText}>
+          Want to be a founding seller?{" "}
+          <a
+            className={styles.successLink}
+            href={whatsappLink(FOUNDING_SELLER_MESSAGE, WAITLIST_WHATSAPP_NUMBER)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Message us on WhatsApp
+          </a>
+        </p>
+      )}
+    </div>
+  );
+}
