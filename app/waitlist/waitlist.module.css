@@ -36,13 +36,13 @@
   object-fit: cover;
 }
 
-/* A light, even wash over the video. The colour is the homepage closing
+/* An even wash over the video, dark enough for white text to stand out. The colour is the homepage closing
  * section's overlay colour. */
 .heroShade {
   position: absolute;
   inset: 0;
   background: rgb(10, 10, 8);
-  opacity: 0.25;
+  opacity: 0.4;
 }
 
 .heroInner {
@@ -66,9 +66,9 @@
 .heroTitle {
   font-family: var(--font-display);
   font-weight: 300;
-  /* Two lines on a phone for "your next favourite outfit is already out
-   * there." */
-  font-size: clamp(32px, 8.8vw, 80px);
+  /* As large as the first line, "your next favourite outfit", can be and
+   * still fit across a phone. The line break is in the markup. */
+  font-size: clamp(34px, 10.4vw, 88px);
   line-height: 1.05;
   letter-spacing: -0.02em;
   font-variation-settings: "opsz" 144;
@@ -93,10 +93,16 @@
 /* ─── Waitlist form, in the panel ─────────────────────── */
 
 /* OFF-SYSTEM, at Bismah's request (28 Oct): email and WhatsApp are one
- * underline each with no box or fill. Labels, "I want to" and its choices
- * are in Fraunces; the button is the hero's outlined one. Every colour here
- * comes from the panel's --panel-* variables (see .joinPanel), so the panel
- * can be light or dark by changing those alone. */
+ * underline each with no box or fill, and the button is the hero's outlined
+ * one. Every colour comes from the panel's --panel-* variables (see
+ * .joinPanel), so the panel can be light or dark by changing those alone.
+ *
+ * Kept deliberately small (29 Oct), in four text styles:
+ *   heading   Fraunces Light, "Get in early" and the success line
+ *   body      Inter 16, ink: everything she reads or types in the form
+ *   button    Inter Medium 14, the design system's button text
+ *   note      Inter 12, soft ink: the hint and error lines
+ * and two ink colours, full for text and soft for placeholders and notes. */
 .lineForm {
   width: 100%;
   display: flex;
@@ -149,14 +155,10 @@
   /* 16px, so iPhone does not zoom the page when the field is tapped. */
   font-size: var(--size-body);
 }
-/* The label sits in the line as its placeholder, in Fraunces. What she
- * types is in the body face. */
+/* The label sits in the line as its placeholder, same face and size as
+ * what she types, in the softer ink. */
 .lineInput::placeholder {
-  color: var(--panel-ink);
-  font-family: var(--font-display);
-  font-weight: 300;
-  font-size: var(--size-h3);
-  font-variation-settings: "opsz" 144;
+  color: var(--panel-ink-soft);
 }
 /* Browser autofill paints its own background; keep the line bare. */
 .lineInput:-webkit-autofill {
@@ -274,7 +276,7 @@
   align-items: center;
   padding: 0 var(--space-4);
   cursor: pointer;
-  font-size: var(--size-body-sm);
+  font-size: var(--size-body);
   color: var(--panel-ink);
 }
 .codeOption[aria-selected="true"] {
@@ -288,7 +290,7 @@
 }
 .codeEmpty {
   padding: var(--space-3) var(--space-4);
-  font-size: var(--size-body-sm);
+  font-size: var(--size-body);
   color: var(--panel-ink-soft);
 }
 
@@ -303,10 +305,8 @@
 }
 .intentLabel,
 .intentChoice {
-  font-family: var(--font-display);
-  font-weight: 300;
-  font-size: var(--size-h3);
-  font-variation-settings: "opsz" 144;
+  font-family: var(--font-body);
+  font-size: var(--size-body);
   color: var(--panel-ink);
 }
 .intentChoices {
@@ -605,12 +605,13 @@ p.benefitLight {
   -webkit-backdrop-filter: blur(10px);
 }
 
-/* Large and light, at the hero headline's scale, for an editorial feel. */
-.joinHeading {
+/* The form's one heading size, shared with the success line. */
+.joinHeading,
+.joinPanel .successHeading {
   font-family: var(--font-display);
   font-weight: 300;
-  font-size: clamp(48px, 13vw, 88px);
-  line-height: 1;
+  font-size: clamp(32px, 8.5vw, 40px);
+  line-height: 1.1;
   letter-spacing: -0.02em;
   font-variation-settings: "opsz" 144;
   color: var(--panel-ink);
@@ -620,19 +621,14 @@ p.benefitLight {
 }
 
 .joinSub {
-  margin: var(--space-3) 0 var(--space-6);
-  font-size: var(--size-body-sm);
-  line-height: var(--lh-body-sm);
+  margin: var(--space-2) 0 var(--space-6);
+  font-size: var(--size-body);
+  line-height: var(--lh-body);
   color: var(--panel-ink);
 }
 
 /* The success message inside the panel. Its first line stands where
- * "Get in early." stood, so it is set large and light too. */
-.joinPanel .successHeading {
-  font-size: clamp(32px, 9vw, 56px);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-}
+ * "Get in early" stood, in the same heading style (above). */
 .joinPanel .successHeading,
 .joinPanel .successText,
 .joinPanel .successLink {

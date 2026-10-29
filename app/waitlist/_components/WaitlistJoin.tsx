@@ -50,7 +50,7 @@ export default function WaitlistJoin() {
         {!saved && (
           <>
             <h2 id={JOIN_HEADING_ID} tabIndex={-1} className={styles.joinHeading}>
-              Get in early.
+              Get in early
             </h2>
             <p className={styles.joinSub}>Be first to shop, or be one of our founding sellers.</p>
           </>
