@@ -1,6 +1,47 @@
 /* The waitlist page. Only what app/page.module.css, BuySellToggle.module.css
  * and globals.css do not already cover. Tokens only. */
 
+/* ─── Opening: into the heart ─────────────────────────── */
+
+/* 2.4 seconds in all (WaitlistIntro). The heart sits alone on the canvas,
+ * then the page dives into it: it grows, faster and faster, until the dark
+ * covers the screen. The cover turns dark behind it, then lifts, and the
+ * hero is underneath. The dark is the hero's own fill, #1A1A18, so the
+ * hand-over is seamless. It ends invisible and click-through. */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--canvas);
+  pointer-events: auto;
+  animation: introCover 2.4s linear forwards;
+}
+.introHeart {
+  display: block;
+  color: #1A1A18;
+  /* A point well inside the heart, so growing from it fills the screen. */
+  transform-origin: 50% 55%;
+  animation: introDive 2.4s forwards;
+}
+
+@keyframes introCover {
+  0%, 55% { background-color: var(--canvas); opacity: 1; visibility: visible; }
+  62% { background-color: #1A1A18; opacity: 1; }
+  70% { opacity: 1; }
+  100% { background-color: #1A1A18; opacity: 0; visibility: hidden; pointer-events: none; }
+}
+@keyframes introDive {
+  0%, 20% { transform: scale(1); animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0); }
+  62%, 100% { transform: scale(60); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro { display: none; }
+}
+
 /* ─── Hero ─────────────────────────────────────────────── */
 
 /* Full screen, words at the bottom left. Pulled up under the transparent nav

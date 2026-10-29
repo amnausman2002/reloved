@@ -15,7 +15,11 @@ export default function WaitlistSuccess() {
 
   return (
     <div ref={ref} tabIndex={-1} role="status" className={styles.success}>
-      <p className={styles.successHeading}>You&rsquo;re in! We&rsquo;ll email you the moment we launch.</p>
+      <p className={styles.successHeading}>
+        You&rsquo;re in!
+        <br />
+        We&rsquo;ll email you the moment we launch.
+      </p>
 
       <div className={styles.successBlock}>
         <p className={styles.successText}>Know someone with a closet to clear?</p>

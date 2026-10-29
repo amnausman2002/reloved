@@ -1,4 +1,5 @@
 import homeStyles from "@/app/page.module.css";
+import WaitlistIntro from "./_components/WaitlistIntro";
 import WaitlistNav from "./_components/WaitlistNav";
 import WaitlistHero from "./_components/WaitlistHero";
 import WaitlistBuySellToggle from "./_components/WaitlistBuySellToggle";
@@ -15,6 +16,7 @@ import WaitlistFooter from "./_components/WaitlistFooter";
 export default function WaitlistPage() {
   return (
     <>
+      <WaitlistIntro />
       <WaitlistNav />
 
       <main>
@@ -22,8 +24,8 @@ export default function WaitlistPage() {
 
         <div className={homeStyles.pageScroll}>
           <WaitlistBuySellToggle />
-          <WaitlistTicker />
           <WaitlistQuote />
+          <WaitlistTicker />
           {/* The form: where both "Join the waitlist" buttons bring her. */}
           <WaitlistJoin />
         </div>

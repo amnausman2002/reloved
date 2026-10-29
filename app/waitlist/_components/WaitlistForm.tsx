@@ -124,8 +124,10 @@ export default function WaitlistForm({ onSaved }: Props) {
         <div className={styles.foldClip}>
           <div className={styles.foldBody}>
             <p className={styles.foundingIntro} id={`${phoneId}-intro`}>
-              Want to be a founding seller? The first 30 get personal help listing and go live on launch
-              day. Drop your WhatsApp and we&rsquo;ll set you up.
+              Want to be a founding seller?
+              <br />
+              The first 30 get personal help listing and go live on launch day. Drop your WhatsApp and
+              we&rsquo;ll set you up.
             </p>
             <div>
               <div className={[styles.lineField, form.phoneError && styles.lineFieldError].filter(Boolean).join(" ")}>
