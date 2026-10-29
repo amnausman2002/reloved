@@ -7,17 +7,18 @@ import { goToForm } from "./JoinButton";
 // How it works, as a Sell / Buy switch over a one-screen carousel, after
 // eseagency.ch's hero. Each benefit fades into the next in the same place;
 // a row of bars along the bottom fills as each one plays, about 10 seconds
-// apiece. Tapping a bar or swiping left and right chooses one, and from then
-// on it stays where she put it.
+// apiece. Tapping a bar or swiping left and right jumps to a slide and starts
+// its 10 seconds again; it keeps playing on from there.
 //
-// Buy: each slide is a full-bleed photo with white words over it, and it
-// loops. Sell: the phone demo video stays put while four slides of words
-// change under it, and it stops on the last, the founding-seller invitation.
+// Both sides: a picture above and the words below on the light canvas. Buy
+// changes its photo with each slide and loops. Sell keeps the phone demo
+// video still while four slides of words change under it, and stops on the
+// last, the founding-seller invitation.
 
 type Slide = {
   headline: string;
   body: string;
-  /** Buy only: the full-bleed photo behind the words. */
+  /** Buy only: the photo above the words, which changes with the slide. */
   photo?: string;
   /** Sell's last slide: "Join as a founding seller". */
   founding?: boolean;
@@ -70,9 +71,12 @@ const SWIPE_PX = 40;
 export default function WaitlistBuySellToggle() {
   const [tab, setTab] = useState<Tab>("sell");
   const [index, setIndex] = useState(0);
-  /** Off once she chooses a slide herself, when Sell reaches its last slide,
-   *  and from the start for anyone who has asked for less motion. */
+  /** Off when Sell reaches its last slide, and from the start for anyone who
+   *  has asked for less motion. */
   const [auto, setAuto] = useState(true);
+  /** Counts her own choices, so tapping the bar already playing still
+   *  starts its 10 seconds again. */
+  const [restarts, setRestarts] = useState(0);
   const [inView, setInView] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -131,10 +135,12 @@ export default function WaitlistBuySellToggle() {
     setAuto(!reducedMotion);
   }
 
-  /** Her own choice, by bar or by swipe. Auto-advance stops for good. */
+  /** Her own choice, by bar or by swipe: that slide, from the start of its
+   *  10 seconds, and on from there. */
   function choose(next: number) {
     setIndex(next);
-    setAuto(false);
+    setRestarts((n) => n + 1);
+    setAuto(!reducedMotion);
   }
 
   /** The current bar has filled: on to the next, or round again, or stop. */
@@ -163,7 +169,6 @@ export default function WaitlistBuySellToggle() {
   }
 
   const playing = auto && inView && !hovered;
-  const tone = tab === "buy" ? styles.stageOnPhoto : styles.stageOnLight;
 
   return (
     <section className={styles.how} aria-label="How it works">
@@ -193,7 +198,7 @@ export default function WaitlistBuySellToggle() {
       <div
         ref={stageRef}
         id={`${id}-stage`}
-        className={`${styles.stage} ${tone}`}
+        className={styles.stage}
         role="region"
         aria-roledescription="carousel"
         aria-label={tab === "buy" ? "Buying on Reloved" : "Selling on Reloved"}
@@ -203,7 +208,7 @@ export default function WaitlistBuySellToggle() {
         onMouseLeave={() => setHovered(false)}
       >
         {tab === "sell" && (
-          <div className={styles.stageVideoFrame}>
+          <div className={styles.stageMediaFrame}>
             {/* The waitlist's own copy, about 1 MB against the homepage's 21. */}
             <video
               className={styles.stageVideo}
@@ -231,11 +236,10 @@ export default function WaitlistBuySellToggle() {
             inert={i !== index}
           >
             {slide.photo && (
-              <>
+              <div className={styles.stageMediaFrame}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img className={styles.slidePhoto} src={slide.photo} alt="" loading="lazy" />
-                <div className={styles.slideShade} aria-hidden="true" />
-              </>
+              </div>
             )}
             <div className={styles.slideText}>
               <p className={styles.slideHeadline}>{slide.headline}</p>
@@ -263,7 +267,7 @@ export default function WaitlistBuySellToggle() {
               >
                 <span
                   // A new key restarts the fill whenever this bar becomes current.
-                  key={state === "playing" ? `${tab}-${index}` : state}
+                  key={state === "playing" ? `${tab}-${index}-${restarts}` : state}
                   className={[
                     styles.barFill,
                     state === "done" && styles.barFillDone,

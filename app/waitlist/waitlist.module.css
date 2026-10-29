@@ -7,8 +7,7 @@
  * the same way the homepage hero is. */
 .hero {
   position: relative;
-  /* Leaves room for the 36px launch bar below it on the first screen. */
-  min-height: calc(100svh - 36px);
+  min-height: 100svh;
   margin-top: calc(-1 * var(--nav-height));
   display: flex;
   flex-direction: column;
@@ -381,26 +380,16 @@
   opacity: calc(0.15 + 0.85 * clamp(0, var(--p) * var(--n) - var(--i), 1));
 }
 
-/* ─── Launch bar under the hero ──────────────────────── */
+/* ─── Ticker, as its own band ─────────────────────────── */
 
-/* After kindredofireland.com's announcement bar: thin, still, the ticker's
- * dark colour (page.module.css .tickerTape). 36px tall; the hero's height
- * subtracts the same 36px. */
-.announce {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  padding: 0 var(--space-4);
-  background: #1A1A18;
+/* The homepage pins this to the bottom of its hero; here it sits in the flow. */
+div.tickerBand {
+  position: relative;
 }
-.announceText {
-  font-family: var(--font-display);
-  font-weight: 300;
-  font-size: var(--size-sheet-body);
-  line-height: 1;
-  font-variation-settings: "opsz" 30;
-  color: var(--white);
+/* The homepage tape lowercases its phrase; this one keeps the launch line as
+ * written. */
+span.tickerText {
+  text-transform: none;
 }
 
 /* ─── Fade up on arrival ──────────────────────────────── */
@@ -477,6 +466,9 @@
   overflow: hidden;
   /* Vertical swipes still scroll the page; sideways ones are ours. */
   touch-action: pan-y;
+  --stage-ink: var(--text-primary);
+  --stage-track: rgba(45, 45, 45, 0.15);
+  background: var(--canvas);
 }
 
 @media (min-width: 640px) {
@@ -489,25 +481,10 @@
   .stage { --stage-gutter: 40px; }
 }
 
-/* Buy: white words over the photos. */
-.stageOnPhoto {
-  --stage-ink: var(--white);
-  --stage-track: rgba(255, 255, 255, 0.35);
-  background: #1A1A18;
-}
-/* Sell: dark words on the page's own canvas, so the stage runs straight on
- * from the Sell / Buy row. The video's near-white is within a few shades of
- * it. */
-.stageOnLight {
-  --stage-ink: var(--text-primary);
-  --stage-track: rgba(45, 45, 45, 0.15);
-  background: var(--canvas);
-}
-
-/* Sell's phone video, fixed in the upper part of the stage while the words
- * below it change. The space under it fits the tallest slide, the founding
- * seller one with its button. */
-.stageVideoFrame {
+/* The picture's place in the upper part of the stage: Sell's phone video,
+ * which stays still, or Buy's photo, which fades with its slide. The space
+ * under it fits the tallest slide, the founding seller one with its button. */
+.stageMediaFrame {
   position: absolute;
   top: var(--space-5);
   bottom: 300px;
@@ -524,6 +501,13 @@
   /* The recording's white surround takes on the canvas colour instead of
    * showing as a paler box around the phone. */
   mix-blend-mode: multiply;
+}
+/* Buy's photos keep the homepage's 3:4 frame. */
+.slidePhoto {
+  height: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  display: block;
 }
 
 /* Every slide is stacked in the same place; only the current one shows. */
@@ -542,26 +526,6 @@
   .slide {
     transition: opacity 0.8s ease;
   }
-}
-
-.slidePhoto {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-/* Darkens the lower half so the words read over any photo. The colour is
- * the hero's overlay colour. */
-.slideShade {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(10, 10, 8, 0) 30%,
-    rgba(10, 10, 8, 0.5) 60%,
-    rgba(10, 10, 8, 0.8) 100%
-  );
 }
 
 /* The words sit above the bars, bottom left, like the hero's. */
