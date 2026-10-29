@@ -424,6 +424,40 @@ p.benefitLight {
   font-weight: 300;
 }
 
+/* "Join as a founding seller": the hero's outlined button (page.module.css
+ * .heroCta) in dark, since the Sell side sits on the light canvas. Hover
+ * fills it, like the hero's. */
+.foundingButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3) var(--space-5);
+  background: transparent;
+  border: 1px solid var(--text-primary);
+  border-radius: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-ui);
+  color: var(--text-primary);
+}
+.foundingButton:hover {
+  background: var(--text-primary);
+  color: var(--white);
+}
+.foundingButton:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .foundingButton {
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+}
+
 /* ─── How it works: the Buy / Sell switch ─────────────── */
 
 /* Fraunces at the homepage's section heading size (page.module.css's
