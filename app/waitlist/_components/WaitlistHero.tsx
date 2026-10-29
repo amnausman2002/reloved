@@ -15,8 +15,11 @@ export default function WaitlistHero() {
 
       <div className={styles.heroInner}>
         <div className={styles.heroIntro}>
-          <h1 className={styles.heroTitle}>great style doesn&rsquo;t have to cost full price.</h1>
-          <p className={styles.heroSub}>Buy and sell preloved women&rsquo;s fashion.</p>
+          <h1 className={styles.heroTitle}>your next favourite outfit is already out there.</h1>
+          <p className={styles.heroSub}>
+            Reloved is a new home for preloved women&rsquo;s fashion in Pakistan. Join the waitlist to
+            get first look when we launch.
+          </p>
         </div>
 
         <JoinButton className={`${homeStyles.heroCta} ${styles.heroButton}`} />
