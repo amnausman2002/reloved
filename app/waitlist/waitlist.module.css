@@ -455,7 +455,26 @@ span.tickerText {
 }
 
 .howRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
   padding: var(--space-5) var(--space-4);
+}
+
+/* A small label in spaced Inter capitals: "How it works" across from the
+ * switch, "Our mission" over the quote. */
+.eyebrow {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--size-caption);
+  line-height: var(--lh-caption);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.quoteScroll {
+  margin-top: var(--space-5);
 }
 
 .stage {
@@ -482,12 +501,17 @@ span.tickerText {
 }
 
 /* The picture's place in the upper part of the stage: Sell's phone video,
- * which stays still, or Buy's photo, which fades with its slide. The space
- * under it fits the tallest slide, the founding seller one with its button. */
+ * which stays still, or Buy's photo, which fades with its slide. Same frame
+ * on both sides, so the caption under it starts in the same place on both.
+ * --caption-space below it fits the tallest slide, the founding seller one
+ * with its button, plus the bars. */
+.stage {
+  --caption-space: 280px;
+}
 .stageMediaFrame {
   position: absolute;
   top: var(--space-5);
-  bottom: 300px;
+  bottom: var(--caption-space);
   left: 0;
   right: 0;
   display: flex;
@@ -522,18 +546,26 @@ span.tickerText {
   pointer-events: auto;
 }
 
+/* One out, then the next in: the leaving slide fades out at once, and the
+ * arriving one waits for it to finish before fading in, so the two are
+ * never on screen together. */
 @media (prefers-reduced-motion: no-preference) {
   .slide {
-    transition: opacity 0.8s ease;
+    transition: opacity 0.35s ease;
+  }
+  .slideActive {
+    transition: opacity 0.35s ease 0.35s;
   }
 }
 
-/* The words sit above the bars, bottom left, like the hero's. */
+/* The words start a fixed 24px under the picture's frame, whatever their
+ * length, so a headline never jumps between slides or between Buy and
+ * Sell. */
 .slideText {
   position: absolute;
   left: var(--stage-gutter);
   right: var(--stage-gutter);
-  bottom: calc(var(--space-5) + 24px + var(--space-4));
+  top: calc(100% - var(--caption-space) + var(--space-5));
   max-width: 560px;
   display: flex;
   flex-direction: column;

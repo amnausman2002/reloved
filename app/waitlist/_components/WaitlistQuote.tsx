@@ -88,6 +88,7 @@ export default function WaitlistQuote() {
   return (
     <section className={homeStyles.quoteSection}>
       <div className={homeStyles.container}>
+        <p className={styles.eyebrow}>Our mission</p>
         <p
           ref={textRef}
           className={`${homeStyles.quoteText} ${styles.quoteScroll}`}

@@ -5,7 +5,7 @@ import styles from "../waitlist.module.css";
 // and the quote, carrying the launch line instead of "a more circular way to
 // shop". Same classes, so it moves and looks like the homepage's.
 
-const TICKER_PHRASE = "Launching across Pakistan soon.";
+const TICKER_PHRASE = "launching across Pakistan soon";
 const TICKER_REPEAT = 6;
 
 function HeartIcon() {

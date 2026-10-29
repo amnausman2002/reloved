@@ -78,7 +78,6 @@ export default function WaitlistBuySellToggle() {
    *  starts its 10 seconds again. */
   const [restarts, setRestarts] = useState(0);
   const [inView, setInView] = useState(false);
-  const [hovered, setHovered] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [videoNear, setVideoNear] = useState(false);
   const switchRef = useRef<HTMLDivElement>(null);
@@ -168,10 +167,10 @@ export default function WaitlistBuySellToggle() {
     else choose(index > 0 ? index - 1 : loops ? last : 0);
   }
 
-  const playing = auto && inView && !hovered;
+  const playing = auto && inView;
 
   return (
-    <section className={styles.how} aria-label="How it works">
+    <section className={styles.how} aria-labelledby={`${id}-label`}>
       <div className={styles.howRow}>
         <div ref={switchRef} className={`${styles.howTabs} ${styles.reveal}`} role="tablist" aria-label="How it works">
           {TABS.map((value, i) => (
@@ -193,6 +192,9 @@ export default function WaitlistBuySellToggle() {
             </span>
           ))}
         </div>
+        <p id={`${id}-label`} className={styles.eyebrow}>
+          How it works
+        </p>
       </div>
 
       <div
@@ -204,8 +206,6 @@ export default function WaitlistBuySellToggle() {
         aria-label={tab === "buy" ? "Buying on Reloved" : "Selling on Reloved"}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       >
         {tab === "sell" && (
           <div className={styles.stageMediaFrame}>
