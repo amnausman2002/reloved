@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import homeStyles from "@/app/page.module.css";
 import styles from "../waitlist.module.css";
 
-// The homepage's mission paragraph (app/_components/QuoteSection.tsx), but
+// The mission paragraph, in the homepage's quote style (app/_components/QuoteSection.tsx), but
 // revealed by scrolling instead of on a timer: each word fades from faint to
 // full as she scrolls the paragraph up the screen, and stays full after. The
 // text is never invisible, so there is no blank gap while it plays.
@@ -15,9 +15,10 @@ import styles from "../waitlist.module.css";
 type Segment = { text: string; italic: boolean };
 
 const SEGMENTS: Segment[] = [
-  { text: "Everything you want is already out there, sitting in ", italic: false },
-  { text: "someone else’s closet", italic: true },
-  { text: ". We’re building the place where it finds its next owner, so clothes get a longer life and preloved feels ", italic: false },
+  {
+    text: "We saw wardrobes full of clothes worn once, and buyers who’d love them, with nothing good in between. Reloved is the place where clothes get a longer life and preloved feels ",
+    italic: false,
+  },
   { text: "as good as new", italic: true },
   { text: ".", italic: false },
 ];

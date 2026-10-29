@@ -407,50 +407,18 @@ span.tickerText {
   }
 }
 
-/* "Join as a founding seller": the hero's outlined button (page.module.css
- * .heroCta) in dark, since the Sell side sits on the light canvas. Hover
- * fills it, like the hero's. */
-.foundingButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 48px;
-  padding: var(--space-3) var(--space-5);
-  background: transparent;
-  border: 1px solid var(--text-primary);
-  border-radius: 0;
-  cursor: pointer;
-  font-family: var(--font-ui);
-  font-weight: 500;
-  font-size: var(--size-ui);
-  color: var(--text-primary);
-}
-.foundingButton:hover {
-  background: var(--text-primary);
-  color: var(--white);
-}
-.foundingButton:focus-visible {
-  outline: 2px solid var(--text-primary);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .foundingButton {
-    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
-  }
-}
-
 /* ─── How it works: one-screen carousel ───────────────── */
 
 /* After eseagency.ch's hero: the Sell / Buy row, then a stage that fills the
  * rest of the screen, where each benefit fades into the next and a bar per
- * slide fills along the bottom. */
+ * slide fills along the bottom. A little room above and below, so it does
+ * not sit hard against the hero or the ticker. */
 .how {
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: calc(100svh - var(--nav-height));
+  padding: var(--space-6) 0 var(--space-6);
   background: var(--canvas);
 }
 
@@ -459,14 +427,14 @@ span.tickerText {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-5) var(--space-4);
+  padding: 0 var(--space-4) var(--space-4);
 }
 
 /* A small label in spaced Inter capitals: "How it works" across from the
  * switch, "Our mission" over the quote. */
 .eyebrow {
-  font-family: var(--font-ui);
-  font-weight: 500;
+  font-family: var(--font-body);
+  font-weight: 400;
   font-size: var(--size-caption);
   line-height: var(--lh-caption);
   letter-spacing: 0.14em;
@@ -477,17 +445,23 @@ span.tickerText {
   margin-top: var(--space-5);
 }
 
+/* A column: the picture takes whatever height is left, then the words, then
+ * the bars. */
 .stage {
   --stage-gutter: var(--space-4);
+  --stage-ink: var(--text-primary);
+  --stage-track: rgba(45, 45, 45, 0.15);
   position: relative;
   flex: 1;
   min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-2) var(--stage-gutter) 0;
   overflow: hidden;
+  background: var(--canvas);
   /* Vertical swipes still scroll the page; sideways ones are ours. */
   touch-action: pan-y;
-  --stage-ink: var(--text-primary);
-  --stage-track: rgba(45, 45, 45, 0.15);
-  background: var(--canvas);
 }
 
 @media (min-width: 640px) {
@@ -500,78 +474,70 @@ span.tickerText {
   .stage { --stage-gutter: 40px; }
 }
 
-/* The picture's place in the upper part of the stage: Sell's phone video,
- * which stays still, or Buy's photo, which fades with its slide. Same frame
- * on both sides, so the caption under it starts in the same place on both.
- * --caption-space below it fits the tallest slide, the founding seller one
- * with its button, plus the bars. */
-.stage {
-  --caption-space: 280px;
+/* The picture: Sell's phone video, still, or Buy's photo for the current
+ * slide. Same box on both sides, so the words below start in the same place
+ * on both. Centred, full height of what is left. */
+.stageMedia {
+  position: relative;
+  flex: 1;
+  min-height: 200px;
 }
-.stageMediaFrame {
+.stageVideo,
+.stagePhoto {
   position: absolute;
-  top: var(--space-5);
-  bottom: var(--caption-space);
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 100%;
+  display: block;
 }
 .stageVideo {
-  height: 100%;
   aspect-ratio: 488 / 960;
   object-fit: contain;
-  display: block;
   /* The recording's white surround takes on the canvas colour instead of
    * showing as a paler box around the phone. */
   mix-blend-mode: multiply;
 }
 /* Buy's photos keep the homepage's 3:4 frame. */
-.slidePhoto {
-  height: 100%;
+.stagePhoto {
   aspect-ratio: 3 / 4;
   object-fit: cover;
-  display: block;
 }
 
-/* Every slide is stacked in the same place; only the current one shows. */
-.slide {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
+/* Every slide's words in one grid cell: the row is as tall as the longest,
+ * so the bars never move and nothing below jumps. */
+.captions {
+  display: grid;
 }
-.slideActive {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* One out, then the next in: the leaving slide fades out at once, and the
- * arriving one waits for it to finish before fading in, so the two are
- * never on screen together. */
-@media (prefers-reduced-motion: no-preference) {
-  .slide {
-    transition: opacity 0.35s ease;
-  }
-  .slideActive {
-    transition: opacity 0.35s ease 0.35s;
-  }
-}
-
-/* The words start a fixed 24px under the picture's frame, whatever their
- * length, so a headline never jumps between slides or between Buy and
- * Sell. */
-.slideText {
-  position: absolute;
-  left: var(--stage-gutter);
-  right: var(--stage-gutter);
-  top: calc(100% - var(--caption-space) + var(--space-5));
+.caption {
+  grid-area: 1 / 1;
   max-width: 560px;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   color: var(--stage-ink);
 }
+
+/* A photo or a caption, stacked with the others; only the current one shows.
+ * One out, then the next in: the leaving one fades out at once, and the
+ * arriving one waits for it to finish, so the two are never on screen
+ * together. */
+.layer {
+  opacity: 0;
+}
+.layerActive {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .layer {
+    transition: opacity 0.35s ease;
+  }
+  .layerActive {
+    transition: opacity 0.35s ease 0.35s;
+  }
+}
+
 .slideHeadline {
   font-family: var(--font-display);
   font-weight: 300;
@@ -583,17 +549,10 @@ span.tickerText {
   font-size: var(--size-body);
   line-height: var(--lh-body);
 }
-.slideText .foundingButton {
-  margin-top: var(--space-3);
-}
 
 /* One bar per slide. The bar is the tap target; the line drawn in it is
  * 2px, the filled part a second line over it. */
 .bars {
-  position: absolute;
-  left: var(--stage-gutter);
-  right: var(--stage-gutter);
-  bottom: var(--space-5);
   display: flex;
   gap: var(--space-2);
 }
@@ -608,7 +567,6 @@ span.tickerText {
 }
 .bar::before,
 .barFill {
-  content: "";
   position: absolute;
   left: 0;
   right: 0;
@@ -617,6 +575,7 @@ span.tickerText {
   margin-top: -1px;
 }
 .bar::before {
+  content: "";
   background: var(--stage-track);
 }
 .bar:focus-visible {

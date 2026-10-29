@@ -8,7 +8,6 @@ import { useWaitlistForm } from "../useWaitlistForm";
 import WaitlistSuccess from "./WaitlistSuccess";
 import Honeypot from "./Honeypot";
 import CountryCodePicker from "./CountryCodePicker";
-import { CHOOSE_INTENT_EVENT } from "./JoinButton";
 import styles from "../waitlist.module.css";
 
 // The waitlist form, in the dark panel at the end of the page. Email and
@@ -33,19 +32,6 @@ export default function WaitlistForm({ onSaved }: Props) {
   useEffect(() => {
     if (form.saved) onSaved();
   }, [form.saved, onSaved]);
-
-  // A button elsewhere can arrive with a choice made, like "Join as a
-  // founding seller" choosing Sell. "Buy and sell" already includes selling,
-  // so it is left as it is.
-  const { setIntent } = form;
-  useEffect(() => {
-    function onChoose(event: Event) {
-      const next = (event as CustomEvent<Intent>).detail;
-      setIntent((current) => (current === "both" ? current : next));
-    }
-    window.addEventListener(CHOOSE_INTENT_EVENT, onChoose);
-    return () => window.removeEventListener(CHOOSE_INTENT_EVENT, onChoose);
-  }, [setIntent]);
 
   if (form.saved) return <WaitlistSuccess intent={form.savedIntent} />;
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import styles from "../waitlist.module.css";
-import { goToForm } from "./JoinButton";
 
 // How it works, as a Sell / Buy switch over a one-screen carousel, after
 // eseagency.ch's hero. Each benefit fades into the next in the same place;
@@ -14,14 +13,16 @@ import { goToForm } from "./JoinButton";
 // changes its photo with each slide and loops. Sell keeps the phone demo
 // video still while four slides of words change under it, and stops on the
 // last, the founding-seller invitation.
+//
+// The stage is a column: picture, words, bars. Every slide's words, Sell's and
+// Buy's, share one grid cell, so that row is exactly as tall as the longest
+// of them at whatever width she has, and the picture takes the rest.
 
 type Slide = {
   headline: string;
   body: string;
   /** Buy only: the photo above the words, which changes with the slide. */
   photo?: string;
-  /** Sell's last slide: "Join as a founding seller". */
-  founding?: boolean;
 };
 
 const BUY_SLIDES: Slide[] = [
@@ -58,7 +59,6 @@ const SELL_SLIDES: Slide[] = [
   {
     headline: "Become a founding seller.",
     body: "The first 30 sellers get personal help listing and go live on launch day.",
-    founding: true,
   },
 ];
 
@@ -207,9 +207,9 @@ export default function WaitlistBuySellToggle() {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {tab === "sell" && (
-          <div className={styles.stageMediaFrame}>
-            {/* The waitlist's own copy, about 1 MB against the homepage's 21. */}
+        <div className={styles.stageMedia}>
+          {tab === "sell" ? (
+            // The waitlist's own copy, about 1 MB against the homepage's 21.
             <video
               className={styles.stageVideo}
               src={videoNear ? "/photos/sell-demo-small.mp4" : undefined}
@@ -222,36 +222,45 @@ export default function WaitlistBuySellToggle() {
               preload={videoNear && !reducedMotion ? "auto" : "none"}
               aria-label="A seller listing her clothes on Reloved"
             />
-          </div>
-        )}
+          ) : (
+            slides.map((slide, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={slide.photo}
+                className={[styles.stagePhoto, styles.layer, i === index && styles.layerActive]
+                  .filter(Boolean)
+                  .join(" ")}
+                src={slide.photo}
+                alt=""
+                loading="lazy"
+              />
+            ))
+          )}
+        </div>
 
-        {slides.map((slide, i) => (
-          <div
-            key={`${tab}-${slide.headline}`}
-            className={[styles.slide, i === index && styles.slideActive].filter(Boolean).join(" ")}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`${i + 1} of ${slides.length}`}
-            aria-hidden={i !== index}
-            inert={i !== index}
-          >
-            {slide.photo && (
-              <div className={styles.stageMediaFrame}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className={styles.slidePhoto} src={slide.photo} alt="" loading="lazy" />
-              </div>
-            )}
-            <div className={styles.slideText}>
-              <p className={styles.slideHeadline}>{slide.headline}</p>
-              <p className={styles.slideBody}>{slide.body}</p>
-              {slide.founding && (
-                <button type="button" className={styles.foundingButton} onClick={() => goToForm("sell")}>
-                  Join as a founding seller
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
+        {/* Both sides' words are laid out here, the other side's unseen, so
+            this row is the same height on Sell and Buy and switching never
+            moves the headline. */}
+        <div className={styles.captions}>
+          {TABS.flatMap((side) =>
+            (side === "buy" ? BUY_SLIDES : SELL_SLIDES).map((slide, i, all) => {
+              const current = side === tab && i === index;
+              return (
+                <div
+                  key={`${side}-${slide.headline}`}
+                  className={[styles.caption, styles.layer, current && styles.layerActive].filter(Boolean).join(" ")}
+                  role={side === tab ? "group" : undefined}
+                  aria-roledescription={side === tab ? "slide" : undefined}
+                  aria-label={side === tab ? `${i + 1} of ${all.length}` : undefined}
+                  aria-hidden={!current}
+                >
+                  <p className={styles.slideHeadline}>{slide.headline}</p>
+                  <p className={styles.slideBody}>{slide.body}</p>
+                </div>
+              );
+            }),
+          )}
+        </div>
 
         <div className={styles.bars}>
           {slides.map((slide, i) => {
