@@ -490,7 +490,12 @@ span.tickerText {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: calc(100svh - var(--nav-height));
+  /* The screen as she sees it while scrolling, when phone browsers have
+   * folded their toolbars away (lvh), not the smaller first-load height
+   * (svh), which left a band of empty page under the bars. vh first, for
+   * browsers that do not know lvh. */
+  min-height: calc(100vh - var(--nav-height));
+  min-height: calc(100lvh - var(--nav-height));
   padding: var(--space-6) 0 var(--space-6);
   background: var(--canvas);
 }
