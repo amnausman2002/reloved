@@ -35,11 +35,12 @@ const bodySchema = z
       .enum(INTENTS)
       .nullish()
       .transform((value) => value ?? null),
-  form_location: z.enum(["hero", "bottom"]),
-  utm_source: optionalText(200),
-  utm_medium: optionalText(200),
-  utm_campaign: optionalText(200),
-  referrer: optionalText(500),
+    utm_source: optionalText(200),
+    utm_medium: optionalText(200),
+    utm_campaign: optionalText(200),
+    utm_content: optionalText(200),
+    utm_term: optionalText(200),
+    referrer: optionalText(500),
     /** The honeypot. Hidden from people, so only a bot fills it in. */
     company: z.string().max(200).nullish(),
   })
@@ -100,8 +101,9 @@ export async function POST(request: Request) {
       utm_source: body.utm_source,
       utm_medium: body.utm_medium,
       utm_campaign: body.utm_campaign,
+      utm_content: body.utm_content,
+      utm_term: body.utm_term,
       referrer: body.referrer,
-      form_location: body.form_location,
     });
   } catch (error) {
     console.error("waitlist.save failed", error);

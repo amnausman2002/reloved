@@ -16,11 +16,11 @@ export function track(name: string, params: GtagParams): void {
   window.gtag?.("event", name, params);
 }
 
-/** form_start fires once per page load, across both forms. */
+/** form_start fires once per page load, the first time she touches the form. */
 let formStarted = false;
 
-export function trackFormStart(formLocation: "hero" | "bottom"): void {
+export function trackFormStart(): void {
   if (formStarted) return;
   formStarted = true;
-  track("form_start", { form_location: formLocation });
+  track("form_start", {});
 }

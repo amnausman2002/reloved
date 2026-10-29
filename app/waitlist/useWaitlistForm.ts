@@ -8,14 +8,12 @@ import { track, trackFormStart } from "./analytics";
 // The waitlist form's state, its checks, and the save, kept apart from how
 // the form looks.
 
-/** Saved with every entry and sent to GA. There is one form now, at the end
- *  of the page; the field stays so a second placement can be told apart. */
-const FORM_LOCATION = "bottom";
-
 type Attribution = {
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
   referrer: string | null;
 };
 
@@ -40,6 +38,8 @@ export function useWaitlistForm() {
     utm_source: null,
     utm_medium: null,
     utm_campaign: null,
+    utm_content: null,
+    utm_term: null,
     referrer: null,
   });
 
@@ -49,6 +49,8 @@ export function useWaitlistForm() {
       utm_source: params.get("utm_source"),
       utm_medium: params.get("utm_medium"),
       utm_campaign: params.get("utm_campaign"),
+      utm_content: params.get("utm_content"),
+      utm_term: params.get("utm_term"),
       referrer: document.referrer || null,
     };
   }, []);
@@ -84,7 +86,6 @@ export function useWaitlistForm() {
           country_code: country.code,
           phone: sentPhone || null,
           intent,
-          form_location: FORM_LOCATION,
           company,
           ...attribution.current,
         }),
@@ -92,7 +93,7 @@ export function useWaitlistForm() {
       const result = (await response.json().catch(() => null)) as { ok?: boolean } | null;
       if (!response.ok || !result?.ok) throw new Error(`waitlist ${response.status}`);
 
-      track("form_submit", { intent: intent ?? "none", has_phone: sentPhone !== "", form_location: FORM_LOCATION });
+      track("form_submit", { intent: intent ?? "none", has_phone: sentPhone !== "" });
       setSavedIntent(intent);
       setSaved(true);
     } catch {
@@ -136,7 +137,7 @@ export function useWaitlistForm() {
     submitError,
     saved,
     savedIntent,
-    onFieldFocus: () => trackFormStart(FORM_LOCATION),
+    onFieldFocus: trackFormStart,
     onSubmit,
   };
 }

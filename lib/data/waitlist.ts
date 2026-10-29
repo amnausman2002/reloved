@@ -12,20 +12,21 @@ import { adminDb } from "@/lib/firebase/admin";
 export const WAITLIST_COLLECTION = "waitlist";
 
 export type WaitlistIntent = "buy" | "sell" | "both";
-export type WaitlistFormLocation = "hero" | "bottom";
 
 export type WaitlistInput = {
   /** Already trimmed and lowercased. */
   email: string;
   /** E.164, or null when she left it blank. */
   phone: string | null;
-  /** Null when she skipped "I want to": only the email is required. */
+  /** Null when she skipped "I'm here to": only the email is required. */
   intent: WaitlistIntent | null;
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
+  /** Which ad or post she came from, when the link says. */
+  utm_content: string | null;
+  utm_term: string | null;
   referrer: string | null;
-  form_location: WaitlistFormLocation;
 };
 
 /** One document per email, so signing up twice can never make two rows.
@@ -38,9 +39,9 @@ function docIdFor(email: string): string {
 /** Creates her entry, or updates it if this email is already on the list.
  *
  *  On a repeat signup her answers (intent and phone, when she gave them) are
- *  updated, but where she first came from is kept: utm_*, referrer,
- *  form_location and created_at describe the first visit, which is what the
- *  smoke test is measuring. A blank answer never wipes one she gave before. */
+ *  updated, but where she first came from is kept: utm_*, referrer and
+ *  created_at describe the first visit, which is what the smoke test is
+ *  measuring. A blank answer never wipes one she gave before. */
 export async function upsertWaitlistEntry(input: WaitlistInput): Promise<void> {
   const db = adminDb();
   const ref = db.collection(WAITLIST_COLLECTION).doc(docIdFor(input.email));

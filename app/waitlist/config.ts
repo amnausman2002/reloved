@@ -1,6 +1,8 @@
 // Everything about the waitlist page that is ours to change without touching
 // a component: our WhatsApp number, the prefilled messages, the footer links.
 
+import { isWaitlistHost } from "./domain";
+
 /** Our WhatsApp, E.164, behind the footer's WhatsApp link. */
 export const WAITLIST_WHATSAPP_NUMBER = "+923094505552";
 
@@ -19,8 +21,10 @@ export function whatsappLink(message: string, number?: string): string {
   return `https://wa.me/${to}?text=${encodeURIComponent(message)}`;
 }
 
-/** The link a friend receives, on whatever domain this page is open on, so it
- *  keeps working once shop-reloved.com points here. */
+/** The link a friend receives, on whatever domain this page is open on. On
+ *  shop-reloved.com the waitlist is the home page, so the link is just the
+ *  domain. */
 export function shareUrl(): string {
-  return `${window.location.origin}/waitlist?utm_source=share`;
+  const path = isWaitlistHost(window.location.hostname) ? "/" : "/waitlist";
+  return `${window.location.origin}${path}?utm_source=share`;
 }
