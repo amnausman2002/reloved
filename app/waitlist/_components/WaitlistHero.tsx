@@ -18,7 +18,7 @@ export default function WaitlistHero() {
           <h1 className={styles.heroTitle}>your next favourite outfit is already out there.</h1>
           <p className={styles.heroSub}>
             Reloved is a new home for preloved women&rsquo;s fashion in Pakistan. Join the waitlist to
-            get first look when we launch.
+            get the first look.
           </p>
         </div>
 

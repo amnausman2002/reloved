@@ -166,7 +166,7 @@ export default function WaitlistBuySellToggle() {
                 className={styles.sellBenefit}
               >
                 <div className={styles.sellBenefitInner}>
-                  <p className={styles.benefitHeadline}>{b.headline}</p>
+                  <p className={`${styles.benefitHeadline} ${waitlistStyles.benefitLight}`}>{b.headline}</p>
                   <p className={styles.benefitBody}>{b.body}</p>
                 </div>
               </div>
@@ -184,7 +184,7 @@ export default function WaitlistBuySellToggle() {
               className={styles.benefitCard}
             >
               <div className={styles.benefitCardInner}>
-                <p className={styles.benefitHeadline}>{b.headline}</p>
+                <p className={`${styles.benefitHeadline} ${waitlistStyles.benefitLight}`}>{b.headline}</p>
                 <p className={styles.benefitBody}>{b.body}</p>
                 <div className={styles.benefitPhotoWrap}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -66,8 +66,10 @@
 .heroTitle {
   font-family: var(--font-display);
   font-weight: 300;
-  font-size: clamp(44px, 12.5vw, 96px);
-  line-height: 1;
+  /* Two lines on a phone for "your next favourite outfit is already out
+   * there." */
+  font-size: clamp(32px, 8.8vw, 80px);
+  line-height: 1.05;
   letter-spacing: -0.02em;
   font-variation-settings: "opsz" 144;
 }
@@ -88,11 +90,13 @@
   .heroButton { max-width: 480px; }
 }
 
-/* ─── Waitlist form: white on the dark panel ──────────── */
+/* ─── Waitlist form, in the panel ─────────────────────── */
 
-/* OFF-SYSTEM, at Bismah's request (28 Oct): email and WhatsApp are one white
+/* OFF-SYSTEM, at Bismah's request (28 Oct): email and WhatsApp are one
  * underline each with no box or fill. Labels, "I want to" and its choices
- * are in Fraunces; the button is the hero's outlined one. */
+ * are in Fraunces; the button is the hero's outlined one. Every colour here
+ * comes from the panel's --panel-* variables (see .joinPanel), so the panel
+ * can be light or dark by changing those alone. */
 .lineForm {
   width: 100%;
   display: flex;
@@ -116,13 +120,13 @@
   right: 0;
   bottom: 0;
   height: 1px;
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--panel-line);
   pointer-events: none;
 }
 /* The line brightens and doubles in weight on focus: the focus mark here. */
 .lineField:focus-within::after {
-  background: var(--white);
-  box-shadow: 0 1px 0 0 var(--white);
+  background: var(--panel-ink);
+  box-shadow: 0 1px 0 0 var(--panel-ink);
 }
 .lineFieldError::after,
 .lineFieldError:focus-within::after {
@@ -139,8 +143,8 @@
   border: none;
   border-radius: 0;
   outline: none;
-  color: var(--white);
-  caret-color: var(--white);
+  color: var(--panel-ink);
+  caret-color: var(--panel-ink);
   font-family: var(--font-body);
   /* 16px, so iPhone does not zoom the page when the field is tapped. */
   font-size: var(--size-body);
@@ -148,7 +152,7 @@
 /* The label sits in the line as its placeholder, in Fraunces. What she
  * types is in the body face. */
 .lineInput::placeholder {
-  color: var(--white);
+  color: var(--panel-ink);
   font-family: var(--font-display);
   font-weight: 300;
   font-size: var(--size-h3);
@@ -156,7 +160,7 @@
 }
 /* Browser autofill paints its own background; keep the line bare. */
 .lineInput:-webkit-autofill {
-  -webkit-text-fill-color: var(--white);
+  -webkit-text-fill-color: var(--panel-ink);
   transition: background-color 9999s ease 0s;
 }
 
@@ -165,10 +169,10 @@
   margin-top: var(--space-1);
   font-size: var(--size-caption);
   line-height: var(--lh-caption);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--panel-ink-soft);
 }
 .lineError {
-  color: var(--white);
+  color: var(--panel-error);
 }
 
 /* ─── Panel arrival, after eseagency.ch's footer ─────── */
@@ -222,10 +226,10 @@
   cursor: pointer;
   font-family: var(--font-body);
   font-size: var(--size-body);
-  color: var(--white);
+  color: var(--panel-ink);
 }
 .codeButton:focus-visible {
-  outline: 2px solid var(--white);
+  outline: 2px solid var(--panel-ink);
   outline-offset: 2px;
 }
 /* Opens above the line, the width of the line: the panel sits low on the
@@ -236,8 +240,8 @@
   left: 0;
   right: 0;
   z-index: var(--z-drawer);
-  background: #1A1A18;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--panel-paper);
+  border: 1px solid var(--panel-line);
 }
 .codeSearch {
   display: block;
@@ -246,15 +250,15 @@
   padding: var(--space-3) var(--space-4);
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid var(--panel-line);
   outline: none;
-  color: var(--white);
-  caret-color: var(--white);
+  color: var(--panel-ink);
+  caret-color: var(--panel-ink);
   font-family: var(--font-body);
   font-size: var(--size-body);
 }
 .codeSearch::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--panel-ink-soft);
 }
 .codeList {
   max-height: 240px;
@@ -271,21 +275,21 @@
   padding: 0 var(--space-4);
   cursor: pointer;
   font-size: var(--size-body-sm);
-  color: var(--white);
+  color: var(--panel-ink);
 }
 .codeOption[aria-selected="true"] {
   font-weight: 500;
 }
 .codeOptionActive {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--panel-hover);
 }
 .codeOptionCode {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--panel-ink-soft);
 }
 .codeEmpty {
   padding: var(--space-3) var(--space-4);
   font-size: var(--size-body-sm);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--panel-ink-soft);
 }
 
 /* ─── I want to: words beside the label ───────────────── */
@@ -303,52 +307,64 @@
   font-weight: 300;
   font-size: var(--size-h3);
   font-variation-settings: "opsz" 144;
-  color: var(--white);
+  color: var(--panel-ink);
 }
 .intentChoices {
   display: flex;
-  gap: var(--space-5);
+  gap: var(--space-1);
 }
+/* Each word sits in its own box; the chosen one is filled in ink with the
+ * word reversed out, which reads at a glance where an underline did not.
+ * The design system's chip size and corner. */
 .intentChoice {
+  display: inline-flex;
+  align-items: center;
   min-height: 44px;
-  padding: 0;
-  background: none;
+  padding: 0 var(--space-3);
+  background: transparent;
   border: none;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 5px;
 }
 .intentChoice:hover {
-  opacity: 0.75;
+  background: var(--panel-hover);
 }
 .intentChoice:focus-visible {
-  outline: 2px solid var(--white);
+  outline: 2px solid var(--panel-ink);
   outline-offset: 2px;
 }
-.intentChoiceActive {
-  text-decoration-line: underline;
+.intentChoiceActive,
+.intentChoiceActive:hover {
+  background: var(--panel-ink);
+  color: var(--panel-paper);
 }
 
-/* The hero's outlined full-width button (page.module.css .heroCta), white on
- * the dark panel. Hover fills it, like the hero's. */
+@media (prefers-reduced-motion: no-preference) {
+  .intentChoice {
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+}
+
+/* The hero's outlined full-width button (page.module.css .heroCta), in the
+ * panel's ink. Hover fills it, like the hero's. */
 .panelSubmit:global(.btn-primary) {
   margin-top: var(--space-2);
   min-height: 48px;
   background: transparent;
-  border-color: var(--white);
-  color: var(--white);
+  border-color: var(--panel-ink);
+  color: var(--panel-ink);
 }
 .panelSubmit:global(.btn-primary):hover {
-  background: var(--white);
-  color: var(--text-primary);
+  background: var(--panel-ink);
+  color: var(--panel-paper);
 }
 .panelSubmit:global(.btn-primary):disabled:hover {
   background: transparent;
-  color: var(--white);
-  border-color: var(--white);
+  color: var(--panel-ink);
+  border-color: var(--panel-ink);
 }
 .panelSubmit:global(.btn-primary):focus-visible {
-  outline: 2px solid var(--white);
+  outline: 2px solid var(--panel-ink);
   outline-offset: 2px;
 }
 
@@ -400,6 +416,12 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* The homepage's benefit headings are Fraunces Regular (400). Every other
+ * heading on this page, and design-system.md's font-heading, is Light (300). */
+p.benefitLight {
+  font-weight: 300;
 }
 
 /* ─── How it works: the Buy / Sell switch ─────────────── */
@@ -556,15 +578,29 @@
   }
 }
 
-/* Kindred's panel, inverted at Bismah's request: near-opaque dark with the
- * same 10px blur, so the photo only just shows through. */
+/* Kindred's panel: near-opaque white with a 10px blur, so the photo only just
+ * shows through, and dark ink on it.
+ *
+ * Tried dark on 28 Oct. To go back to that, swap in:
+ *   --panel-bg: rgba(26, 26, 24, 0.9);   --panel-paper: #1A1A18;
+ *   --panel-ink: var(--white);           --panel-ink-soft: rgba(255, 255, 255, 0.7);
+ *   --panel-line: rgba(255, 255, 255, 0.3); --panel-hover: rgba(255, 255, 255, 0.1);
+ *   --panel-error: var(--white); */
 .joinPanel {
+  --panel-bg: rgba(255, 255, 255, 0.9);
+  --panel-paper: var(--white);
+  --panel-ink: var(--text-primary);
+  --panel-ink-soft: var(--text-secondary);
+  --panel-line: rgba(45, 45, 45, 0.3);
+  --panel-hover: rgba(45, 45, 45, 0.06);
+  --panel-error: var(--status-rejected);
+
   position: sticky;
   bottom: var(--space-4);
   width: 100%;
   max-width: 560px;
   padding: var(--space-6) var(--space-5) var(--space-5);
-  background: rgba(26, 26, 24, 0.9);
+  background: var(--panel-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -577,7 +613,7 @@
   line-height: 1;
   letter-spacing: -0.02em;
   font-variation-settings: "opsz" 144;
-  color: var(--white);
+  color: var(--panel-ink);
 }
 .joinHeading:focus:not(:focus-visible) {
   outline: none;
@@ -587,10 +623,10 @@
   margin: var(--space-3) 0 var(--space-6);
   font-size: var(--size-body-sm);
   line-height: var(--lh-body-sm);
-  color: var(--white);
+  color: var(--panel-ink);
 }
 
-/* The success message inside the dark panel. Its first line stands where
+/* The success message inside the panel. Its first line stands where
  * "Get in early." stood, so it is set large and light too. */
 .joinPanel .successHeading {
   font-size: clamp(32px, 9vw, 56px);
@@ -600,19 +636,19 @@
 .joinPanel .successHeading,
 .joinPanel .successText,
 .joinPanel .successLink {
-  color: var(--white);
+  color: var(--panel-ink);
 }
 .joinPanel :global(.btn-whatsapp) {
   background: transparent;
-  border-color: var(--white);
-  color: var(--white);
+  border-color: var(--panel-ink);
+  color: var(--panel-ink);
 }
 .joinPanel :global(.btn-whatsapp):hover {
-  background: var(--white);
-  color: var(--text-primary);
+  background: var(--panel-ink);
+  color: var(--panel-paper);
 }
 .joinPanel :global(.btn-whatsapp):focus-visible {
-  outline: 2px solid var(--white);
+  outline: 2px solid var(--panel-ink);
   outline-offset: 2px;
 }
 
