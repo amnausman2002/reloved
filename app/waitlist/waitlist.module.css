@@ -418,12 +418,6 @@
   }
 }
 
-/* The homepage's benefit headings are Fraunces Regular (400). Every other
- * heading on this page, and design-system.md's font-heading, is Light (300). */
-p.benefitLight {
-  font-weight: 300;
-}
-
 /* "Join as a founding seller": the hero's outlined button (page.module.css
  * .heroCta) in dark, since the Sell side sits on the light canvas. Hover
  * fills it, like the hero's. */
@@ -456,6 +450,198 @@ p.benefitLight {
   .foundingButton {
     transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
   }
+}
+
+/* ─── How it works: one-screen carousel ───────────────── */
+
+/* After eseagency.ch's hero: the Sell / Buy row, then a stage that fills the
+ * rest of the screen, where each benefit fades into the next and a bar per
+ * slide fills along the bottom. */
+.how {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100svh - var(--nav-height));
+  background: var(--canvas);
+}
+
+.howRow {
+  padding: var(--space-5) var(--space-4);
+}
+
+.stage {
+  --stage-gutter: var(--space-4);
+  position: relative;
+  flex: 1;
+  min-height: 480px;
+  overflow: hidden;
+  /* Vertical swipes still scroll the page; sideways ones are ours. */
+  touch-action: pan-y;
+}
+
+@media (min-width: 640px) {
+  .howRow { padding-left: 24px; padding-right: 24px; }
+  .stage { --stage-gutter: 24px; }
+}
+
+@media (min-width: 1024px) {
+  .howRow { padding-left: 40px; padding-right: 40px; }
+  .stage { --stage-gutter: 40px; }
+}
+
+/* Buy: white words over the photos. */
+.stageOnPhoto {
+  --stage-ink: var(--white);
+  --stage-track: rgba(255, 255, 255, 0.35);
+  background: #1A1A18;
+}
+/* Sell: dark words on the page's own canvas, so the stage runs straight on
+ * from the Sell / Buy row. The video's near-white is within a few shades of
+ * it. */
+.stageOnLight {
+  --stage-ink: var(--text-primary);
+  --stage-track: rgba(45, 45, 45, 0.15);
+  background: var(--canvas);
+}
+
+/* Sell's phone video, fixed in the upper part of the stage while the words
+ * below it change. The space under it fits the tallest slide, the founding
+ * seller one with its button. */
+.stageVideoFrame {
+  position: absolute;
+  top: var(--space-5);
+  bottom: 300px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}
+.stageVideo {
+  height: 100%;
+  aspect-ratio: 488 / 960;
+  object-fit: contain;
+  display: block;
+  /* The recording's white surround takes on the canvas colour instead of
+   * showing as a paler box around the phone. */
+  mix-blend-mode: multiply;
+}
+
+/* Every slide is stacked in the same place; only the current one shows. */
+.slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.slideActive {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .slide {
+    transition: opacity 0.8s ease;
+  }
+}
+
+.slidePhoto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Darkens the lower half so the words read over any photo. The colour is
+ * the hero's overlay colour. */
+.slideShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 10, 8, 0) 30%,
+    rgba(10, 10, 8, 0.5) 60%,
+    rgba(10, 10, 8, 0.8) 100%
+  );
+}
+
+/* The words sit above the bars, bottom left, like the hero's. */
+.slideText {
+  position: absolute;
+  left: var(--stage-gutter);
+  right: var(--stage-gutter);
+  bottom: calc(var(--space-5) + 24px + var(--space-4));
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--stage-ink);
+}
+.slideHeadline {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(24px, 6.5vw, 36px);
+  line-height: var(--lh-h2);
+  font-variation-settings: "opsz" 144;
+}
+.slideBody {
+  font-size: var(--size-body);
+  line-height: var(--lh-body);
+}
+.slideText .foundingButton {
+  margin-top: var(--space-3);
+}
+
+/* One bar per slide. The bar is the tap target; the line drawn in it is
+ * 2px, the filled part a second line over it. */
+.bars {
+  position: absolute;
+  left: var(--stage-gutter);
+  right: var(--stage-gutter);
+  bottom: var(--space-5);
+  display: flex;
+  gap: var(--space-2);
+}
+.bar {
+  position: relative;
+  flex: 1;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.bar::before,
+.barFill {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+}
+.bar::before {
+  background: var(--stage-track);
+}
+.bar:focus-visible {
+  outline: 2px solid var(--stage-ink);
+  outline-offset: 2px;
+}
+.barFill {
+  background: var(--stage-ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.barFillDone {
+  transform: scaleX(1);
+}
+/* Ten seconds a slide. When it ends, the carousel moves on. */
+.barFillPlaying {
+  animation: barFill 10s linear forwards;
+}
+@keyframes barFill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
 /* ─── How it works: the Buy / Sell switch ─────────────── */

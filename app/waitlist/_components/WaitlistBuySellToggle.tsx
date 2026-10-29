@@ -1,36 +1,47 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import styles from "@/app/_components/BuySellToggle.module.css";
-import waitlistStyles from "../waitlist.module.css";
+import styles from "../waitlist.module.css";
 import { goToForm } from "./JoinButton";
 
-// A copy of the homepage's Buy / Sell toggle (app/_components/BuySellToggle.tsx),
-// kept separate so the homepage file is untouched. Same CSS module, so the two
-// look identical below the switch. Differences: Sell / Buy as Fraunces text
-// links in place of the segmented control, Sell first and open to begin with,
-// the waitlist's own Sell copy, and a founding-seller block at the end of
-// Sell in place of the homepage's "List your first item" link.
+// How it works, as a Sell / Buy switch over a one-screen carousel, after
+// eseagency.ch's hero. Each benefit fades into the next in the same place;
+// a row of bars along the bottom fills as each one plays, about 10 seconds
+// apiece. Tapping a bar or swiping left and right chooses one, and from then
+// on it stays where she put it.
+//
+// Buy: each slide is a full-bleed photo with white words over it, and it
+// loops. Sell: the phone demo video stays put while four slides of words
+// change under it, and it stops on the last, the founding-seller invitation.
 
-const BUY_BENEFITS = [
+type Slide = {
+  headline: string;
+  body: string;
+  /** Buy only: the full-bleed photo behind the words. */
+  photo?: string;
+  /** Sell's last slide: "Join as a founding seller". */
+  founding?: boolean;
+};
+
+const BUY_SLIDES: Slide[] = [
   {
     headline: "Filter by brand, size, and price.",
     body: "No more scrolling endlessly on Instagram. Find exactly what you're looking for on Reloved.",
-    photo: "/photos/buy-1.jpg",
+    photo: "/photos/buy-1-slide.jpg",
   },
   {
     headline: "Every listing checked before it goes live.",
     body: "No fakes, no blurry photos, no surprises. We review every item so you don't have to.",
-    photo: "/photos/buy-2.jpg",
+    photo: "/photos/buy-2-slide.jpg",
   },
   {
     headline: "Message the seller directly on WhatsApp.",
     body: "No middleman, no waiting. See something you like? You're one tap away.",
-    photo: "/photos/buy-3.png",
+    photo: "/photos/buy-3-slide.jpg",
   },
 ];
 
-const SELL_BENEFITS = [
+const SELL_SLIDES: Slide[] = [
   {
     headline: "Snap your closet, we’ll do the rest.",
     body: "Take photos of everything in one go. Our AI works out which photos belong to which piece and fills in the details. You check, tweak and post.",
@@ -43,34 +54,52 @@ const SELL_BENEFITS = [
     headline: "Live within a day.",
     body: "A real person reviews your listing so buyers can trust what they find. You’ll hear from us within 24 hours.",
   },
+  {
+    headline: "Become a founding seller.",
+    body: "The first 30 sellers get personal help listing and go live on launch day.",
+    founding: true,
+  },
 ];
 
 const TABS = ["sell", "buy"] as const;
+type Tab = (typeof TABS)[number];
+
+/** How far a finger has to travel sideways to count as a swipe. */
+const SWIPE_PX = 40;
 
 export default function WaitlistBuySellToggle() {
-  const [tab, setTab] = useState<"buy" | "sell">("sell");
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [tab, setTab] = useState<Tab>("sell");
+  const [index, setIndex] = useState(0);
+  /** Off once she chooses a slide herself, when Sell reaches its last slide,
+   *  and from the start for anyone who has asked for less motion. */
+  const [auto, setAuto] = useState(true);
+  const [inView, setInView] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const switchRef = useRef<HTMLDivElement>(null);
-  const foundingRef = useRef<HTMLDivElement>(null);
-  const mediaRef = useRef<HTMLDivElement>(null);
-  /** The demo video loads only once she has scrolled close to it. */
   const [videoNear, setVideoNear] = useState(false);
+  const switchRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const id = useId();
 
+  const slides = tab === "buy" ? BUY_SLIDES : SELL_SLIDES;
+  const loops = tab === "buy";
+  const last = slides.length - 1;
+
   useEffect(() => {
-    setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setReducedMotion(reduce);
+    if (reduce) setAuto(false);
   }, []);
 
-  // The Buy / Sell row fades up as it arrives, once, like the cards below it.
+  // The Sell / Buy row fades up as it arrives, once.
   useEffect(() => {
     const el = switchRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
-        el.classList.add(waitlistStyles.revealed);
+        el.classList.add(styles.revealed);
         observer.disconnect();
       },
       { threshold: 0.5 },
@@ -79,166 +108,177 @@ export default function WaitlistBuySellToggle() {
     return () => observer.disconnect();
   }, []);
 
+  // The bars only fill while she can see them, so nobody arrives halfway
+  // through. The demo video loads the first time the stage is on screen.
   useEffect(() => {
-    const media = mediaRef.current;
-    if (!media || videoNear) return;
+    const el = stageRef.current;
+    if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return;
-        setVideoNear(true);
-        observer.disconnect();
+        setInView(entry.intersectionRatio >= 0.5);
+        if (entry.isIntersecting) setVideoNear(true);
       },
-      // Sell starts only just below the first screen on a phone, so any
-      // margin at all would load it with the page. It starts the moment it is
-      // on screen instead, with its poster showing until then.
-      { rootMargin: "0px" },
+      { threshold: [0, 0.5] },
     );
-    observer.observe(media);
+    observer.observe(el);
     return () => observer.disconnect();
-  }, [tab, videoNear]);
+  }, []);
 
-  useEffect(() => {
-    const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
-    if (!cards.length) return;
-    // The founding-seller block fades in like the cards, but is not one of
-    // the three the indicator counts.
-    const founding = tab === "sell" ? foundingRef.current : null;
+  function switchTab(next: Tab) {
+    if (next === tab) return;
+    setTab(next);
+    setIndex(0);
+    setAuto(!reducedMotion);
+  }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add(styles.benefitCardRevealed);
-          const idx = cards.indexOf(entry.target as HTMLDivElement);
-          if (idx !== -1) setActiveIndex(idx);
-        });
-      },
-      { threshold: 0.35 },
-    );
+  /** Her own choice, by bar or by swipe. Auto-advance stops for good. */
+  function choose(next: number) {
+    setIndex(next);
+    setAuto(false);
+  }
 
-    cards.forEach((el) => observer.observe(el));
-    if (founding) observer.observe(founding);
-    return () => observer.disconnect();
-  }, [tab]);
+  /** The current bar has filled: on to the next, or round again, or stop. */
+  function advance() {
+    if (index < last) setIndex(index + 1);
+    else if (loops) setIndex(0);
+    else setAuto(false);
+  }
 
-  const count = tab === "buy" ? BUY_BENEFITS.length : SELL_BENEFITS.length;
+  function onTouchStart(event: React.TouchEvent) {
+    const t = event.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  }
+
+  function onTouchEnd(event: React.TouchEvent) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const t = event.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    // Mostly sideways only, so scrolling the page past it never changes slide.
+    if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0) choose(index < last ? index + 1 : loops ? 0 : last);
+    else choose(index > 0 ? index - 1 : loops ? last : 0);
+  }
+
+  const playing = auto && inView && !hovered;
+  const tone = tab === "buy" ? styles.stageOnPhoto : styles.stageOnLight;
 
   return (
-    <section className={styles.wrapper} aria-label="How it works">
-      {/* Pinned under the nav, so the switch is always in reach. */}
-      <div className={styles.stickyHeader}>
-        <div ref={switchRef} className={`${styles.stickyInner} ${waitlistStyles.reveal}`}>
-          <div className={waitlistStyles.howTabs} role="tablist" aria-label="How it works">
-            {TABS.map((value, i) => (
-              <span key={value} className={waitlistStyles.howTabItem}>
-                {i > 0 && (
-                  <span className={waitlistStyles.howTabSep} aria-hidden="true">
-                    /
-                  </span>
-                )}
-                <button
-                  role="tab"
-                  aria-selected={tab === value}
-                  aria-controls={`${id}-panel`}
-                  className={[waitlistStyles.howTab, tab === value ? waitlistStyles.howTabActive : ""]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() => {
-                    setTab(value);
-                    setActiveIndex(0);
-                  }}
-                >
-                  {value === "buy" ? "Buy" : "Sell"}
-                </button>
-              </span>
-            ))}
-          </div>
-
-          <div className={styles.scrollIndicator} aria-hidden="true">
-            {Array.from({ length: count }).map((_, j) => (
-              <div
-                key={j}
-                className={[styles.indicatorBar, activeIndex === j ? styles.indicatorBarActive : ""].filter(Boolean).join(" ")}
-              />
-            ))}
-          </div>
+    <section className={styles.how} aria-label="How it works">
+      <div className={styles.howRow}>
+        <div ref={switchRef} className={`${styles.howTabs} ${styles.reveal}`} role="tablist" aria-label="How it works">
+          {TABS.map((value, i) => (
+            <span key={value} className={styles.howTabItem}>
+              {i > 0 && (
+                <span className={styles.howTabSep} aria-hidden="true">
+                  /
+                </span>
+              )}
+              <button
+                role="tab"
+                aria-selected={tab === value}
+                aria-controls={`${id}-stage`}
+                className={[styles.howTab, tab === value && styles.howTabActive].filter(Boolean).join(" ")}
+                onClick={() => switchTab(value)}
+              >
+                {value === "buy" ? "Buy" : "Sell"}
+              </button>
+            </span>
+          ))}
         </div>
       </div>
 
-      {tab === "sell" ? (
-        <div id={`${id}-panel`} key={tab} className={styles.sellLayout}>
-          <div ref={mediaRef} className={styles.sellMedia}>
-            <div className={styles.sellMediaInner}>
-              {/* Sell is open from the start, so the video waits until she is
-                  near it rather than competing with the first load. The
-                  waitlist's own copy, about 1 MB against the homepage's 21. */}
-              <video
-                className={styles.sellVideo}
-                src={videoNear ? "/photos/sell-demo-small.mp4" : undefined}
-                poster="/photos/sell-demo-poster.jpg"
-                autoPlay={!reducedMotion}
-                controls={reducedMotion}
-                loop
-                muted
-                playsInline
-                preload={reducedMotion || !videoNear ? "none" : "auto"}
-                aria-label="A seller listing her clothes on Reloved"
-              />
-            </div>
+      <div
+        ref={stageRef}
+        id={`${id}-stage`}
+        className={`${styles.stage} ${tone}`}
+        role="region"
+        aria-roledescription="carousel"
+        aria-label={tab === "buy" ? "Buying on Reloved" : "Selling on Reloved"}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {tab === "sell" && (
+          <div className={styles.stageVideoFrame}>
+            {/* The waitlist's own copy, about 1 MB against the homepage's 21. */}
+            <video
+              className={styles.stageVideo}
+              src={videoNear ? "/photos/sell-demo-small.mp4" : undefined}
+              poster="/photos/sell-demo-poster.jpg"
+              autoPlay={!reducedMotion}
+              controls={reducedMotion}
+              loop
+              muted
+              playsInline
+              preload={videoNear && !reducedMotion ? "auto" : "none"}
+              aria-label="A seller listing her clothes on Reloved"
+            />
           </div>
-          <div className={styles.sellCopy}>
-            {SELL_BENEFITS.map((b, i) => (
-              <div
-                key={b.headline}
-                ref={(el) => {
-                  cardRefs.current[i] = el;
-                }}
-                className={styles.sellBenefit}
-              >
-                <div className={styles.sellBenefitInner}>
-                  <p className={`${styles.benefitHeadline} ${waitlistStyles.benefitLight}`}>{b.headline}</p>
-                  <p className={styles.benefitBody}>{b.body}</p>
-                </div>
-              </div>
-            ))}
+        )}
 
-            <div ref={foundingRef} className={styles.sellBenefit}>
-              <div className={styles.sellBenefitInner}>
-                <p className={`${styles.benefitHeadline} ${waitlistStyles.benefitLight}`}>
-                  Become a founding seller.
-                </p>
-                <p className={styles.benefitBody}>
-                  The first 30 sellers get personal help listing and go live on launch day.
-                </p>
-                <button type="button" className={waitlistStyles.foundingButton} onClick={() => goToForm("sell")}>
+        {slides.map((slide, i) => (
+          <div
+            key={`${tab}-${slide.headline}`}
+            className={[styles.slide, i === index && styles.slideActive].filter(Boolean).join(" ")}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${i + 1} of ${slides.length}`}
+            aria-hidden={i !== index}
+            inert={i !== index}
+          >
+            {slide.photo && (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className={styles.slidePhoto} src={slide.photo} alt="" loading="lazy" />
+                <div className={styles.slideShade} aria-hidden="true" />
+              </>
+            )}
+            <div className={styles.slideText}>
+              <p className={styles.slideHeadline}>{slide.headline}</p>
+              <p className={styles.slideBody}>{slide.body}</p>
+              {slide.founding && (
+                <button type="button" className={styles.foundingButton} onClick={() => goToForm("sell")}>
                   Join as a founding seller
                 </button>
-              </div>
+              )}
             </div>
           </div>
+        ))}
+
+        <div className={styles.bars}>
+          {slides.map((slide, i) => {
+            const state = i < index ? "done" : i > index ? "todo" : auto ? "playing" : "done";
+            return (
+              <button
+                key={`${tab}-${i}`}
+                type="button"
+                className={styles.bar}
+                aria-label={`Show ${i + 1} of ${slides.length}: ${slide.headline}`}
+                aria-current={i === index ? "true" : undefined}
+                onClick={() => choose(i)}
+              >
+                <span
+                  // A new key restarts the fill whenever this bar becomes current.
+                  key={state === "playing" ? `${tab}-${index}` : state}
+                  className={[
+                    styles.barFill,
+                    state === "done" && styles.barFillDone,
+                    state === "playing" && styles.barFillPlaying,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  style={{ animationPlayState: playing ? "running" : "paused" }}
+                  onAnimationEnd={state === "playing" ? advance : undefined}
+                />
+              </button>
+            );
+          })}
         </div>
-      ) : (
-        <div id={`${id}-panel`} key={tab}>
-          {BUY_BENEFITS.map((b, i) => (
-            <div
-              key={b.headline}
-              ref={(el) => {
-                cardRefs.current[i] = el;
-              }}
-              className={styles.benefitCard}
-            >
-              <div className={styles.benefitCardInner}>
-                <p className={`${styles.benefitHeadline} ${waitlistStyles.benefitLight}`}>{b.headline}</p>
-                <p className={styles.benefitBody}>{b.body}</p>
-                <div className={styles.benefitPhotoWrap}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={b.photo} alt="" className={styles.benefitPhoto} loading={i === 0 ? "eager" : "lazy"} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      </div>
     </section>
   );
 }
