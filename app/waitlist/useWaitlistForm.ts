@@ -53,8 +53,14 @@ export function useWaitlistForm() {
     };
   }, []);
 
-  // Only the email is required. A number, if she types one, has to look real.
-  const valid = isEmailValid(email) && phoneError(phone, country.code) === null;
+  /** The WhatsApp field is only offered to sellers: Sell, or Buy and sell. */
+  const asksForPhone = intent === "sell" || intent === "both";
+  /** What is actually sent. A number typed before switching to Buy stays in
+   *  the field, in case she switches back, but is not saved. */
+  const sentPhone = asksForPhone ? phone : "";
+
+  // Only the email is required. A number, if she gives one, has to look real.
+  const valid = isEmailValid(email) && phoneError(sentPhone, country.code) === null;
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -76,7 +82,7 @@ export function useWaitlistForm() {
         body: JSON.stringify({
           email,
           country_code: country.code,
-          phone: phone || null,
+          phone: sentPhone || null,
           intent,
           form_location: FORM_LOCATION,
           company,
@@ -86,7 +92,7 @@ export function useWaitlistForm() {
       const result = (await response.json().catch(() => null)) as { ok?: boolean } | null;
       if (!response.ok || !result?.ok) throw new Error(`waitlist ${response.status}`);
 
-      track("form_submit", { intent: intent ?? "none", has_phone: phone !== "", form_location: FORM_LOCATION });
+      track("form_submit", { intent: intent ?? "none", has_phone: sentPhone !== "", form_location: FORM_LOCATION });
       setSavedIntent(intent);
       setSaved(true);
     } catch {
@@ -123,7 +129,8 @@ export function useWaitlistForm() {
     touchEmail: () => setShownEmailError(emailError(email)),
     touchPhone: () => setShownPhoneError(phoneError(phone, country.code)),
     emailError: shownEmailError,
-    phoneError: shownPhoneError,
+    phoneError: asksForPhone ? shownPhoneError : null,
+    asksForPhone,
     valid,
     saving,
     submitError,

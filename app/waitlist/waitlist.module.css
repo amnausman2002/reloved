@@ -165,26 +165,60 @@
   transition: background-color 9999s ease 0s;
 }
 
-.lineHint,
 .lineError {
   margin-top: var(--space-1);
   font-size: var(--size-caption);
   line-height: var(--lh-caption);
-  color: var(--panel-ink-soft);
-}
-.lineError {
   color: var(--panel-error);
+}
+
+/* The WhatsApp line and the founding-seller invitation above it, folded away
+ * until she picks Sell or Buy and sell. Growing the grid row from 0fr to 1fr
+ * opens it to its real height. The fold cancels the form's gap above it and
+ * puts the same space back inside, so closed it takes no room at all. */
+.fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: calc(-1 * var(--space-5));
+  opacity: 0;
+}
+.foldOpen {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.foldClip {
+  min-height: 0;
+  overflow: hidden;
+}
+/* Open and finished opening: the country list may now spill out. */
+.foldSettled .foldClip {
+  overflow: visible;
+}
+.foldBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fold {
+    transition: grid-template-rows 0.4s ease, opacity 0.4s ease;
+  }
+}
+
+.foundingIntro {
+  font-size: var(--size-body);
+  line-height: var(--lh-body);
+  color: var(--panel-ink);
 }
 
 /* ─── Panel arrival, after eseagency.ch's footer ─────── */
 
 /* The first time the panel comes into view (WaitlistJoin adds .joinPanelIn),
- * the email and WhatsApp lines draw in from left to right, one after the
- * other, and their words fade in moving rightwards just behind them. Played
- * once. Without motion everything is simply there. */
+ * the email line draws in from left to right and its words fade in moving
+ * rightwards just behind it. Played once. Without motion everything is
+ * simply there. (The WhatsApp line opens later, already drawn.) */
 @media (prefers-reduced-motion: no-preference) {
-  .lineForm > :nth-child(1) { --arrive-delay: 0s; }
-  .lineForm > :nth-child(2) { --arrive-delay: 0.18s; }
 
   .joinPanel .lineField::after {
     transform: scaleX(0);
@@ -195,8 +229,7 @@
     transform: scaleX(1);
   }
 
-  .joinPanel .lineField > *,
-  .joinPanel .lineHint {
+  .joinPanel .lineField > * {
     opacity: 0;
     transform: translateX(-12px);
     transition: opacity 0.8s ease calc(var(--arrive-delay, 0s) + 0.3s),
@@ -204,8 +237,7 @@
   }
   /* "none" rather than translateX(0): a transform left in place would trap
    * the country list inside the code button. */
-  .joinPanelIn .lineField > *,
-  .joinPanelIn .lineHint {
+  .joinPanelIn .lineField > * {
     opacity: 1;
     transform: none;
   }
@@ -457,7 +489,7 @@ span.tickerText {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  padding: var(--space-2) var(--stage-gutter) 0;
+  padding: var(--space-5) var(--stage-gutter) 0;
   overflow: hidden;
   background: var(--canvas);
   /* Vertical swipes still scroll the page; sideways ones are ours. */
@@ -700,12 +732,6 @@ span.tickerText {
   color: var(--text-secondary);
 }
 
-.successLink {
-  color: var(--text-primary);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 /* ─── The form section: photo and frosted panel ───────── */
 
 /* After kindredofireland.com's footer. The section is the photo; the panel
@@ -805,8 +831,7 @@ span.tickerText {
 /* The success message inside the panel. Its first line stands where
  * "Get in early" stood, in the same heading style (above). */
 .joinPanel .successHeading,
-.joinPanel .successText,
-.joinPanel .successLink {
+.joinPanel .successText {
   color: var(--panel-ink);
 }
 .joinPanel :global(.btn-whatsapp) {

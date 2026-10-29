@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import { formatNational } from "@/app/sell/account";
 import { INTENT_LABELS, type Intent } from "../validation";
@@ -10,10 +10,10 @@ import Honeypot from "./Honeypot";
 import CountryCodePicker from "./CountryCodePicker";
 import styles from "../waitlist.module.css";
 
-// The waitlist form, in the dark panel at the end of the page. Email and
-// WhatsApp are bare white lines labelled in Fraunces; "I want to" has its
-// choices beside it as Fraunces words, the chosen one underlined; the button
-// is the hero's outlined one.
+// The waitlist form, in the panel at the end of the page: the email, then
+// "I'm here to" with Buy / Sell / Both beside it, then, only for sellers, the
+// founding-seller invitation and the WhatsApp line. The button is the hero's
+// outlined one.
 
 const SINGLE_CHOICES: Intent[] = ["buy", "sell", "both"];
 
@@ -28,12 +28,23 @@ export default function WaitlistForm({ onSaved }: Props) {
   const phoneId = useId();
   const emailErrorId = useId();
   const phoneRef = useRef<HTMLInputElement>(null);
+  // The fold clips its contents while it opens. Once open, the country list
+  // has to be able to spill out of it, upwards over the line above.
+  const [foldSettled, setFoldSettled] = useState(false);
+  useEffect(() => {
+    if (!form.asksForPhone) {
+      setFoldSettled(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setFoldSettled(true), 450);
+    return () => window.clearTimeout(timer);
+  }, [form.asksForPhone]);
 
   useEffect(() => {
     if (form.saved) onSaved();
   }, [form.saved, onSaved]);
 
-  if (form.saved) return <WaitlistSuccess intent={form.savedIntent} />;
+  if (form.saved) return <WaitlistSuccess />;
 
   /** Tapping the chosen word again clears it. */
   function choose(value: Intent) {
@@ -69,49 +80,11 @@ export default function WaitlistForm({ onSaved }: Props) {
         )}
       </div>
 
-      <div>
-        <div className={[styles.lineField, form.phoneError && styles.lineFieldError].filter(Boolean).join(" ")}>
-          <CountryCodePicker
-            value={form.country}
-            onChange={form.setCountry}
-            onPicked={() => phoneRef.current?.focus()}
-          />
-          <input
-            ref={phoneRef}
-            id={phoneId}
-            className={styles.lineInput}
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel-national"
-            placeholder="WhatsApp number (optional)"
-            aria-label="WhatsApp number (optional)"
-            aria-invalid={form.phoneError ? true : undefined}
-            aria-describedby={`${phoneId}-hint${form.phoneError ? ` ${phoneId}-error` : ""}`}
-            value={form.country.code === "92" ? formatNational(form.phone) : form.phone}
-            onFocus={form.onFieldFocus}
-            onChange={(event) => form.setPhone(event.target.value)}
-            onBlur={(event) => {
-              // Going to the country code is still working on the number.
-              const line = event.currentTarget.parentElement;
-              if (!line?.contains(event.relatedTarget as Node | null)) form.touchPhone();
-            }}
-          />
-        </div>
-        <p className={styles.lineHint} id={`${phoneId}-hint`}>
-          So we can help you list faster. We&rsquo;ll never share it.
-        </p>
-        {form.phoneError && (
-          <p className={styles.lineError} id={`${phoneId}-error`}>
-            {form.phoneError}
-          </p>
-        )}
-      </div>
-
       {/* Choosing Both folds the three words into one, "Buy and sell";
           tapping that clears it and brings the three back. */}
-      <div className={styles.intentRow} role="group" aria-label="I want to">
+      <div className={styles.intentRow} role="group" aria-label="I’m here to">
         <span className={styles.intentLabel} aria-hidden="true">
-          I want to
+          I&rsquo;m here to
         </span>
         <div className={styles.intentChoices}>
           {form.intent === "both" ? (
@@ -141,6 +114,57 @@ export default function WaitlistForm({ onSaved }: Props) {
         </div>
       </div>
 
+      {/* Only for sellers: opens when she picks Sell or Buy and sell. */}
+      <div
+        className={[styles.fold, form.asksForPhone && styles.foldOpen, foldSettled && styles.foldSettled]
+          .filter(Boolean)
+          .join(" ")}
+        inert={!form.asksForPhone}
+      >
+        <div className={styles.foldClip}>
+          <div className={styles.foldBody}>
+            <p className={styles.foundingIntro} id={`${phoneId}-intro`}>
+              Want to be a founding seller? The first 30 get personal help listing and go live on launch
+              day. Drop your WhatsApp and we&rsquo;ll set you up.
+            </p>
+            <div>
+              <div className={[styles.lineField, form.phoneError && styles.lineFieldError].filter(Boolean).join(" ")}>
+                <CountryCodePicker
+                  value={form.country}
+                  onChange={form.setCountry}
+                  onPicked={() => phoneRef.current?.focus()}
+                />
+                <input
+                  ref={phoneRef}
+                  id={phoneId}
+                  className={styles.lineInput}
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel-national"
+                  placeholder="WhatsApp number (optional)"
+                  aria-label="WhatsApp number (optional)"
+                  aria-invalid={form.phoneError ? true : undefined}
+                  aria-describedby={`${phoneId}-intro${form.phoneError ? ` ${phoneId}-error` : ""}`}
+                  value={form.country.code === "92" ? formatNational(form.phone) : form.phone}
+                  onFocus={form.onFieldFocus}
+                  onChange={(event) => form.setPhone(event.target.value)}
+                  onBlur={(event) => {
+                    // Going to the country code is still working on the number.
+                    const line = event.currentTarget.parentElement;
+                    if (!line?.contains(event.relatedTarget as Node | null)) form.touchPhone();
+                  }}
+                />
+              </div>
+              {form.phoneError && (
+                <p className={styles.lineError} id={`${phoneId}-error`}>
+                  {form.phoneError}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Honeypot value={form.company} onChange={form.setCompany} />
 
       {form.submitError && (
@@ -156,7 +180,7 @@ export default function WaitlistForm({ onSaved }: Props) {
         loading={form.saving}
         loadingLabel="Saving your spot..."
       >
-        Join the waitlist
+        Save my spot
       </PrimaryButton>
     </form>
   );

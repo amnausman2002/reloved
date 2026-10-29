@@ -1,10 +1,8 @@
 // Everything about the waitlist page that is ours to change without touching
 // a component: our WhatsApp number, the prefilled messages, the footer links.
 
-/** Our WhatsApp, E.164. Founding sellers message this number. */
+/** Our WhatsApp, E.164, behind the footer's WhatsApp link. */
 export const WAITLIST_WHATSAPP_NUMBER = "+923094505552";
-
-export const FOUNDING_SELLER_MESSAGE = "Hi Reloved! I'd love to be a founding seller.";
 
 /** What she forwards to a friend. The link is added after it. */
 export const SHARE_MESSAGE =
