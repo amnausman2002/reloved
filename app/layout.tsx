@@ -1,9 +1,6 @@
 import type { ReactNode } from "react";
-import Script from "next/script";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
-
-const GA_ID = "G-N5NC6SRM6W";
 
 // Both faces are self-hosted at build time by next/font, so the browser makes
 // no request to Google Fonts at runtime. Weight is omitted on purpose: these
@@ -36,16 +33,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
       <body>
         {children}
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-          strategy="afterInteractive"
-        />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', '${GA_ID}');`}
-        </Script>
       </body>
     </html>
   );

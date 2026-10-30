@@ -63,3 +63,8 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  - variable: NEXT_PUBLIC_GA_ID
+    value: "G-N5NC6SRM6W"
+    availability:
+      - BUILD
+      - RUNTIME
