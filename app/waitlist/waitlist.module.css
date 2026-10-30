@@ -991,6 +991,7 @@ span.tickerText {
   .hero,
   .how,
   .quoteSpace,
+  .joinSection,
   .footer {
     --gutter: clamp(16px, calc(5.882vw - 21.65px), 80px);
     /* 56px to 103px. Local to this page: other pages keep the shared height. */
@@ -1040,19 +1041,64 @@ span.tickerText {
   .eyebrow { font-size: clamp(12px, calc(0.184vw + 10.82px), 14px); }
   .slideHeadline { font-size: clamp(36px, calc(0.735vw + 31.3px), 44px); }
 
-  /* The form sits centred on its photo, one screen tall, as in Figma. With the
-   * whole section in view there is nothing for the panel to stick over. The
+  /* The form sits centred on its photo, as in Figma, with nothing to stick
+   * over because the whole section is in view at the end of the page. The
    * photo is phone-sized (402 x 874), so it is soft at this width; agreed by
    * Amna on 30 Oct. */
   .joinSection {
-    min-height: 100svh;
+    /* The room left between the sticky nav and the footer, both the same
+     * height, so the whole panel shows at the end of the page. */
+    min-height: calc(100svh - 2 * var(--nav-height));
     align-items: center;
     justify-content: center;
-    padding-top: var(--space-8);
-    padding-bottom: var(--space-8);
+    padding: var(--space-8) var(--gutter);
   }
-  /* Relative, not static: it has to stay in front of the photo. */
-  .joinPanel { position: relative; bottom: auto; }
+
+  /* The whole form scales up with the screen, larger than Figma's 560px panel
+   * (Amna, 30 Oct). Relative, not static: it has to stay in front of the photo. */
+  .joinPanel {
+    --form-text: clamp(16px, calc(0.368vw + 13.65px), 20px);
+    --form-note: clamp(12px, calc(0.184vw + 10.82px), 14px);
+    --form-gap: clamp(24px, calc(0.735vw + 19.3px), 32px);
+    --form-control: clamp(48px, calc(1.47vw + 38.6px), 64px);
+    --form-side: clamp(24px, calc(2.94vw + 5.18px), 56px);
+    position: relative;
+    bottom: auto;
+    max-width: clamp(560px, calc(22.06vw + 418.8px), 800px);
+    padding: clamp(32px, calc(2.2vw + 17.9px), 56px) var(--form-side) clamp(24px, calc(2.2vw + 9.9px), 48px);
+  }
+  .joinHeading,
+  .joinPanel .successHeading {
+    font-size: clamp(40px, calc(2.206vw + 25.88px), 64px);
+  }
+  .joinSub {
+    margin-bottom: clamp(32px, calc(0.735vw + 27.3px), 40px);
+  }
+  .joinSub,
+  .joinPanel .successText,
+  .joinPanel .successSub,
+  .foundingIntro,
+  .intentLabel,
+  .intentChoice,
+  .lineInput,
+  .codeButton,
+  .codeSearch,
+  .codeOption,
+  .codeEmpty {
+    font-size: var(--form-text);
+  }
+  .lineError { font-size: var(--form-note); }
+  .lineForm { gap: var(--form-gap); }
+  .fold { margin-top: calc(-1 * var(--form-gap)); }
+  .foldBody { padding-top: var(--form-gap); }
+  .lineInput,
+  .codeButton,
+  .codeSearch { min-height: var(--form-control); }
+  .intentChoice { min-height: clamp(44px, calc(1.1vw + 36.9px), 56px); }
+  .panelSubmit:global(.btn-primary) {
+    min-height: var(--form-control);
+    font-size: clamp(14px, calc(0.368vw + 11.65px), 18px);
+  }
 
   /* The footer mirrors the nav: same height, margins, wordmark and link size,
    * with the links where the nav has its button. */
@@ -1084,15 +1130,16 @@ span.tickerText {
     padding-bottom: clamp(120px, calc(13.33vw + 34.7px), 265px);
   }
   .quoteSpace > div {
-    max-width: calc(1280px + 2 * var(--gutter));
+    max-width: none;
     padding-left: var(--gutter);
     padding-right: var(--gutter);
   }
   p.quoteScroll {
     max-width: none;
-    text-wrap: balance;
     margin-top: clamp(24px, calc(0.368vw + 21.65px), 28px);
-    font-size: clamp(38px, calc(1.654vw + 27.41px), 56px);
+    /* Sized to the screen with no upper limit, so the paragraph always runs
+     * the full width between the margins (Amna, 30 Oct, over Figma's 56px). */
+    font-size: max(38px, 4.9vw);
   }
 }
 
