@@ -33,10 +33,11 @@ const WORDS = SEGMENTS.flatMap((segment) =>
 );
 const WORD_COUNT = WORDS.filter((word) => !word.space).length;
 
-/** Fully revealed by the time the paragraph's bottom edge reaches this far
- *  down the screen, having started when its top edge came in at START. */
+/** Fully revealed only once the paragraph's bottom edge has risen to this far
+ *  down the screen, as she is about to scroll past it, having started when
+ *  its top edge came in at START. */
 const START = 0.9;
-const END = 0.6;
+const END = 0.3;
 
 export default function WaitlistQuote() {
   const textRef = useRef<HTMLParagraphElement>(null);

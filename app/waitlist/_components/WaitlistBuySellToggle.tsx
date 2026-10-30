@@ -5,9 +5,9 @@ import styles from "../waitlist.module.css";
 
 // How it works, as a Sell / Buy switch over a one-screen carousel, after
 // eseagency.ch's hero. Each benefit fades into the next in the same place;
-// a row of bars along the bottom fills as each one plays, about 10 seconds
+// a row of bars along the bottom fills as each one plays, 8 seconds
 // apiece. Tapping a bar or swiping left and right jumps to a slide and starts
-// its 10 seconds again; it keeps playing on from there.
+// its 8 seconds again; it keeps playing on from there.
 //
 // Both sides: a picture above and the words below on the light canvas. Buy
 // changes its photo with each slide and loops. Sell keeps the phone demo
@@ -75,7 +75,7 @@ export default function WaitlistBuySellToggle() {
    *  has asked for less motion. */
   const [auto, setAuto] = useState(true);
   /** Counts her own choices, so tapping the bar already playing still
-   *  starts its 10 seconds again. */
+   *  starts its 8 seconds again. */
   const [restarts, setRestarts] = useState(0);
   const [inView, setInView] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -135,7 +135,7 @@ export default function WaitlistBuySellToggle() {
   }
 
   /** Her own choice, by bar or by swipe: that slide, from the start of its
-   *  10 seconds, and on from there. */
+   *  8 seconds, and on from there. */
   function choose(next: number) {
     setIndex(next);
     setRestarts((n) => n + 1);

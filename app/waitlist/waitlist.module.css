@@ -448,9 +448,14 @@
  * the paragraph's shape is there from the start. */
 .quoteScroll {
   --p: 0;
+  /* How many words are part-way in at once. Wider is a softer, more visible
+   * wave; 1 would be one word snapping on at a time. */
+  --w: 8;
 }
 .quoteWord {
-  opacity: calc(0.15 + 0.85 * clamp(0, var(--p) * var(--n) - var(--i), 1));
+  opacity: calc(
+    0.15 + 0.85 * clamp(0, (var(--p) * (var(--n) + var(--w)) - var(--i)) / var(--w), 1)
+  );
 }
 
 /* ─── Ticker, as its own band ─────────────────────────── */
@@ -668,9 +673,9 @@ span.tickerText {
 .barFillDone {
   transform: scaleX(1);
 }
-/* Ten seconds a slide. When it ends, the carousel moves on. */
+/* Eight seconds a slide. When it ends, the carousel moves on. */
 .barFillPlaying {
-  animation: barFill 10s linear forwards;
+  animation: barFill 8s linear forwards;
 }
 @keyframes barFill {
   from { transform: scaleX(0); }
