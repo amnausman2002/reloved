@@ -9,6 +9,9 @@ const description =
 
 // The Open Graph tags are what WhatsApp, Instagram and iMessage read to draw a
 // link preview. The image must be an absolute address, hence metadataBase.
+// Its grain is softened slightly so it does not break up when Slack or
+// WhatsApp shrink it to a thumbnail. Give a replacement a new file name:
+// both apps keep the image they fetched first.
 export const metadata: Metadata = {
   metadataBase: new URL(`https://${WAITLIST_DOMAIN}`),
   title,
@@ -22,7 +25,7 @@ export const metadata: Metadata = {
     locale: "en_PK",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/og-image-2.jpg",
         width: 1200,
         height: 630,
         alt: "The reloved. wordmark on a pink and orange gradient",
@@ -33,7 +36,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title,
     description,
-    images: ["/og-image.jpg"],
+    images: ["/og-image-2.jpg"],
   },
 };
 
