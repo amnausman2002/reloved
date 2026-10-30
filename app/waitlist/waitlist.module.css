@@ -571,7 +571,7 @@ span.tickerText {
   display: block;
 }
 .stageVideo {
-  aspect-ratio: 488 / 960;
+  aspect-ratio: 1 / 2;
   object-fit: contain;
   /* The recording's white surround takes on the canvas colour instead of
    * showing as a paler box around the phone. */

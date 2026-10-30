@@ -212,8 +212,8 @@ export default function WaitlistBuySellToggle() {
             // The waitlist's own copy, about 1 MB against the homepage's 21.
             <video
               className={styles.stageVideo}
-              src={videoNear ? "/photos/sell-demo-small.mp4" : undefined}
-              poster="/photos/sell-demo-poster.jpg"
+              src={videoNear ? "/photos/sell-demo-phone.mp4" : undefined}
+              poster="/photos/sell-demo-phone-poster.jpg"
               autoPlay={!reducedMotion}
               controls={reducedMotion}
               loop
