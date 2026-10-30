@@ -973,6 +973,11 @@ span.tickerText {
   }
 }
 
+/* The wordmark is for wider screens; on a phone the links sit straight in the
+ * row, centred, as they always have. */
+.footerWordmark { display: none; }
+.footerLinks { display: contents; }
+
 /* ─── Wider screens ───────────────────────────────────── */
 
 /* The phone layout is untouched below 640px. Above it, every size is taken from
@@ -985,7 +990,8 @@ span.tickerText {
   .waitlistNav,
   .hero,
   .how,
-  .quoteSpace {
+  .quoteSpace,
+  .footer {
     --gutter: clamp(16px, calc(5.882vw - 21.65px), 80px);
     /* 56px to 103px. Local to this page: other pages keep the shared height. */
     --nav-height: clamp(56px, calc(4.32vw + 28.35px), 103px);
@@ -995,10 +1001,14 @@ span.tickerText {
     padding-left: var(--gutter);
     padding-right: var(--gutter);
   }
-  .waitlistNav :global(.nav-wordmark) {
+  .waitlistNav :global(.nav-wordmark),
+  .footer :global(.nav-wordmark) {
     font-size: clamp(20px, calc(1.103vw + 12.94px), 32px);
   }
+  /* The negative margin cancels the button's own 8px padding, so its words sit
+   * on the same 80px margin as How it works and the footer. */
   .waitlistNav :global(.nav-sell) {
+    margin-right: calc(-1 * var(--space-2));
     font-size: clamp(14px, calc(0.368vw + 11.65px), 18px);
   }
 
@@ -1030,10 +1040,10 @@ span.tickerText {
   .eyebrow { font-size: clamp(12px, calc(0.184vw + 10.82px), 14px); }
   .slideHeadline { font-size: clamp(36px, calc(0.735vw + 31.3px), 44px); }
 
-  /* The form's photo is phone-sized (402 x 874), so it would stretch and blur.
-   * Until there is a landscape one the form sits on a plain background,
-   * centred, with no photo to uncover and nothing for the panel to stick over. */
-  .joinImage { display: none; }
+  /* The form sits centred on its photo, one screen tall, as in Figma. With the
+   * whole section in view there is nothing for the panel to stick over. The
+   * photo is phone-sized (402 x 874), so it is soft at this width; agreed by
+   * Amna on 30 Oct. */
   .joinSection {
     min-height: 100svh;
     align-items: center;
@@ -1041,7 +1051,31 @@ span.tickerText {
     padding-top: var(--space-8);
     padding-bottom: var(--space-8);
   }
-  .joinPanel { position: static; }
+  /* Relative, not static: it has to stay in front of the photo. */
+  .joinPanel { position: relative; bottom: auto; }
+
+  /* The footer mirrors the nav: same height, margins, wordmark and link size,
+   * with the links where the nav has its button. */
+  .footer {
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--nav-height);
+    padding: var(--space-1) var(--gutter);
+  }
+  .footerWordmark { display: inline; }
+  .footerLinks {
+    display: flex;
+    gap: clamp(24px, calc(2.2vw + 9.9px), 48px);
+  }
+  .footerLink {
+    font-weight: 500;
+    font-size: clamp(14px, calc(0.368vw + 11.65px), 18px);
+    color: var(--text-primary);
+  }
+  .footerLink:hover {
+    color: var(--text-primary);
+    opacity: 0.65;
+  }
 
   /* Our mission gets far more air: 120px above and below at 640px, 265px on
    * the Figma frame. */
