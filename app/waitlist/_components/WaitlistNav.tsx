@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import JoinButton from "./JoinButton";
+import styles from "../waitlist.module.css";
 
 // The waitlist's own nav: the wordmark and one button, nothing else. The
 // shared components/ui/Nav is built around search and the menu, and every
@@ -21,7 +22,7 @@ export default function WaitlistNav() {
   }, []);
 
   return (
-    <nav className={`nav${scrolled ? "" : " nav-transparent"}`}>
+    <nav className={`nav ${styles.waitlistNav}${scrolled ? "" : " nav-transparent"}`}>
       <div className="nav-left">
         <span className="nav-wordmark">reloved.</span>
       </div>

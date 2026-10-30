@@ -972,3 +972,69 @@ span.tickerText {
     transition: color var(--dur-fast) var(--ease);
   }
 }
+
+/* ─── Wider screens ───────────────────────────────────── */
+
+/* The page was laid out for a phone. Everything under 640px is untouched; all
+ * the wider layouts live here, last in the file so they win. */
+
+/* From tablet up: the heading's two lines need more than the hero's 640px, and
+ * the form's photo is phone-sized (402 x 874), so it would stretch and blur.
+ * Until there is a landscape one the form sits on a plain background, centred,
+ * with no photo to uncover and so nothing for the panel to stick over. */
+@media (min-width: 640px) {
+  .heroInner { max-width: none; }
+  .heroSub { max-width: 560px; }
+  .heroButton { max-width: 480px; }
+
+  .joinImage { display: none; }
+  .joinSection {
+    min-height: 100svh;
+    align-items: center;
+    justify-content: center;
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-8);
+  }
+  .joinPanel { position: static; }
+}
+
+/* From laptop up: every section shares the homepage container's 1280px column,
+ * so the edges line up from the nav down, however wide the screen. */
+@media (min-width: 1024px) {
+  .waitlistNav,
+  .hero,
+  .how {
+    --wide-gutter: max(40px, calc((100vw - 1280px) / 2 + 40px));
+  }
+  nav.waitlistNav,
+  .hero {
+    padding-left: var(--wide-gutter);
+    padding-right: var(--wide-gutter);
+  }
+  .howRow { padding-left: var(--wide-gutter); padding-right: var(--wide-gutter); }
+
+  /* The nav button has its own 8px side padding; this lines its words up with
+   * the page edge. */
+  .waitlistNav :global(.nav-sell) { margin-right: calc(-1 * var(--space-2)); }
+
+  /* How it works, side by side: the picture on the left for the full height,
+   * the words and bars together in the middle of the right. The two 1fr rows
+   * hold the words in the centre. */
+  .stage {
+    --stage-gutter: var(--wide-gutter);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: 1fr auto auto 1fr;
+    gap: var(--space-5) var(--space-8);
+    padding-bottom: var(--space-5);
+  }
+  .stageMedia { grid-column: 1; grid-row: 1 / -1; }
+  .captions { grid-column: 2; grid-row: 2; }
+  .bars { grid-column: 2; grid-row: 3; max-width: 560px; }
+  .slideHeadline { font-size: clamp(36px, 3vw, 44px); }
+
+  p.quoteScroll {
+    max-width: 960px;
+    font-size: clamp(38px, 3.8vw, 56px);
+  }
+}
