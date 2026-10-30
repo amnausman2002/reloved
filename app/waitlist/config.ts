@@ -14,11 +14,14 @@ export const INSTAGRAM_HANDLE = "reloved.community";
 export const INSTAGRAM_URL = `https://www.instagram.com/${INSTAGRAM_HANDLE}/`;
 export const CONTACT_EMAIL = "reloved.isb@gmail.com";
 
-/** wa.me wants digits only: no plus, no spaces. No number opens her own
- *  contact picker, which is what sharing needs. */
+/** Straight to api.whatsapp.com, not wa.me: wa.me's redirect turns emoji into
+ *  the "unknown character" box (checked 30 Oct). The number is digits only, no
+ *  plus or spaces; no number opens her own contact picker, which is what
+ *  sharing needs. */
 export function whatsappLink(message: string, number?: string): string {
-  const to = number ? number.replace(/\D/g, "") : "";
-  return `https://wa.me/${to}?text=${encodeURIComponent(message)}`;
+  const params = new URLSearchParams({ text: message });
+  if (number) params.set("phone", number.replace(/\D/g, ""));
+  return `https://api.whatsapp.com/send?${params}`;
 }
 
 /** The link a friend receives, on whatever domain this page is open on. On
