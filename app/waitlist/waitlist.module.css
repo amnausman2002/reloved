@@ -999,8 +999,9 @@ span.tickerText {
   .joinSection,
   .footer {
     --gutter: clamp(16px, calc(5.882vw - 21.65px), 80px);
-    /* 56px to 103px. Local to this page: other pages keep the shared height. */
-    --nav-height: clamp(56px, calc(4.32vw + 28.35px), 103px);
+    /* 56px to 72px, smaller than Figma's 103px (Bismah, 30 Oct). Local to
+     * this page: other pages keep the shared height. */
+    --nav-height: clamp(56px, calc(1.471vw + 46.59px), 72px);
   }
 
   nav.waitlistNav {
@@ -1009,32 +1010,44 @@ span.tickerText {
   }
   .waitlistNav :global(.nav-wordmark),
   .footer :global(.nav-wordmark) {
-    font-size: clamp(20px, calc(1.103vw + 12.94px), 32px);
+    font-size: clamp(20px, calc(0.368vw + 17.65px), 24px);
   }
   /* The negative margin cancels the button's own 8px padding, so its words sit
    * on the same 80px margin as How it works and the footer. */
   .waitlistNav :global(.nav-sell) {
     margin-right: calc(-1 * var(--space-2));
-    font-size: clamp(14px, calc(0.368vw + 11.65px), 18px);
+    font-size: clamp(14px, calc(0.184vw + 12.82px), 16px);
   }
 
   .hero {
+    --hero-title: clamp(66.56px, calc(2.34vw + 51.58px), 92px);
     padding-left: var(--gutter);
     padding-right: var(--gutter);
   }
   .heroInner { max-width: none; }
   .heroIntro { gap: clamp(12px, calc(1.103vw + 4.94px), 24px); }
   .heroTitle {
-    font-size: clamp(66.56px, calc(2.34vw + 51.58px), 92px);
+    font-size: var(--hero-title);
     line-height: clamp(70px, calc(2.06vw + 56.82px), 92.4px);
   }
+  /* The subheading's first line and the button both end under "there.", the
+   * end of the headline's second line, at every width. Both are fixed shares
+   * of the headline size, measured from the fonts on 30 Oct: "is already out
+   * there." is 6.5 headline ems wide, and the subheading's first line matches
+   * it at 0.2117 of the headline size. Change the copy and these need
+   * measuring again. */
   .heroSub {
-    max-width: 769px;
-    font-size: clamp(14px, calc(0.184vw + 12.82px), 16px);
-    line-height: 21px;
+    max-width: none;
+    font-size: calc(var(--hero-title) * 0.2117);
+    line-height: 1.45;
+  }
+  .heroSubLine {
+    display: block;
+    white-space: nowrap;
   }
   .heroInner .heroButton {
-    max-width: 480px;
+    max-width: none;
+    width: calc(var(--hero-title) * 6.5);
     font-size: clamp(14px, calc(0.184vw + 12.82px), 16px);
   }
 
@@ -1046,86 +1059,64 @@ span.tickerText {
   .eyebrow { font-size: clamp(12px, calc(0.184vw + 10.82px), 14px); }
   .slideHeadline { font-size: clamp(36px, calc(0.735vw + 31.3px), 44px); }
 
-  /* The form sits centred on its photo, as in Figma, with nothing to stick
-   * over because the whole section is in view at the end of the page. The
-   * photo is phone-sized (402 x 874), so it is soft at this width; agreed by
-   * Amna on 30 Oct. */
+  /* As on a phone: the panel is pinned to the bottom as the section arrives
+   * and the photo is uncovered above it. Bottom left, on the page margin, at
+   * the phone's own form sizes (Bismah, 30 Oct; it was centred and scaled up).
+   * Pinned to the bottom, opening Sell or Both grows the panel upwards only. */
+  /* Exactly the screen less the nav and the ticker (12px padding either side
+   * of its 18px line), so at the very end of the page the ticker rests just
+   * under the nav and the photo fills the rest. The page ends here: the
+   * footer is drawn over the bottom of the photo (below). The dark fill shows
+   * until the photo arrives, so the white footer is never on a light ground. */
   .joinSection {
-    /* The room left between the sticky nav and the footer, both the same
-     * height, so the whole panel shows at the end of the page. */
-    min-height: calc(100svh - 2 * var(--nav-height));
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-8) var(--gutter);
+    min-height: calc(100svh - var(--nav-height) - (2 * var(--space-3) + 18px));
+    align-items: flex-start;
+    /* Little room on top: with Sell or Both open the panel is about 550px,
+     * which only just fits a 768px-high screen. */
+    padding: var(--space-5) var(--gutter) calc(var(--nav-height) + var(--space-5));
+    background: #1A1A18;
   }
-
-  /* The whole form scales up with the screen, larger than Figma's 560px panel
-   * (Amna, 30 Oct). Relative, not static: it has to stay in front of the photo. */
   .joinPanel {
-    --form-text: clamp(16px, calc(0.368vw + 13.65px), 20px);
-    --form-note: clamp(12px, calc(0.184vw + 10.82px), 14px);
-    --form-gap: clamp(24px, calc(0.735vw + 19.3px), 32px);
-    --form-control: clamp(48px, calc(1.47vw + 38.6px), 64px);
-    --form-side: clamp(24px, calc(2.94vw + 5.18px), 56px);
-    position: relative;
-    bottom: auto;
-    max-width: clamp(560px, calc(22.06vw + 418.8px), 800px);
-    padding: clamp(32px, calc(2.2vw + 17.9px), 56px) var(--form-side) clamp(24px, calc(2.2vw + 9.9px), 48px);
+    z-index: 1;
+    bottom: calc(var(--nav-height) + var(--space-5));
+    max-width: 480px;
   }
-  .joinHeading,
-  .joinPanel .successHeading {
-    font-size: clamp(40px, calc(2.206vw + 25.88px), 64px);
-  }
-  .joinSub {
-    margin-bottom: clamp(32px, calc(0.735vw + 27.3px), 40px);
-  }
-  .joinSub,
-  .joinPanel .successText,
-  .joinPanel .successSub,
-  .foundingIntro,
-  .intentLabel,
-  .intentChoice,
-  .lineInput,
-  .codeButton,
-  .codeSearch,
-  .codeOption,
-  .codeEmpty {
-    font-size: var(--form-text);
-  }
-  .lineError { font-size: var(--form-note); }
-  .lineForm { gap: var(--form-gap); }
-  .fold { margin-top: calc(-1 * var(--form-gap)); }
-  .foldBody { padding-top: var(--form-gap); }
-  .lineInput,
-  .codeButton,
-  .codeSearch { min-height: var(--form-control); }
-  .intentChoice { min-height: clamp(44px, calc(1.1vw + 36.9px), 56px); }
-  .panelSubmit:global(.btn-primary) {
-    min-height: var(--form-control);
-    font-size: clamp(14px, calc(0.368vw + 11.65px), 18px);
+  /* A landscape photo, so it is not cropped to a close-up. Dimmed to 60% so
+   * the white panel and the white footer both stand off it. */
+  .joinImage {
+    filter: brightness(0.6);
   }
 
-  /* The footer mirrors the nav: same height, margins, wordmark and link size,
-   * with the links where the nav has its button. */
+  /* The footer mirrors the nav (same height, margins, wordmark and link
+   * size) but has no bar of its own: it is pulled up over the bottom of the
+   * form's photo, in white. */
   .footer {
+    position: relative;
+    z-index: 2;
+    margin-top: calc(-1 * var(--nav-height));
     align-items: center;
     justify-content: space-between;
     min-height: var(--nav-height);
     padding: var(--space-1) var(--gutter);
+    border-top: 0;
+    background: transparent;
   }
-  .footerWordmark { display: inline; }
+  .footerWordmark {
+    display: inline;
+    color: var(--white);
+  }
   .footerLinks {
     display: flex;
-    gap: clamp(24px, calc(2.2vw + 9.9px), 48px);
+    gap: clamp(24px, calc(0.735vw + 19.3px), 32px);
   }
   .footerLink {
     font-weight: 500;
-    font-size: clamp(14px, calc(0.368vw + 11.65px), 18px);
-    color: var(--text-primary);
+    font-size: clamp(14px, calc(0.184vw + 12.82px), 16px);
+    color: var(--white);
   }
   .footerLink:hover {
-    color: var(--text-primary);
-    opacity: 0.65;
+    color: var(--white);
+    opacity: 0.7;
   }
 
   /* Our mission gets far more air: 120px above and below at 640px, 265px on
@@ -1139,18 +1130,18 @@ span.tickerText {
     padding-left: var(--gutter);
     padding-right: var(--gutter);
   }
+  /* Left aligned, 32px to 48px, with open space kept on the right (Bismah,
+   * 30 Oct; it used to grow with the screen and run the full width). */
   p.quoteScroll {
-    max-width: none;
+    max-width: 80%;
     margin-top: clamp(24px, calc(0.368vw + 21.65px), 28px);
-    /* Sized to the screen with no upper limit, so the paragraph always runs
-     * the full width between the margins (Amna, 30 Oct, over Figma's 56px). */
-    font-size: max(38px, 4.9vw);
+    font-size: clamp(32px, calc(1.471vw + 22.59px), 48px);
   }
 }
 
 /* How it works, side by side: two columns of up to 568px, centred as a pair,
- * with the picture full height on the left and the words and bars together in
- * the middle of the right. The two 1fr rows hold the words in the centre. */
+ * with the words and bars together in the middle of the left and the picture
+ * full height on the right. The two 1fr rows hold the words in the centre. */
 @media (min-width: 1024px) {
   .stage {
     display: grid;
@@ -1161,7 +1152,11 @@ span.tickerText {
     padding-top: var(--space-5);
     padding-bottom: var(--space-5);
   }
-  .stageMedia { grid-column: 1; grid-row: 1 / -1; }
-  .captions { grid-column: 2; grid-row: 2; }
-  .bars { grid-column: 2; grid-row: 3; max-width: 560px; }
+  /* Words and bars on the left, like the rest of the page's text; the
+   * picture on the right (Bismah, 30 Oct). */
+  .stageMedia { grid-column: 2; grid-row: 1 / -1; }
+  .captions { grid-column: 1; grid-row: 2; }
+  .bars { grid-column: 1; grid-row: 3; max-width: 560px; }
+
+  p.quoteScroll { max-width: 65%; }
 }

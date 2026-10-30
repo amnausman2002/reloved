@@ -42,8 +42,12 @@ export default function WaitlistJoin() {
 
   return (
     <section id={JOIN_SECTION_ID} className={styles.joinSection}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img ref={imageRef} className={styles.joinImage} src="/photos/join-bg.jpg" alt="" loading="lazy" />
+      {/* Phones keep the portrait photo and never download the wide one. */}
+      <picture>
+        <source media="(min-width: 640px)" srcSet="/photos/join-bg-wide.jpg" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img ref={imageRef} className={styles.joinImage} src="/photos/join-bg.jpg" alt="" loading="lazy" />
+      </picture>
 
       <div ref={panelRef} className={styles.joinPanel}>
         {/* Once she has joined, the success message takes this place. */}

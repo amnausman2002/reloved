@@ -20,9 +20,12 @@ export default function WaitlistHero() {
             <br />
             is already out there.
           </h1>
+          {/* Two lines on wider screens, one flowing paragraph on a phone. */}
           <p className={styles.heroSub}>
-            Reloved is a new home for preloved women&rsquo;s fashion in Pakistan. Join the waitlist to
-            get the first look.
+            <span className={styles.heroSubLine}>
+              Reloved is a new home for preloved women&rsquo;s fashion in Pakistan.
+            </span>{" "}
+            <span className={styles.heroSubLine}>Join the waitlist to get the first look.</span>
           </p>
         </div>
 
