@@ -87,7 +87,7 @@ export default function WaitlistQuote() {
   let index = 0;
 
   return (
-    <section className={homeStyles.quoteSection}>
+    <section className={`${homeStyles.quoteSection} ${styles.quoteSpace}`}>
       <div className={homeStyles.container}>
         <p className={styles.eyebrow}>Our mission</p>
         <p

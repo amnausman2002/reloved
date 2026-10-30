@@ -515,7 +515,7 @@ span.tickerText {
   font-weight: 400;
   font-size: var(--size-caption);
   line-height: var(--lh-caption);
-  letter-spacing: 0.14em;
+  letter-spacing: 1.68px;
   text-transform: uppercase;
   color: var(--text-secondary);
 }
@@ -975,18 +975,64 @@ span.tickerText {
 
 /* ─── Wider screens ───────────────────────────────────── */
 
-/* The page was laid out for a phone. Everything under 640px is untouched; all
- * the wider layouts live here, last in the file so they win. */
-
-/* From tablet up: the heading's two lines need more than the hero's 640px, and
- * the form's photo is phone-sized (402 x 874), so it would stretch and blur.
- * Until there is a landscape one the form sits on a plain background, centred,
- * with no photo to uncover and so nothing for the panel to stick over. */
+/* The phone layout is untouched below 640px. Above it, every size is taken from
+ * the desktop Figma frame (Reloved - Design, node 240:2, 1728px wide) and grows
+ * in a straight line from its phone value at 640px to its Figma value at
+ * 1728px, then stops. So nothing jumps as the window widens, and the only real
+ * change of shape is How it works going side by side at 1024px. Each calc is
+ * that line worked out: phone + (figma - phone) * (100vw - 640px) / 1088px. */
 @media (min-width: 640px) {
-  .heroInner { max-width: none; }
-  .heroSub { max-width: 560px; }
-  .heroButton { max-width: 480px; }
+  .waitlistNav,
+  .hero,
+  .how,
+  .quoteSpace {
+    --gutter: clamp(16px, calc(5.882vw - 21.65px), 80px);
+    /* 56px to 103px. Local to this page: other pages keep the shared height. */
+    --nav-height: clamp(56px, calc(4.32vw + 28.35px), 103px);
+  }
 
+  nav.waitlistNav {
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+  }
+  .waitlistNav :global(.nav-wordmark) {
+    font-size: clamp(20px, calc(1.103vw + 12.94px), 32px);
+  }
+  .waitlistNav :global(.nav-sell) {
+    font-size: clamp(14px, calc(0.368vw + 11.65px), 18px);
+  }
+
+  .hero {
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+  }
+  .heroInner { max-width: none; }
+  .heroIntro { gap: clamp(12px, calc(1.103vw + 4.94px), 24px); }
+  .heroTitle {
+    font-size: clamp(66.56px, calc(2.34vw + 51.58px), 92px);
+    line-height: clamp(70px, calc(2.06vw + 56.82px), 92.4px);
+  }
+  .heroSub {
+    max-width: 769px;
+    font-size: clamp(14px, calc(0.184vw + 12.82px), 16px);
+    line-height: 21px;
+  }
+  .heroInner .heroButton {
+    max-width: 480px;
+    font-size: clamp(14px, calc(0.184vw + 12.82px), 16px);
+  }
+
+  .howRow {
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+  }
+  .stage { --stage-gutter: var(--gutter); }
+  .eyebrow { font-size: clamp(12px, calc(0.184vw + 10.82px), 14px); }
+  .slideHeadline { font-size: clamp(36px, calc(0.735vw + 31.3px), 44px); }
+
+  /* The form's photo is phone-sized (402 x 874), so it would stretch and blur.
+   * Until there is a landscape one the form sits on a plain background,
+   * centred, with no photo to uncover and nothing for the panel to stick over. */
   .joinImage { display: none; }
   .joinSection {
     min-height: 100svh;
@@ -996,45 +1042,40 @@ span.tickerText {
     padding-bottom: var(--space-8);
   }
   .joinPanel { position: static; }
+
+  /* Our mission gets far more air: 120px above and below at 640px, 265px on
+   * the Figma frame. */
+  section.quoteSpace {
+    padding-top: clamp(120px, calc(13.33vw + 34.7px), 265px);
+    padding-bottom: clamp(120px, calc(13.33vw + 34.7px), 265px);
+  }
+  .quoteSpace > div {
+    max-width: calc(1280px + 2 * var(--gutter));
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+  }
+  p.quoteScroll {
+    max-width: none;
+    text-wrap: balance;
+    margin-top: clamp(24px, calc(0.368vw + 21.65px), 28px);
+    font-size: clamp(38px, calc(1.654vw + 27.41px), 56px);
+  }
 }
 
-/* From laptop up: every section shares the homepage container's 1280px column,
- * so the edges line up from the nav down, however wide the screen. */
+/* How it works, side by side: two columns of up to 568px, centred as a pair,
+ * with the picture full height on the left and the words and bars together in
+ * the middle of the right. The two 1fr rows hold the words in the centre. */
 @media (min-width: 1024px) {
-  .waitlistNav,
-  .hero,
-  .how {
-    --wide-gutter: max(40px, calc((100vw - 1280px) / 2 + 40px));
-  }
-  nav.waitlistNav,
-  .hero {
-    padding-left: var(--wide-gutter);
-    padding-right: var(--wide-gutter);
-  }
-  .howRow { padding-left: var(--wide-gutter); padding-right: var(--wide-gutter); }
-
-  /* The nav button has its own 8px side padding; this lines its words up with
-   * the page edge. */
-  .waitlistNav :global(.nav-sell) { margin-right: calc(-1 * var(--space-2)); }
-
-  /* How it works, side by side: the picture on the left for the full height,
-   * the words and bars together in the middle of the right. The two 1fr rows
-   * hold the words in the centre. */
   .stage {
-    --stage-gutter: var(--wide-gutter);
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 568px));
     grid-template-rows: 1fr auto auto 1fr;
+    justify-content: center;
     gap: var(--space-5) var(--space-8);
+    padding-top: var(--space-5);
     padding-bottom: var(--space-5);
   }
   .stageMedia { grid-column: 1; grid-row: 1 / -1; }
   .captions { grid-column: 2; grid-row: 2; }
   .bars { grid-column: 2; grid-row: 3; max-width: 560px; }
-  .slideHeadline { font-size: clamp(36px, 3vw, 44px); }
-
-  p.quoteScroll {
-    max-width: 960px;
-    font-size: clamp(38px, 3.8vw, 56px);
-  }
 }
